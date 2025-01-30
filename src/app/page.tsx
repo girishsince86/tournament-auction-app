@@ -11,10 +11,10 @@ export default function Home() {
           A platform for managing tournament player auctions
         </p>
         <div className="flex justify-center gap-4">
-          <Button variant="contained" color="primary" href="/login">
+          <Button variant="contained" color="primary" href="/(auth)/login">
             Login
           </Button>
-          <Button variant="outlined" color="primary" href="/register">
+          <Button variant="outlined" color="primary" href="/(auth)/register">
             Register
           </Button>
         </div>
