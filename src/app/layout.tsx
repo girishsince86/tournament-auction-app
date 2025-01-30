@@ -1,14 +1,30 @@
 'use client'
 
-import { Inter } from 'next/font/google'
-import './globals.css'
-import { ThemeProvider } from '@mui/material/styles'
-import CssBaseline from '@mui/material/CssBaseline'
-import { theme } from '@/lib/theme'
+import '@/styles/globals.css'
+import { Poppins, DM_Sans, JetBrains_Mono } from 'next/font/google'
 import { AuthProvider } from '@/features/auth/context/auth-context'
 import { Toaster } from 'react-hot-toast'
+import { cn } from '@/lib/utils'
+import { ThemeProvider, CssBaseline } from '@mui/material'
+import { theme } from '@/lib/theme'
 
-const inter = Inter({ subsets: ['latin'] })
+const poppins = Poppins({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-poppins',
+})
+
+const dmSans = DM_Sans({
+  subsets: ['latin'],
+  weight: ['400', '500', '700'],
+  variable: '--font-dm-sans',
+})
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ['latin'],
+  weight: ['400', '500', '600'],
+  variable: '--font-jetbrains-mono',
+})
 
 export default function RootLayout({
   children,
@@ -16,13 +32,31 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en">
-      <body className={inter.className}>
+    <html lang="en" className={cn(
+      poppins.variable,
+      dmSans.variable,
+      jetbrainsMono.variable,
+    )}>
+      <body className={cn(
+        'min-h-screen',
+        'bg-background-primary',
+        'text-text-primary',
+        'antialiased',
+        'font-body'
+      )}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
           <AuthProvider>
-            {children}
-            <Toaster position="top-right" />
+            <main className="min-h-screen">
+              {children}
+            </main>
+            <Toaster 
+              position="top-right"
+              toastOptions={{
+                className: 'bg-background-secondary text-text-primary',
+                duration: 4000,
+              }}
+            />
           </AuthProvider>
         </ThemeProvider>
       </body>

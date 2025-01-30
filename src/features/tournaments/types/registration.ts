@@ -3,7 +3,7 @@ import { Database } from '@/lib/supabase/types/supabase'
 // Form step type
 export type RegistrationStep = 'category' | 'personal' | 'profile' | 'jersey' | 'payment' | 'review'
 
-export type RegistrationCategory = 'VOLLEYBALL_OPEN_MEN' | 'THROWBALL_WOMEN' | 'THROWBALL_13_17_MIXED' | 'THROWBALL_8_12_MIXED'
+export type RegistrationCategory = '' | 'VOLLEYBALL_OPEN_MEN' | 'THROWBALL_WOMEN' | 'THROWBALL_13_17_MIXED' | 'THROWBALL_8_12_MIXED'
 
 export type LastPlayedStatus = 'PLAYING_ACTIVELY' | 'NOT_PLAYED_SINCE_LAST_YEAR' | 'NOT_PLAYED_IN_FEW_YEARS'
 
@@ -36,7 +36,7 @@ export const initialFormData: RegistrationFormData = {
   flat_number: '',
   height: 0,
   last_played_date: '' as LastPlayedStatus,
-  registration_category: 'VOLLEYBALL_OPEN_MEN',
+  registration_category: '' as RegistrationCategory,
   registration_type: 'INDIVIDUAL',
   playing_positions: [],
   skill_level: '' as 'RECREATIONAL_C' | 'INTERMEDIATE_B' | 'UPPER_INTERMEDIATE_BB' | 'COMPETITIVE_A',

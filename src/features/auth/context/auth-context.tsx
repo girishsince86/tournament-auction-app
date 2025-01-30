@@ -1,12 +1,27 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useRef } from 'react'
 import { AuthContextType, AuthUser } from '@/types/auth'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
 import { useRouter, usePathname } from 'next/navigation'
 import { toast } from 'react-hot-toast'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+// Create a ClientComponent wrapper
+function ClientOnly({ children }: { children: React.ReactNode }) {
+  const [hasMounted, setHasMounted] = useState(false)
+
+  useEffect(() => {
+    setHasMounted(true)
+  }, [])
+
+  if (!hasMounted) {
+    return null
+  }
+
+  return <>{children}</>
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
@@ -14,15 +29,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [error, setError] = useState<Error | null>(null)
   const router = useRouter()
   const pathname = usePathname()
-  const supabase = createClientComponentClient({
-    cookieOptions: {
-      name: 'sb-auth-token',
-      domain: window.location.hostname,
-      path: '/',
-      sameSite: 'lax',
-      secure: window.location.protocol === 'https:'
+  const supabaseRef = useRef<SupabaseClient | null>(null)
+
+  // Initialize Supabase client on mount
+  useEffect(() => {
+    const initSupabase = async () => {
+      if (!supabaseRef.current) {
+        const { createClientComponentClient } = await import('@supabase/auth-helpers-nextjs')
+        supabaseRef.current = createClientComponentClient()
+      }
     }
-  })
+    initSupabase()
+  }, [])
 
   // Handle navigation based on auth state
   useEffect(() => {
@@ -45,7 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         isPublicRoute,
         isLoginPage,
         pathname,
-        cookies: document.cookie 
+        cookies: typeof document !== 'undefined' ? document.cookie : ''
       })
       
       // Don't redirect from login page unless explicitly logged in
@@ -59,14 +77,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [user, isLoading, pathname, router])
 
+  // Initialize auth state
   useEffect(() => {
     let mounted = true
     console.log('Auth provider mounted')
 
     const initializeAuth = async () => {
       try {
+        if (!supabaseRef.current) return
+
         console.log('Initializing auth...')
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession()
+        const { data: { session }, error: sessionError } = await supabaseRef.current.auth.getSession()
         
         if (sessionError) {
           console.error('Session fetch error:', sessionError)
@@ -77,7 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           hasSession: !!session,
           user: session?.user?.email,
           timestamp: new Date().toISOString(),
-          cookies: document.cookie
+          cookies: typeof document !== 'undefined' ? document.cookie : ''
         })
         
         if (session?.user && mounted) {
@@ -91,12 +112,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
         const {
           data: { subscription },
-        } = supabase.auth.onAuthStateChange(async (event, session) => {
+        } = supabaseRef.current.auth.onAuthStateChange(async (event, session) => {
           console.log('Auth state change detected:', {
             event,
             email: session?.user?.email,
             timestamp: new Date().toISOString(),
-            cookies: document.cookie
+            cookies: typeof document !== 'undefined' ? document.cookie : ''
           })
           
           if (!mounted) return
@@ -141,16 +162,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       console.log('Auth provider unmounting')
     }
-  }, [supabase, pathname, router])
+  }, [pathname, router])
 
   const signIn = async (email: string, password: string) => {
     try {
+      if (!supabaseRef.current) throw new Error('Supabase client not initialized')
+
       console.log('Starting sign in process...')
       setIsLoading(true)
       setError(null)
       
       console.log('Calling Supabase signInWithPassword...')
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabaseRef.current.auth.signInWithPassword({
         email,
         password
       })
@@ -165,7 +188,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Sign in API call successful:', {
         user: data.user?.email,
         timestamp: new Date().toISOString(),
-        cookies: document.cookie
+        cookies: typeof document !== 'undefined' ? document.cookie : ''
       })
       
       // Set user immediately
@@ -191,11 +214,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     try {
+      if (!supabaseRef.current) throw new Error('Supabase client not initialized')
+
       setIsLoading(true)
       setError(null)
       console.log('Attempting sign out...')
       
-      const { error } = await supabase.auth.signOut()
+      const { error } = await supabaseRef.current.auth.signOut()
       if (error) {
         console.error('Sign out error:', error)
         toast.error(error.message)
@@ -221,12 +246,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signUp = async (email: string, password: string) => {
     try {
+      if (!supabaseRef.current) throw new Error('Supabase client not initialized')
+
       setError(null)
-      const { error } = await supabase.auth.signUp({
+      const { error } = await supabaseRef.current.auth.signUp({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/verify-email`
+          emailRedirectTo: typeof window !== 'undefined' 
+            ? `${window.location.origin}/verify-email`
+            : `${process.env.NEXT_PUBLIC_SITE_URL}/verify-email`
         }
       })
       if (error) {
@@ -243,34 +272,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resetPassword = async (email: string) => {
     try {
+      if (!supabaseRef.current) throw new Error('Supabase client not initialized')
+
       setError(null)
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/update-password`,
+      const { error } = await supabaseRef.current.auth.resetPasswordForEmail(email, {
+        redirectTo: typeof window !== 'undefined'
+          ? `${window.location.origin}/update-password`
+          : `${process.env.NEXT_PUBLIC_SITE_URL}/update-password`
       })
       if (error) {
         toast.error(error.message)
         throw error
       }
       toast.success('Password reset email sent')
+      router.push('/check-email')
     } catch (error) {
       setError(error as Error)
       throw error
     }
   }
 
+  const value = {
+    user,
+    isLoading,
+    error,
+    signIn,
+    signOut,
+    signUp,
+    resetPassword
+  }
+
   return (
-    <AuthContext.Provider
-      value={{
-        user,
-        isLoading,
-        error,
-        signUp,
-        signIn,
-        signOut,
-        resetPassword,
-      }}
-    >
-      {children}
+    <AuthContext.Provider value={value}>
+      <ClientOnly>
+        {children}
+      </ClientOnly>
     </AuthContext.Provider>
   )
 }
