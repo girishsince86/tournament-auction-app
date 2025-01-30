@@ -1,0 +1,20 @@
+{
+  "first_name": "John",
+  "last_name": "Doe",
+  "phone_number": "+919876543210",
+  "flat_number": "A-123",
+  "height": 1.75,
+  "last_played_date": "2024-01-01",
+  "registration_category": "VOLLEYBALL_OPEN_MEN",
+  "registration_type": "INDIVIDUAL",
+  "playing_positions": [
+    "P1_RIGHT_BACK"
+  ],
+  "skill_level": "INTERMEDIATE_B",
+  "tshirt_number": "24",
+  "tshirt_name": "JOHN",
+  "tshirt_size": "L",
+  "payment_upi_id": "john@upi",
+  "payment_transaction_id": "TXN123456",
+  "paid_to": "organizer@upi"
+}

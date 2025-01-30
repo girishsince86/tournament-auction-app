@@ -28,7 +28,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     if (!isLoading) {
       const isAuthRoute = ['/login', '/register', '/'].includes(pathname)
-      const isProtectedRoute = [
+      const isPublicRoute = pathname.startsWith('/tournaments/register')
+      const isLoginPage = pathname === '/login'
+      const isProtectedRoute = !isPublicRoute && [
         '/dashboard',
         '/players',
         '/teams',
@@ -40,19 +42,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         user: user?.email, 
         isAuthRoute,
         isProtectedRoute,
+        isPublicRoute,
+        isLoginPage,
         pathname,
         cookies: document.cookie 
       })
       
-      if (user && isAuthRoute) {
+      // Don't redirect from login page unless explicitly logged in
+      if (user && isAuthRoute && !isPublicRoute && !isLoginPage) {
         console.log('Authenticated user on auth route - redirecting to dashboard')
-        window.location.href = '/dashboard'
+        router.push('/dashboard')
       } else if (!user && isProtectedRoute) {
         console.log('Unauthenticated user on protected route - redirecting to login')
-        window.location.href = '/login'
+        router.push('/login')
       }
     }
-  }, [user, isLoading, pathname])
+  }, [user, isLoading, pathname, router])
 
   useEffect(() => {
     let mounted = true
@@ -100,18 +105,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             console.log('Updating user state:', session.user.email)
             setUser(session.user)
             
-            if (event === 'SIGNED_IN') {
+            if (event === 'SIGNED_IN' && !pathname.startsWith('/tournaments/register')) {
               console.log('Processing SIGNED_IN event - forcing navigation')
               // Add a small delay to ensure cookies are set
               await new Promise(resolve => setTimeout(resolve, 500))
-              window.location.href = '/dashboard'
+              router.push('/dashboard')
             }
           } else {
             console.log('Clearing user state')
             setUser(null)
-            if (event === 'SIGNED_OUT') {
+            if (event === 'SIGNED_OUT' && !pathname.startsWith('/tournaments/register')) {
               console.log('Processing SIGNED_OUT event - forcing navigation')
-              window.location.href = '/login'
+              router.push('/login')
             }
           }
           
@@ -136,7 +141,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return () => {
       console.log('Auth provider unmounting')
     }
-  }, [supabase])
+  }, [supabase, pathname, router])
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -170,9 +175,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Add a longer delay to ensure cookies are set
       await new Promise(resolve => setTimeout(resolve, 500))
       
-      // Force navigation after successful sign in
-      console.log('Forcing navigation to dashboard')
-      window.location.href = '/dashboard'
+      // Only redirect to dashboard if not on registration page
+      if (!pathname.startsWith('/tournaments/register')) {
+        console.log('Forcing navigation to dashboard')
+        router.push('/dashboard')
+      }
     } catch (error) {
       console.error('Sign in process error:', error)
       setError(error as Error)
@@ -198,7 +205,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('Sign out successful')
       setUser(null)
       toast.success('Signed out successfully')
-      window.location.href = '/login'
+      
+      // Only redirect to login if not on registration page
+      if (!pathname.startsWith('/tournaments/register')) {
+        router.push('/login')
+      }
     } catch (error) {
       console.error('Sign out error:', error)
       setError(error as Error)
@@ -223,7 +234,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error
       }
       toast.success('Verification email sent')
-      window.location.href = '/verify-email'
+      router.push('/verify-email')
     } catch (error) {
       setError(error as Error)
       throw error
