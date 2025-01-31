@@ -2,6 +2,8 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
 import { Database } from '@/lib/supabase/types/supabase'
+import { RegistrationCategory } from '@/lib/supabase/schema/tournaments'
+import { SkillLevel, TShirtSize } from '@/lib/supabase/schema/players'
 
 export async function POST(request: NextRequest) {
   try {
@@ -15,15 +17,16 @@ export async function POST(request: NextRequest) {
       const registrationData = {
         first_name: String(registration.first_name).trim(),
         last_name: String(registration.last_name).trim(),
+        email: String(registration.email).trim().toLowerCase(),
         phone_number: String(registration.phone_number).trim(),
         flat_number: String(registration.flat_number).trim().toUpperCase(),
-        height: parseFloat((Number(registration.height) / 100).toFixed(2)), // Convert to meters with 2 decimal places
+        height: Number(registration.height), // Store as meters
         last_played_date: String(registration.last_played_date),
         registration_category: registration.registration_category,
         registration_type: String(registration.registration_type).trim(),
         playing_positions: Array.isArray(registration.playing_positions) 
-          ? registration.playing_positions.map(String) 
-          : [String(registration.playing_positions)],
+          ? registration.playing_positions 
+          : [registration.playing_positions],
         skill_level: registration.skill_level,
         tshirt_number: String(registration.tshirt_number).trim(),
         tshirt_name: String(registration.tshirt_name).trim(),
@@ -31,7 +34,12 @@ export async function POST(request: NextRequest) {
         payment_upi_id: String(registration.payment_upi_id).trim(),
         payment_transaction_id: String(registration.payment_transaction_id).trim(),
         paid_to: String(registration.paid_to).trim(),
-        is_verified: false
+        is_verified: false,
+        tournament_id: process.env.NEXT_PUBLIC_DEFAULT_TOURNAMENT_ID!, // Add the tournament ID
+        // Add youth-specific fields with conditional handling
+        date_of_birth: registration.date_of_birth || null,
+        parent_name: registration.parent_name ? String(registration.parent_name).trim() : null,
+        parent_phone_number: registration.parent_phone_number ? String(registration.parent_phone_number).trim() : null
       }
 
       // Validate numeric fields
@@ -39,10 +47,30 @@ export async function POST(request: NextRequest) {
         throw new Error('Height must be between 1.0m and 2.5m')
       }
 
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!emailRegex.test(registrationData.email)) {
+        throw new Error('Invalid email format')
+      }
+
       // Validate last_played_date enum
       const validLastPlayedStatuses = ['PLAYING_ACTIVELY', 'NOT_PLAYED_SINCE_LAST_YEAR', 'NOT_PLAYED_IN_FEW_YEARS']
       if (!validLastPlayedStatuses.includes(registrationData.last_played_date)) {
         throw new Error('Invalid last played status')
+      }
+
+      // Validate youth category fields
+      if (registration.registration_category === 'THROWBALL_13_17_MIXED' || 
+          registration.registration_category === 'THROWBALL_8_12_MIXED') {
+        if (!registrationData.date_of_birth) {
+          throw new Error('Date of birth is required for youth categories')
+        }
+        if (!registrationData.parent_name) {
+          throw new Error('Parent/Guardian name is required for youth categories')
+        }
+        if (!registrationData.parent_phone_number) {
+          throw new Error('Parent/Guardian phone number is required for youth categories')
+        }
       }
 
       console.log('Formatted registration data:', registrationData)
@@ -63,6 +91,10 @@ export async function POST(request: NextRequest) {
           data: registrationData
         })
         throw error
+      }
+
+      if (!data?.id) {
+        throw new Error('Failed to get registration ID')
       }
 
       console.log('Registration successful:', data)
@@ -112,6 +144,13 @@ export async function GET(request: NextRequest) {
     // Check registration status
     if (searchParams.has('registration_id')) {
       const registrationId = searchParams.get('registration_id')
+
+      if (!registrationId) {
+        return NextResponse.json(
+          { error: 'Invalid registration ID' },
+          { status: 400 }
+        )
+      }
 
       console.log('Checking registration status:', registrationId)
 

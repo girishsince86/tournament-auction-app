@@ -38,7 +38,12 @@ import {
 } from '@mui/material'
 import { useState, useEffect } from 'react'
 import { useSearchParams } from 'next/navigation'
-import { RegistrationFormData, initialFormData } from '../../types/registration'
+import {
+  RegistrationFormData,
+  initialFormData,
+  isYouthCategory,
+  RegistrationCategory,
+} from '../../types/registration'
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ErrorIcon from '@mui/icons-material/Error'
@@ -130,7 +135,21 @@ const PLAYING_POSITIONS = [
   { value: 'P6_MIDDLE_BACK', label: 'Middle Back (P6)' },
 ]
 
-const TSHIRT_SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL']
+const PAYMENT_RECEIVERS = [
+  { value: 'Vasu Chepuru', label: 'Vasu Chepuru (9849521594)' },
+  { value: 'Amit Saxena', label: 'Amit Saxena (9866674460)' },
+]
+
+const TSHIRT_SIZES = [
+  { value: 'XS', label: 'XS(36)' },
+  { value: 'S', label: 'S(38)' },
+  { value: 'M', label: 'M(40)' },
+  { value: 'L', label: 'L(42)' },
+  { value: 'XL', label: 'XL(44)' },
+  { value: 'XXL', label: 'XXL(46)' },
+  { value: '3XL', label: '3XL(48)' },
+  { value: '4XL', label: '4XL(50)' },
+]
 
 const REGISTRATION_CATEGORIES = [
   { value: 'VOLLEYBALL_OPEN_MEN', label: 'Volleyball - Open Men' },
@@ -271,6 +290,7 @@ const PrintStyles = styled('style')({
 
 export function RegistrationFormSingle() {
   const theme = useTheme()
+  const searchParams = useSearchParams()
   const [formData, setFormData] = useState<RegistrationFormData>(initialFormData)
   const [errors, setErrors] = useState<Partial<Record<keyof RegistrationFormData, string>>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -291,6 +311,7 @@ export function RegistrationFormSingle() {
     severity: 'success'
   })
   const [rulesAcknowledged, setRulesAcknowledged] = useState(false)
+  const [residencyConfirmed, setResidencyConfirmed] = useState(false)
   const [rulesDialogOpen, setRulesDialogOpen] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [registrationId, setRegistrationId] = useState<string>('')
@@ -341,14 +362,25 @@ export function RegistrationFormSingle() {
   const isSectionComplete = (section: SectionName): boolean => {
     switch (section) {
       case 'category':
-        return !!formData.registration_category && !errors.registration_category && rulesAcknowledged;
+        return !!formData.registration_category && !errors.registration_category && rulesAcknowledged && residencyConfirmed;
       case 'personal':
-        return !!(
+        const baseFieldsComplete = !!(
           formData.first_name &&
           formData.last_name &&
+          formData.email &&
           formData.phone_number &&
           formData.flat_number
-        ) && !errors.first_name && !errors.last_name && !errors.phone_number && !errors.flat_number;
+        ) && !errors.first_name && !errors.last_name && !errors.email && !errors.phone_number && !errors.flat_number;
+
+        if (isYouthCategory(formData.registration_category)) {
+          return baseFieldsComplete && !!(
+            formData.date_of_birth &&
+            formData.parent_name &&
+            formData.parent_phone_number
+          ) && !errors.date_of_birth && !errors.parent_name && !errors.parent_phone_number;
+        }
+        
+        return baseFieldsComplete;
       case 'profile':
         return !!(
           formData.height &&
@@ -393,13 +425,148 @@ export function RegistrationFormSingle() {
     }
   }, [formData, errors]);
 
+  // Handle input changes
+  const processPhoneNumber = (value: string): string => {
+    // Remove any non-digit characters except the '+' prefix
+    const digitsOnly = value.replace(/[^\d+]/g, '')
+    
+    // Ensure the +91 prefix
+    if (!digitsOnly.startsWith('+91')) {
+      // If user is typing digits without prefix, add it
+      if (digitsOnly.length > 0 && !digitsOnly.startsWith('+')) {
+        return '+91' + digitsOnly
+      }
+      return digitsOnly
+    }
+    
+    // Limit to +91 plus 10 digits
+    if (digitsOnly.startsWith('+91')) {
+      const remainingDigits = digitsOnly.substring(3)
+      if (remainingDigits.length > 10) {
+        return '+91' + remainingDigits.substring(0, 10)
+      }
+    }
+    
+    return digitsOnly
+  }
+
+  const handleChange = (field: keyof RegistrationFormData) => (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    let value = event.target.value
+    
+    // Special handling for phone numbers
+    if (field === 'phone_number' || field === 'parent_phone_number') {
+      value = processPhoneNumber(value)
+    }
+
+    // Special handling for date of birth
+    if (field === 'date_of_birth') {
+      // Ensure the date is in ISO format for storage
+      const date = new Date(value)
+      if (!isNaN(date.getTime())) {
+        value = date.toISOString().split('T')[0]
+      }
+    }
+
+    const error = validateField(field, value)
+    setErrors(prev => ({ ...prev, [field]: error }))
+    setFormData(prev => ({ ...prev, [field]: value }))
+
+    // If changing category, validate youth-specific fields
+    if (field === 'registration_category') {
+      const isYouth = isYouthCategory(value as RegistrationCategory)
+      if (isYouth) {
+        ['date_of_birth', 'parent_name', 'parent_phone_number'].forEach(youthField => {
+          const youthError = validateField(
+            youthField as keyof RegistrationFormData,
+            formData[youthField as keyof RegistrationFormData]
+          )
+          setErrors(prev => ({ ...prev, [youthField]: youthError }))
+        })
+      } else {
+        // Clear youth-specific fields and errors when switching to non-youth category
+        setFormData(prev => ({
+          ...prev,
+          date_of_birth: '',
+          parent_name: '',
+          parent_phone_number: ''
+        }))
+        setErrors(prev => ({
+          ...prev,
+          date_of_birth: '',
+          parent_name: '',
+          parent_phone_number: ''
+        }))
+      }
+    }
+  }
+
+  // Handle select changes
+  const handleSelectChange = (event: SelectChangeEvent<any>) => {
+    const { name, value } = event.target
+    const error = validateField(name as keyof RegistrationFormData, value)
+    setErrors(prev => ({ ...prev, [name]: error }))
+    setFormData(prev => ({ ...prev, [name]: value }))
+  }
+
   // Validation functions
   const validateField = (name: keyof RegistrationFormData, value: any): string => {
     switch (name) {
+      case 'email':
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+        if (!value || !emailRegex.test(value)) {
+          return 'Please enter a valid email address'
+        }
+        return ''
       case 'phone_number':
-        return !value.match(/^\+?[\d\s-]{10,}$/)
-          ? 'Please enter a valid phone number'
-          : ''
+        const phoneNumberWithoutPrefix = value.replace(/^\+91/, '').replace(/\s+/g, '')
+        if (!phoneNumberWithoutPrefix.match(/^\d{10}$/)) {
+          return 'Please enter a valid 10-digit phone number'
+        }
+        return ''
+      case 'parent_phone_number':
+        if (isYouthCategory(formData.registration_category)) {
+          const parentPhoneNumberWithoutPrefix = value.replace(/^\+91/, '').replace(/\s+/g, '')
+          if (!parentPhoneNumberWithoutPrefix.match(/^\d{10}$/)) {
+            return 'Please enter a valid 10-digit phone number for parent'
+          }
+        }
+        return ''
+      case 'date_of_birth':
+        if (isYouthCategory(formData.registration_category)) {
+          if (!value) {
+            return 'Date of birth is required'
+          }
+          const dob = new Date(value)
+          const today = new Date()
+          const age = today.getFullYear() - dob.getFullYear()
+          const monthDiff = today.getMonth() - dob.getMonth()
+          const finalAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate()) 
+            ? age - 1 
+            : age
+
+          if (formData.registration_category === 'THROWBALL_8_12_MIXED') {
+            if (finalAge < 8 || finalAge > 12) {
+              return 'Age must be between 8 and 12 years for this category'
+            }
+          } else if (formData.registration_category === 'THROWBALL_13_17_MIXED') {
+            if (finalAge < 13 || finalAge > 17) {
+              return 'Age must be between 13 and 17 years for this category'
+            }
+          }
+        }
+        return ''
+      case 'parent_name':
+        if (isYouthCategory(formData.registration_category)) {
+          if (!value || !value.trim()) {
+            return 'Parent name is required'
+          }
+          if (value.length < 3) {
+            return 'Parent name must be at least 3 characters long'
+          }
+        }
+        return ''
       case 'flat_number':
         return !value.match(/^[a-zA-Z]-\d{3,4}$/)
           ? 'Please enter a valid flat number (e.g., A-123 or a-123)'
@@ -407,7 +574,7 @@ export function RegistrationFormSingle() {
       case 'height':
         const height = parseFloat(value)
         return isNaN(height) || height < 100 || height > 250
-          ? 'Height must be between 100cm and 250cm'
+          ? 'Height must be between 100cm and 250cm (1m to 2.5m)'
           : ''
       case 'last_played_date':
         return !value
@@ -418,9 +585,7 @@ export function RegistrationFormSingle() {
           ? 'Please select a playing position'
           : ''
       case 'payment_upi_id':
-        return !value.includes('@')
-          ? 'Please enter a valid UPI ID'
-          : ''
+        return ''
       case 'skill_level':
         return !value
           ? 'Please select your skill level'
@@ -452,24 +617,6 @@ export function RegistrationFormSingle() {
     }
   }
 
-  // Handle input changes
-  const handleChange = (field: keyof RegistrationFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const value = event.target.value
-    const error = validateField(field, value)
-    setErrors(prev => ({ ...prev, [field]: error }))
-    setFormData(prev => ({ ...prev, [field]: value }))
-  }
-
-  // Handle select changes
-  const handleSelectChange = (event: SelectChangeEvent<any>) => {
-    const { name, value } = event.target
-    const error = validateField(name as keyof RegistrationFormData, value)
-    setErrors(prev => ({ ...prev, [name]: error }))
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
-
   // Function to format the registration details for display
   const getFormattedDetails = () => [
     {
@@ -482,8 +629,14 @@ export function RegistrationFormSingle() {
       title: 'Personal Information',
       items: [
         { label: 'Name', value: `${formData.first_name} ${formData.last_name}` },
+        { label: 'Email', value: formData.email },
         { label: 'Phone Number', value: formData.phone_number },
         { label: 'Flat Number', value: formData.flat_number },
+        ...(isYouthCategory(formData.registration_category) ? [
+          { label: 'Date of Birth', value: formData.date_of_birth ? new Date(formData.date_of_birth).toLocaleDateString() : '' },
+          { label: 'Parent/Guardian Name', value: formData.parent_name },
+          { label: 'Parent/Guardian Phone', value: formData.parent_phone_number },
+        ] : []),
       ]
     },
     {
@@ -506,98 +659,107 @@ export function RegistrationFormSingle() {
     {
       title: 'Payment Information',
       items: [
-        { label: 'UPI ID', value: formData.payment_upi_id },
+        { label: 'UPI ID/ Phone Number of the Payee', value: formData.payment_upi_id },
         { label: 'Transaction ID', value: formData.payment_transaction_id },
         { label: 'Paid To', value: formData.paid_to },
       ]
     },
   ]
 
-  // Update the handleSubmit function
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
+  // Handle submit
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
 
-    if (isSubmitting) return
-    
-    setIsSubmitting(true)
-    setSnackbar({ open: false, message: '', severity: 'success' })
+    // Validate all fields
+    const newErrors: Partial<Record<keyof RegistrationFormData, string>> = {};
+    Object.keys(formData).forEach((field) => {
+      const error = validateField(
+        field as keyof RegistrationFormData,
+        formData[field as keyof RegistrationFormData]
+      );
+      if (error) {
+        newErrors[field as keyof RegistrationFormData] = error;
+      }
+    });
+
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      return;
+    }
+
+    if (!rulesAcknowledged || !residencyConfirmed) {
+      setSnackbar({
+        open: true,
+        message: 'Please acknowledge the rules and confirm your residency',
+        severity: 'error',
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
 
     try {
-      // Validate all fields
-      const newErrors: Partial<Record<keyof RegistrationFormData, string>> = {}
-      let hasErrors = false
-
-      Object.keys(formData).forEach((field) => {
-        const error = validateField(
-          field as keyof RegistrationFormData,
-          formData[field as keyof RegistrationFormData]
-        )
-        if (error) {
-          newErrors[field as keyof RegistrationFormData] = error
-          hasErrors = true
-        }
-      })
-
-      setErrors(newErrors)
-
-      if (hasErrors) {
-        setSnackbar({
-          open: true,
-          message: 'Please fix the errors in the form before submitting',
-          severity: 'error'
-        })
-        const firstErrorField = Object.keys(newErrors)[0]
-        const errorElement = document.querySelector(`[name="${firstErrorField}"]`)
-        if (errorElement) {
-          errorElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
-        }
-        setIsSubmitting(false)
-        return
-      }
-
-      console.log('Submitting form data:', formData)
+      // Convert height from centimeters to meters before submission
+      const heightInMeters = formData.height ? Number(formData.height) / 100 : 0;
       
       const response = await fetch('/api/tournaments/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData)
-      })
+        body: JSON.stringify({
+          ...formData,
+          height: heightInMeters,
+        }),
+      });
 
-      const data = await response.json()
+      const data = await response.json();
 
       if (!response.ok) {
-        console.error('Registration error details:', data)
-        throw new Error(data.details || data.error || 'Registration failed')
+        throw new Error(data.message || 'Failed to submit registration');
       }
 
-      // Set registration ID and show success dialog
-      setRegistrationId(data.registrationId)
-      setShowSuccessDialog(true)
-      
-      // Show success snackbar
+      setRegistrationId(data.registrationId);
+      setShowSuccessDialog(true);
       setSnackbar({
         open: true,
-        message: 'Registration successful! Please save your registration details for future reference.',
-        severity: 'success'
-      })
-
+        message: 'Registration submitted successfully!',
+        severity: 'success',
+      });
     } catch (error) {
-      console.error('Registration error:', error)
+      console.error('Registration error:', error);
       setSnackbar({
         open: true,
-        message: error instanceof Error ? error.message : 'Registration failed. Please try again.',
-        severity: 'error'
-      })
+        message: error instanceof Error ? error.message : 'Failed to submit registration',
+        severity: 'error',
+      });
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   const handleSnackbarClose = () => {
     setSnackbar(prev => ({ ...prev, open: false }))
   }
+
+  const reviewData = [
+    { label: 'League Category', value: REGISTRATION_CATEGORIES.find(c => c.value === formData.registration_category)?.label || '' },
+    { label: 'Name', value: formData.first_name + ' ' + formData.last_name },
+    { label: 'Email', value: formData.email },
+    { label: 'Phone', value: formData.phone_number },
+    { label: 'Flat Number', value: formData.flat_number },
+    ...(isYouthCategory(formData.registration_category) ? [
+      { label: 'Date of Birth', value: formData.date_of_birth ? new Date(formData.date_of_birth).toLocaleDateString() : '' },
+      { label: 'Parent/Guardian Name', value: formData.parent_name },
+      { label: 'Parent/Guardian Phone', value: formData.parent_phone_number },
+    ] : []),
+    { label: 'Skill Level', value: SKILL_LEVELS.find(l => l.value === formData.skill_level)?.label || '' },
+    { label: 'Last Played', value: LAST_PLAYED_OPTIONS.find(o => o.value === formData.last_played_date)?.label || '' },
+    { label: 'T-shirt Size', value: formData.tshirt_size },
+    { label: 'Playing Positions', value: formData.playing_positions?.map(p => 
+      PLAYING_POSITIONS.find(pos => pos.value === p)?.label
+    ).join(', ') || '' },
+  ];
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -646,12 +808,44 @@ export function RegistrationFormSingle() {
           </Alert>
         </Snackbar>
 
+        {/* Payment Instructions Alert */}
+        <Alert 
+          severity="info" 
+          sx={{ 
+            mb: 3,
+            '& .MuiAlert-message': {
+              width: '100%'
+            }
+          }}
+        >
+          <Box>
+            <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'medium' }}>
+              Important Payment Instructions
+            </Typography>
+            <Typography variant="body2" paragraph>
+              Before proceeding with the registration, please ensure you have completed the payment and have the transaction details ready.
+            </Typography>
+            <Box sx={{ pl: 2 }}>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                Please make the registration fee payment of INR 650 via UPI to either:
+              </Typography>
+              <Box sx={{ pl: 2, mb: 1 }}>
+                <Typography variant="body2">• Vasu Chepuru (9849521594)</Typography>
+                <Typography variant="body2">• Amit Saxena (9866674460)</Typography>
+              </Box>
+              <Typography variant="body2" color="warning.main">
+                Note: You will need to provide the UPI transaction details to complete the registration form.
+              </Typography>
+            </Box>
+          </Box>
+        </Alert>
+
         {/* Form Header with Sports Image */}
         <Box sx={{ 
           textAlign: 'center', 
           mb: 6,
           position: 'relative',
-          height: { xs: 420, sm: 380, md: 320 }, // Responsive height to prevent text overflow
+          height: { xs: 420, sm: 380, md: 320 },
           borderRadius: 2,
           overflow: 'hidden',
           boxShadow: theme.shadows[4],
@@ -671,83 +865,98 @@ export function RegistrationFormSingle() {
               ${alpha(theme.palette.primary.main, 0.85)} 50%,
               ${alpha(theme.palette.primary.light, 0.75)} 100%)`,
             display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
             padding: { xs: 2, sm: 3, md: 4 },
           }}>
-            <Box sx={{ 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: 2, 
-              mb: 3,
-              '& svg': {
-                fontSize: { xs: 32, sm: 40, md: 48 },
-                color: alpha('#fff', 0.9),
-                filter: 'drop-shadow(2px 2px 4px rgba(0,0,0,0.2))',
-              }
+            {/* Text Content */}
+            <Box sx={{
+              flex: 1,
+              display: 'flex',
+              flexDirection: 'column',
+              justifyContent: 'center',
+              alignItems: 'flex-start',
+              color: 'white',
+              pr: { xs: 2, sm: 3, md: 4 },
             }}>
-              <SportsVolleyballIcon />
-              <EmojiEventsIcon />
-              <SportsHandballIcon />
+              <Typography 
+                variant="h3" 
+                component="h1" 
+                sx={{
+                  fontWeight: 800,
+                  textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+                  mb: 2,
+                  fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+                  letterSpacing: '0.5px',
+                  textTransform: 'uppercase',
+                  textAlign: 'left',
+                  maxWidth: '100%',
+                  background: 'linear-gradient(45deg, #ffffff 30%, #f0f0f0 90%)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                }}
+              >
+                PBEL City VolleyBall and ThrowBall League 2025
+              </Typography>
+              <Box sx={{ 
+                width: 60, 
+                height: '4px', 
+                bgcolor: alpha('#fff', 0.9),
+                mb: 3,
+                borderRadius: '2px',
+                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+              }} />
+              <Typography 
+                variant="h6"
+                sx={{ 
+                  mb: 3,
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
+                  fontWeight: 500,
+                  color: alpha('#fff', 0.95),
+                  fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' },
+                  letterSpacing: '1px',
+                  textAlign: 'left',
+                }}
+              >
+                Bringing Our Community Together Through Sports
+              </Typography>
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
+                  lineHeight: 1.6,
+                  fontSize: { xs: '0.875rem', sm: '1rem', md: '1.125rem' },
+                  opacity: 0.9,
+                  textAlign: 'left',
+                  maxWidth: '600px',
+                }}
+              >
+                Welcome to PBEL City's premier sports event! Register below to participate in our annual League. 
+                Whether you're a volleyball enthusiast or throwball player, join us for an exciting competition 
+                that celebrates sportsmanship and community spirit.
+              </Typography>
             </Box>
-            <Typography 
-              variant="h3" 
-              component="h1" 
-              sx={{
-                fontWeight: 800,
-                textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
-                mb: 2,
-                fontSize: { xs: '1.25rem', sm: '1.75rem', md: '2.25rem' },
-                letterSpacing: '0.5px',
-                textTransform: 'uppercase',
-                px: { xs: 1, sm: 2 },
-                maxWidth: '100%',
-                background: 'linear-gradient(45deg, #ffffff 30%, #f0f0f0 90%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-              }}
-            >
-              PBEL City VolleyBall and ThrowBall Tournament 2025
-            </Typography>
-            <Box sx={{ 
-              width: { xs: 40, sm: 50, md: 60 }, 
-              height: '4px', 
-              bgcolor: alpha('#fff', 0.9),
-              mb: { xs: 2, sm: 3 },
-              borderRadius: '2px',
-              boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-            }} />
-            <Typography 
-              variant="h6"
+
+            {/* Club Logo */}
+            <Box 
               sx={{ 
-                mb: { xs: 2, sm: 3 },
-                textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
-                fontWeight: 500,
-                color: alpha('#fff', 0.95),
-                fontSize: { xs: '0.875rem', sm: '1rem', md: '1.25rem' },
-                letterSpacing: '1px',
+                position: 'relative',
+                width: { xs: '120px', sm: '160px', md: '200px' },
+                height: { xs: '120px', sm: '160px', md: '200px' },
+                alignSelf: 'center',
+                bgcolor: 'white',
+                borderRadius: '50%',
+                p: 3,
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                display: { xs: 'none', sm: 'block' },
               }}
             >
-              Bringing Our Community Together Through Sports
-            </Typography>
-            <Typography 
-              variant="body1" 
-              sx={{ 
-                maxWidth: { xs: '95%', sm: 700, md: 800 },
-                mx: 'auto',
-                textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
-                lineHeight: 1.6,
-                fontSize: { xs: '0.75rem', sm: '0.875rem', md: '1rem' },
-                opacity: 0.9,
-                px: { xs: 1, sm: 2 },
-              }}
-            >
-              Welcome to PBEL City's premier sports event! Register below to participate in our annual tournament. 
-              Whether you're a volleyball enthusiast or throwball player, join us for an exciting competition 
-              that celebrates sportsmanship and community spirit.
-            </Typography>
+              <Image
+                src="/images/pbel-volleyball-logo.png"
+                alt="PBEL City Volleyball Club"
+                fill
+                style={{ objectFit: 'contain' }}
+                priority
+              />
+            </Box>
           </Box>
         </Box>
 
@@ -755,7 +964,7 @@ export function RegistrationFormSingle() {
         <Card sx={{ mb: 2 }}>
           <CardHeader
             avatar={<GavelIcon color="primary" />}
-            title="Tournament Rules & Guidelines"
+            title="League Rules & Guidelines"
             action={
               <Button
                 startIcon={<ArticleIcon />}
@@ -768,24 +977,41 @@ export function RegistrationFormSingle() {
           />
           <CardContent>
             <Typography variant="body2" color="text.secondary" paragraph>
-              Please read and acknowledge the tournament rules before proceeding with registration.
+              Please read and acknowledge the League rules before proceeding with registration.
               The complete rulebook contains important information about match formats, scoring systems,
               and code of conduct.
             </Typography>
-            <FormControlLabel
-              control={
-                <Checkbox
-                  checked={rulesAcknowledged}
-                  onChange={(e) => setRulesAcknowledged(e.target.checked)}
-                  color="primary"
-                />
-              }
-              label={
-                <Typography variant="body2">
-                  I have read and agree to follow the tournament rules and guidelines
-                </Typography>
-              }
-            />
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={rulesAcknowledged}
+                    onChange={(e) => setRulesAcknowledged(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Typography variant="body2">
+                    I have read and agree to follow the League rules and guidelines
+                  </Typography>
+                }
+              />
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={residencyConfirmed}
+                    onChange={(e) => setResidencyConfirmed(e.target.checked)}
+                    color="primary"
+                  />
+                }
+                label={
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    I confirm that I am a resident of PBEL City at the time of registration and will be a resident 
+                    of PBEL City for the entire duration of this league
+                  </Typography>
+                }
+              />
+            </Box>
           </CardContent>
         </Card>
 
@@ -804,7 +1030,7 @@ export function RegistrationFormSingle() {
             gap: 1,
           }}>
             <GavelIcon color="primary" />
-            Tournament Rules & Guidelines
+            League Rules & Guidelines
           </DialogTitle>
           <DialogContent dividers>
             {tournamentRules.map((section, index) => (
@@ -987,12 +1213,28 @@ export function RegistrationFormSingle() {
                   <StyledTextField
                     required
                     fullWidth
+                    label="Email"
+                    type="email"
+                    value={formData.email}
+                    onChange={handleChange('email')}
+                    error={!!errors.email}
+                    helperText={errors.email || 'Enter a valid email address'}
+                    placeholder="your.email@example.com"
+                  />
+                </Grid>
+                <Grid item xs={12} sm={6}>
+                  <StyledTextField
+                    required
+                    fullWidth
                     label="Phone Number"
                     value={formData.phone_number}
                     onChange={handleChange('phone_number')}
                     error={!!errors.phone_number}
-                    helperText={errors.phone_number || 'Format: +91XXXXXXXXXX'}
-                    placeholder="+91XXXXXXXXXX"
+                    helperText={errors.phone_number || 'Enter 10-digit number'}
+                    placeholder="+91"
+                    inputProps={{
+                      maxLength: 13, // +91 plus 10 digits
+                    }}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -1007,6 +1249,60 @@ export function RegistrationFormSingle() {
                     placeholder="A-123"
                   />
                 </Grid>
+
+                {/* Youth-specific fields */}
+                {isYouthCategory(formData.registration_category) && (
+                  <>
+                    <Grid item xs={12}>
+                      <Typography variant="subtitle2" color="primary" sx={{ mb: 1, mt: 2 }}>
+                        Additional Information Required for Youth Category
+                      </Typography>
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <StyledTextField
+                        required
+                        fullWidth
+                        label="Date of Birth"
+                        type="date"
+                        value={formData.date_of_birth}
+                        onChange={handleChange('date_of_birth')}
+                        error={!!errors.date_of_birth}
+                        helperText={errors.date_of_birth || (
+                          formData.registration_category === 'THROWBALL_8_12_MIXED' 
+                            ? 'Age must be between 8-12 years'
+                            : 'Age must be between 13-17 years'
+                        )}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <StyledTextField
+                        required
+                        fullWidth
+                        label="Parent/Guardian Name"
+                        value={formData.parent_name}
+                        onChange={handleChange('parent_name')}
+                        error={!!errors.parent_name}
+                        helperText={errors.parent_name}
+                      />
+                    </Grid>
+                    <Grid item xs={12} sm={6}>
+                      <StyledTextField
+                        required
+                        fullWidth
+                        label="Parent/Guardian Phone Number"
+                        value={formData.parent_phone_number}
+                        onChange={handleChange('parent_phone_number')}
+                        error={!!errors.parent_phone_number}
+                        helperText={errors.parent_phone_number || 'Enter 10-digit number'}
+                        placeholder="+91"
+                        inputProps={{
+                          maxLength: 13, // +91 plus 10 digits
+                        }}
+                      />
+                    </Grid>
+                  </>
+                )}
               </Grid>
             </CardContent>
           </Collapse>
@@ -1163,8 +1459,8 @@ export function RegistrationFormSingle() {
                       onChange={handleSelectChange}
                     >
                       {TSHIRT_SIZES.map(size => (
-                        <MenuItem key={size} value={size}>
-                          {size}
+                        <MenuItem key={size.value} value={size.value}>
+                          {size.label}
                         </MenuItem>
                       ))}
                     </Select>
@@ -1238,12 +1534,12 @@ export function RegistrationFormSingle() {
                   <StyledTextField
                     required
                     fullWidth
-                    label="UPI ID"
+                    label="UPI ID/ Phone Number of the Payee"
                     value={formData.payment_upi_id}
                     onChange={handleChange('payment_upi_id')}
                     error={!!errors.payment_upi_id}
                     helperText={errors.payment_upi_id}
-                    placeholder="username@upi"
+                    placeholder="username@upi or phone number"
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -1258,15 +1554,24 @@ export function RegistrationFormSingle() {
                   />
                 </Grid>
                 <Grid item xs={12}>
-                  <StyledTextField
-                    required
-                    fullWidth
-                    label="Paid To"
-                    value={formData.paid_to}
-                    onChange={handleChange('paid_to')}
-                    error={!!errors.paid_to}
-                    helperText={errors.paid_to}
-                  />
+                  <StyledFormControl fullWidth error={!!errors.paid_to} required>
+                    <InputLabel>Paid To</InputLabel>
+                    <Select
+                      name="paid_to"
+                      value={formData.paid_to}
+                      label="Paid To"
+                      onChange={handleSelectChange}
+                    >
+                      {PAYMENT_RECEIVERS.map(receiver => (
+                        <MenuItem key={receiver.value} value={receiver.value}>
+                          {receiver.label}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                    {errors.paid_to && (
+                      <FormHelperText>{errors.paid_to}</FormHelperText>
+                    )}
+                  </StyledFormControl>
                 </Grid>
               </Grid>
             </CardContent>
@@ -1352,7 +1657,7 @@ export function RegistrationFormSingle() {
             <Box sx={{ mt: 3, p: 2, bgcolor: 'info.soft', borderRadius: 1 }} className="info-box">
               <Typography variant="body2" color="info.main">
                 Please save these details for future reference. You will need your Registration ID for 
-                any tournament-related communications.
+                any League-related communications.
               </Typography>
             </Box>
           </Box>
