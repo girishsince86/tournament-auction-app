@@ -6,6 +6,12 @@ export const dynamic = 'force-dynamic'
 export async function GET() {
   try {
     const supabase = createServerSupabaseClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database client not available' },
+        { status: 503 }
+      )
+    }
 
     const { data, error } = await supabase
       .from('tournament_registrations')
@@ -33,6 +39,13 @@ export async function GET() {
 export async function PUT(request: Request) {
   try {
     const supabase = createServerSupabaseClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database client not available' },
+        { status: 503 }
+      )
+    }
+
     const updates = await request.json()
 
     const { data, error } = await supabase

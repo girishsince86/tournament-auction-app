@@ -1,9 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 
+export const dynamic = 'force-dynamic'
+
 export async function POST(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database client not available' },
+        { status: 503 }
+      )
+    }
 
     // Get the current user's ID
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
@@ -58,6 +66,12 @@ export async function POST(request: NextRequest) {
 export async function GET() {
   try {
     const supabase = createServerSupabaseClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database client not available' },
+        { status: 503 }
+      )
+    }
 
     const { data, error } = await supabase
       .from('tournaments')

@@ -6,6 +6,13 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database client not available' },
+        { status: 503 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     
     const registrationId = searchParams.get('registration_id')

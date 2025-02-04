@@ -6,6 +6,13 @@ export const dynamic = 'force-dynamic'
 export async function POST(request: Request) {
   try {
     const supabase = createServerSupabaseClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database client not available' },
+        { status: 503 }
+      )
+    }
+
     const registration = await request.json()
 
     console.log('Received registration data:', registration)
@@ -137,6 +144,13 @@ export async function POST(request: Request) {
 export async function GET(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database client not available' },
+        { status: 503 }
+      )
+    }
+
     const { searchParams } = new URL(request.url)
     
     // Check registration status
