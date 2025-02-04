@@ -22,13 +22,14 @@ interface JerseyDetailsProps {
 }
 
 const jerseySizes = [
-  { value: 'xs', label: 'XS' },
-  { value: 's', label: 'S' },
-  { value: 'm', label: 'M' },
-  { value: 'l', label: 'L' },
-  { value: 'xl', label: 'XL' },
-  { value: '2xl', label: '2XL' },
-  { value: '3xl', label: '3XL' },
+  { value: 'XS', label: 'XS' },
+  { value: 'S', label: 'S' },
+  { value: 'M', label: 'M' },
+  { value: 'L', label: 'L' },
+  { value: 'XL', label: 'XL' },
+  { value: 'XXL', label: '2XL' },
+  { value: '3XL', label: '3XL' },
+  { value: '4XL', label: '4XL' },
 ]
 
 export function JerseyDetails({ onNext, onBack }: JerseyDetailsProps) {
@@ -37,9 +38,9 @@ export function JerseyDetails({ onNext, onBack }: JerseyDetailsProps) {
 
   const validateField = (name: string, value: string): string => {
     switch (name) {
-      case 'jersey_size':
+      case 'tshirt_size':
         return !value ? 'Please select your jersey size' : ''
-      case 'jersey_number':
+      case 'tshirt_number':
         if (!value) return 'Please enter your preferred jersey number'
         const number = parseInt(value, 10)
         if (isNaN(number) || number < 0 || number > 99) {
@@ -53,16 +54,16 @@ export function JerseyDetails({ onNext, onBack }: JerseyDetailsProps) {
 
   const handleSizeChange = (event: SelectChangeEvent) => {
     const value = event.target.value
-    const error = validateField('jersey_size', value)
-    setErrors(prev => ({ ...prev, jersey_size: error }))
-    updateFormData({ jersey_size: value })
+    const error = validateField('tshirt_size', value)
+    setErrors(prev => ({ ...prev, tshirt_size: error }))
+    updateFormData({ tshirt_size: value as 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | '3XL' | '4XL' })
   }
 
   const handleNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const value = event.target.value
-    const error = validateField('jersey_number', value)
-    setErrors(prev => ({ ...prev, jersey_number: error }))
-    updateFormData({ jersey_number: value })
+    const error = validateField('tshirt_number', value)
+    setErrors(prev => ({ ...prev, tshirt_number: error }))
+    updateFormData({ tshirt_number: value })
   }
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -72,7 +73,7 @@ export function JerseyDetails({ onNext, onBack }: JerseyDetailsProps) {
     let hasErrors = false
 
     // Validate all fields
-    const fieldsToValidate = ['jersey_size', 'jersey_number']
+    const fieldsToValidate = ['tshirt_size', 'tshirt_number']
 
     fieldsToValidate.forEach(field => {
       const value = formData[field as keyof typeof formData] as string
@@ -100,11 +101,11 @@ export function JerseyDetails({ onNext, onBack }: JerseyDetailsProps) {
 
       <Grid container spacing={3}>
         <Grid item xs={12} sm={6}>
-          <FormControl fullWidth error={!!errors.jersey_size}>
+          <FormControl fullWidth error={!!errors.tshirt_size}>
             <InputLabel id="jersey-size-label">Jersey Size</InputLabel>
             <Select
               labelId="jersey-size-label"
-              value={formData.jersey_size}
+              value={formData.tshirt_size}
               label="Jersey Size"
               onChange={handleSizeChange}
             >
@@ -114,8 +115,8 @@ export function JerseyDetails({ onNext, onBack }: JerseyDetailsProps) {
                 </MenuItem>
               ))}
             </Select>
-            {errors.jersey_size && (
-              <FormHelperText>{errors.jersey_size}</FormHelperText>
+            {errors.tshirt_size && (
+              <FormHelperText>{errors.tshirt_size}</FormHelperText>
             )}
           </FormControl>
         </Grid>
@@ -124,10 +125,10 @@ export function JerseyDetails({ onNext, onBack }: JerseyDetailsProps) {
             fullWidth
             label="Jersey Number"
             type="number"
-            value={formData.jersey_number}
+            value={formData.tshirt_number}
             onChange={handleNumberChange}
-            error={!!errors.jersey_number}
-            helperText={errors.jersey_number || 'Choose a number between 0 and 99'}
+            error={!!errors.tshirt_number}
+            helperText={errors.tshirt_number || 'Choose a number between 0 and 99'}
             InputProps={{ inputProps: { min: 0, max: 99 } }}
           />
         </Grid>
