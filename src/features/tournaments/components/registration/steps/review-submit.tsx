@@ -48,7 +48,7 @@ function ReviewSection({ title, data }: ReviewSectionProps) {
 }
 
 export function ReviewSubmit({ onNext, onBack }: ReviewSubmitProps) {
-  const { formData, errors } = useRegistrationForm()
+  const { formData } = useRegistrationForm()
   const { isSubmitting, error, submitForm } = useRegistrationSubmit()
 
   const handleSubmit = async (event: React.FormEvent) => {
