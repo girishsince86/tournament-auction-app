@@ -358,11 +358,16 @@ export function RegistrationFormSingle() {
     },
   ]
 
+  // Add this helper function near the top with other helper functions
+  const isVolleyballCategory = (category: string | undefined): boolean => {
+    return category?.includes('VOLLEYBALL') || false;
+  };
+
   // Function to check section completion
   const isSectionComplete = (section: SectionName): boolean => {
     switch (section) {
       case 'category':
-        return !!formData.registration_category && !errors.registration_category && rulesAcknowledged && residencyConfirmed;
+        return !!formData.registration_category && !errors.registration_category;
       case 'personal':
         const baseFieldsComplete = !!(
           formData.first_name &&
@@ -382,12 +387,16 @@ export function RegistrationFormSingle() {
         
         return baseFieldsComplete;
       case 'profile':
-        return !!(
+        const baseProfileFieldsComplete = !!(
           formData.height &&
           formData.last_played_date &&
-          formData.skill_level &&
-          formData.playing_positions.length
-        ) && !errors.height && !errors.last_played_date && !errors.skill_level && !errors.playing_positions;
+          formData.skill_level
+        ) && !errors.height && !errors.last_played_date && !errors.skill_level;
+
+        if (isVolleyballCategory(formData.registration_category)) {
+          return baseProfileFieldsComplete && !!(formData.playing_positions.length) && !errors.playing_positions;
+        }
+        return baseProfileFieldsComplete;
       case 'jersey':
         return !!(
           formData.tshirt_size &&
@@ -450,10 +459,38 @@ export function RegistrationFormSingle() {
     return digitsOnly
   }
 
+  // Add this helper function to find the next incomplete section
+  const findNextIncompleteSection = (): SectionName | null => {
+    const sections: SectionName[] = ['category', 'personal', 'profile', 'jersey', 'payment'];
+    return sections.find(section => !isSectionComplete(section)) || null;
+  };
+
+  // Add this function to handle section completion
+  const handleSectionCompletion = (currentSection: SectionName) => {
+    if (isSectionComplete(currentSection)) {
+      const nextIncomplete = findNextIncompleteSection();
+      if (nextIncomplete) {
+        // Expand next section
+        setExpandedSections(prev => ({
+          ...prev,
+          [currentSection]: false,
+          [nextIncomplete]: true,
+        }));
+        
+        // Scroll to next section
+        const nextSectionElement = document.querySelector(`[data-section="${nextIncomplete}"]`);
+        if (nextSectionElement) {
+          nextSectionElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+    }
+  };
+
+  // Update handleChange to check for section completion
   const handleChange = (field: keyof RegistrationFormData) => (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    let value = event.target.value
+    let value = event.target.value;
     
     // Special handling for phone numbers
     if (field === 'phone_number' || field === 'parent_phone_number') {
@@ -469,9 +506,40 @@ export function RegistrationFormSingle() {
       }
     }
 
-    const error = validateField(field, value)
-    setErrors(prev => ({ ...prev, [field]: error }))
-    setFormData(prev => ({ ...prev, [field]: value }))
+    const error = validateField(field, value);
+    setErrors(prev => ({ ...prev, [field]: error }));
+    setFormData(prev => ({ ...prev, [field]: value }));
+
+    // Find which section this field belongs to
+    const sectionMap: Record<string, SectionName> = {
+      registration_category: 'category',
+      first_name: 'personal',
+      last_name: 'personal',
+      email: 'personal',
+      phone_number: 'personal',
+      flat_number: 'personal',
+      date_of_birth: 'personal',
+      parent_name: 'personal',
+      parent_phone_number: 'personal',
+      height: 'profile',
+      last_played_date: 'profile',
+      skill_level: 'profile',
+      playing_positions: 'profile',
+      tshirt_size: 'jersey',
+      tshirt_name: 'jersey',
+      tshirt_number: 'jersey',
+      payment_upi_id: 'payment',
+      payment_transaction_id: 'payment',
+      paid_to: 'payment',
+    };
+
+    // Check if section is complete after a short delay to allow state updates
+    setTimeout(() => {
+      const section = sectionMap[field];
+      if (section) {
+        handleSectionCompletion(section);
+      }
+    }, 100);
 
     // If changing category, validate youth-specific fields
     if (field === 'registration_category') {
@@ -502,13 +570,31 @@ export function RegistrationFormSingle() {
     }
   }
 
-  // Handle select changes
+  // Update handleSelectChange similarly
   const handleSelectChange = (event: SelectChangeEvent<any>) => {
-    const { name, value } = event.target
-    const error = validateField(name as keyof RegistrationFormData, value)
-    setErrors(prev => ({ ...prev, [name]: error }))
-    setFormData(prev => ({ ...prev, [name]: value }))
-  }
+    const { name, value } = event.target;
+    const error = validateField(name as keyof RegistrationFormData, value);
+    setErrors(prev => ({ ...prev, [name]: error }));
+    setFormData(prev => ({ ...prev, [name]: value }));
+
+    // Find which section this field belongs to
+    const sectionMap: Record<string, SectionName> = {
+      registration_category: 'category',
+      skill_level: 'profile',
+      last_played_date: 'profile',
+      playing_positions: 'profile',
+      tshirt_size: 'jersey',
+      paid_to: 'payment',
+    };
+
+    // Check if section is complete after a short delay
+    setTimeout(() => {
+      const section = sectionMap[name];
+      if (section) {
+        handleSectionCompletion(section);
+      }
+    }, 100);
+  };
 
   // Validation functions
   const validateField = (name: keyof RegistrationFormData, value: any): string => {
@@ -576,16 +662,6 @@ export function RegistrationFormSingle() {
         return isNaN(height) || height < 100 || height > 250
           ? 'Height must be between 100cm and 250cm (1m to 2.5m)'
           : ''
-      case 'last_played_date':
-        return !value
-          ? 'Please select your last played status'
-          : ''
-      case 'playing_positions':
-        return !value || value.length === 0
-          ? 'Please select a playing position'
-          : ''
-      case 'payment_upi_id':
-        return ''
       case 'skill_level':
         return !value
           ? 'Please select your skill level'
@@ -645,7 +721,9 @@ export function RegistrationFormSingle() {
         { label: 'Height', value: `${formData.height} cm` },
         { label: 'Last Played', value: LAST_PLAYED_OPTIONS.find(o => o.value === formData.last_played_date)?.label || '' },
         { label: 'Skill Level', value: SKILL_LEVELS.find(s => s.value === formData.skill_level)?.label || '' },
-        { label: 'Playing Position', value: PLAYING_POSITIONS.find(p => p.value === formData.playing_positions[0])?.label || '' },
+        ...(isVolleyballCategory(formData.registration_category) ? [
+          { label: 'Playing Position', value: PLAYING_POSITIONS.find(p => p.value === formData.playing_positions[0])?.label || '' },
+        ] : []),
       ]
     },
     {
@@ -827,7 +905,7 @@ export function RegistrationFormSingle() {
             </Typography>
             <Box sx={{ pl: 2 }}>
               <Typography variant="body2" sx={{ mb: 1 }}>
-                Please make the registration fee payment of INR 650 via UPI to either:
+                Please make the registration fee payment of INR 600 via UPI to either:
               </Typography>
               <Box sx={{ pl: 2, mb: 1 }}>
                 <Typography variant="body2">• Vasu Chepuru (9849521594)</Typography>
@@ -1065,7 +1143,7 @@ export function RegistrationFormSingle() {
         </Dialog>
 
         {/* Category Selection */}
-        <Card sx={{ mb: 2 }}>
+        <Card sx={{ mb: 2 }} data-section="category">
           <CardHeader
             title={
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -1160,7 +1238,7 @@ export function RegistrationFormSingle() {
         </Card>
 
         {/* Personal Details */}
-        <Card sx={{ mb: 2 }}>
+        <Card sx={{ mb: 2 }} data-section="personal">
           <CardHeader
             title={
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -1309,7 +1387,7 @@ export function RegistrationFormSingle() {
         </Card>
 
         {/* Player Profile */}
-        <Card sx={{ mb: 2 }}>
+        <Card sx={{ mb: 2 }} data-section="profile">
           <CardHeader
             title={
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -1391,38 +1469,40 @@ export function RegistrationFormSingle() {
                     )}
                   </StyledFormControl>
                 </Grid>
-                <Grid item xs={12} sm={6}>
-                  <StyledFormControl fullWidth error={!!errors.playing_positions} required>
-                    <InputLabel>Playing Position</InputLabel>
-                    <Select
-                      name="playing_positions"
-                      value={formData.playing_positions[0] || ''}
-                      label="Playing Position"
-                      onChange={(event) => {
-                        const value = event.target.value;
-                        const error = validateField('playing_positions', value ? [value] : []);
-                        setErrors(prev => ({ ...prev, playing_positions: error }));
-                        setFormData(prev => ({ ...prev, playing_positions: value ? [value] : [] }));
-                      }}
-                    >
-                      {PLAYING_POSITIONS.map(position => (
-                        <MenuItem key={position.value} value={position.value}>
-                          {position.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {errors.playing_positions && (
-                      <FormHelperText>{errors.playing_positions}</FormHelperText>
-                    )}
-                  </StyledFormControl>
-                </Grid>
+                {isVolleyballCategory(formData.registration_category) && (
+                  <Grid item xs={12} sm={6}>
+                    <StyledFormControl fullWidth error={!!errors.playing_positions} required>
+                      <InputLabel>Playing Position</InputLabel>
+                      <Select
+                        name="playing_positions"
+                        value={formData.playing_positions[0] || ''}
+                        label="Playing Position"
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          const error = validateField('playing_positions', value ? [value] : []);
+                          setErrors(prev => ({ ...prev, playing_positions: error }));
+                          setFormData(prev => ({ ...prev, playing_positions: value ? [value] : [] }));
+                        }}
+                      >
+                        {PLAYING_POSITIONS.map(position => (
+                          <MenuItem key={position.value} value={position.value}>
+                            {position.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {errors.playing_positions && (
+                        <FormHelperText>{errors.playing_positions}</FormHelperText>
+                      )}
+                    </StyledFormControl>
+                  </Grid>
+                )}
               </Grid>
             </CardContent>
           </Collapse>
         </Card>
 
         {/* Jersey Details */}
-        <Card sx={{ mb: 2 }}>
+        <Card sx={{ mb: 2 }} data-section="jersey">
           <CardHeader
             title={
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -1503,7 +1583,7 @@ export function RegistrationFormSingle() {
         </Card>
 
         {/* Payment Details */}
-        <Card sx={{ mb: 2 }}>
+        <Card sx={{ mb: 2 }} data-section="payment">
           <CardHeader
             title={
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -1586,6 +1666,8 @@ export function RegistrationFormSingle() {
             size="large"
             disabled={
               isSubmitting || 
+              !rulesAcknowledged ||
+              !residencyConfirmed ||
               !(['category', 'personal', 'profile', 'jersey', 'payment'] as const)
                 .every(section => isSectionComplete(section as SectionName))
             }

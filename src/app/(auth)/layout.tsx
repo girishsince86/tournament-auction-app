@@ -1,6 +1,7 @@
 'use client'
 
 import { Box, Container, Paper } from '@mui/material'
+import Image from 'next/image'
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -15,6 +16,17 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       }}
     >
       <Container maxWidth="sm">
+        <Box sx={{ mb: 4, display: 'flex', justifyContent: 'center' }}>
+          <Box sx={{ position: 'relative', width: 80, height: 80 }}>
+            <Image
+              src="/images/pbel-volleyball-logo.png"
+              alt="PBEL City Volleyball Club"
+              fill
+              style={{ objectFit: 'contain' }}
+              priority
+            />
+          </Box>
+        </Box>
         <Paper
           elevation={3}
           sx={{

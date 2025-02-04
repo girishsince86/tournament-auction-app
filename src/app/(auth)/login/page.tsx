@@ -15,8 +15,17 @@ export default function LoginPage() {
         }}
       >
         <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
-          <Typography component="h1" variant="h5" align="center" gutterBottom>
-            Sign in to Tournament Auction
+          <Typography 
+            component="h1" 
+            variant="h5" 
+            align="center" 
+            gutterBottom
+            sx={{ 
+              fontWeight: 600,
+              color: 'primary.main'
+            }}
+          >
+            Sign in to PBEL City VolleyBall & ThrowBall League Application
           </Typography>
           <LoginForm />
         </Paper>

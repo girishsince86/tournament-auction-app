@@ -48,7 +48,7 @@ function ReviewSection({ title, data }: ReviewSectionProps) {
 }
 
 export function ReviewSubmit({ onNext, onBack }: ReviewSubmitProps) {
-  const { formData } = useRegistrationForm()
+  const { formData, errors } = useRegistrationForm()
   const { isSubmitting, error, submitForm } = useRegistrationSubmit()
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -56,42 +56,24 @@ export function ReviewSubmit({ onNext, onBack }: ReviewSubmitProps) {
     await submitForm(formData)
   }
 
-  const categoryData = [
-    { label: 'Tournament Category', value: formData.registration_category },
-  ]
-
-  const personalData = [
-    { label: 'First Name', value: formData.first_name },
-    { label: 'Last Name', value: formData.last_name },
-    { label: 'Email', value: formData.email },
-    { label: 'Phone Number', value: formData.phone_number },
-    { label: 'Date of Birth', value: formData.date_of_birth },
-    { label: 'Emergency Contact', value: formData.emergency_contact_name },
-    { label: 'Emergency Phone', value: formData.emergency_contact_phone },
-  ]
-
-  const profileData = [
+  const reviewData = [
+    { label: 'League Category', value: formData.registration_category },
+    { label: 'Name', value: `${formData.first_name} ${formData.last_name}` },
+    { label: 'Phone', value: formData.phone_number },
+    { label: 'Flat Number', value: formData.flat_number },
     { label: 'Skill Level', value: formData.skill_level },
-    { label: 'Years of Experience', value: formData.years_of_experience },
-  ]
-
-  const jerseyData = [
-    { label: 'Jersey Size', value: formData.jersey_size },
-    { label: 'Jersey Number', value: formData.jersey_number },
-  ]
-
-  const paymentData = [
-    { label: 'Payment Method', value: formData.payment_method },
-    { label: 'Payment Status', value: formData.payment_status },
+    { label: 'Last Played', value: formData.last_played_date },
+    { label: 'T-shirt Size', value: formData.tshirt_size },
+    { label: 'Playing Positions', value: formData.playing_positions?.join(', ') },
   ]
 
   return (
     <Box component="form" onSubmit={handleSubmit}>
-      <Typography variant="h5" gutterBottom>
-        Review & Submit
+      <Typography variant="h6" gutterBottom>
+        Review Your Registration
       </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        Please review your registration details before submitting.
+      <Typography variant="body1" color="text.secondary" paragraph>
+        Please review your league registration details before submitting.
       </Typography>
 
       {error && (
@@ -101,15 +83,7 @@ export function ReviewSubmit({ onNext, onBack }: ReviewSubmitProps) {
       )}
 
       <Paper elevation={0} sx={{ p: 3, bgcolor: 'grey.50' }}>
-        <ReviewSection title="Category" data={categoryData} />
-        <Divider sx={{ my: 3 }} />
-        <ReviewSection title="Personal Details" data={personalData} />
-        <Divider sx={{ my: 3 }} />
-        <ReviewSection title="Player Profile" data={profileData} />
-        <Divider sx={{ my: 3 }} />
-        <ReviewSection title="Jersey Details" data={jerseyData} />
-        <Divider sx={{ my: 3 }} />
-        <ReviewSection title="Payment Details" data={paymentData} />
+        <ReviewSection title="Review Data" data={reviewData} />
       </Paper>
 
       <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 4 }}>

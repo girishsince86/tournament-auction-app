@@ -25,11 +25,11 @@ export function CategorySelection({ onNext, onBack }: CategorySelectionProps) {
 
   return (
     <Box>
-      <Typography variant="h5" gutterBottom>
-        Select Tournament Category
+      <Typography variant="h6" gutterBottom>
+        Select League Category
       </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        Choose the category you wish to register for. Each category has specific eligibility requirements.
+      <Typography variant="body1" color="text.secondary" paragraph>
+        Choose the category you want to participate in.
       </Typography>
 
       <Grid container spacing={3} sx={{ mb: 4 }}>

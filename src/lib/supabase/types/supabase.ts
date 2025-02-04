@@ -56,9 +56,24 @@ export interface Database {
         Update: Partial<Omit<TournamentRule, 'id' | 'created_at' | 'updated_at'>>;
       };
       tournament_registrations: {
-        Row: TournamentRegistration;
-        Insert: Omit<TournamentRegistration, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<TournamentRegistration, 'id' | 'created_at' | 'updated_at'>>;
+        Row: TournamentRegistration & {
+          email: string;
+          date_of_birth: string | null;
+          parent_name: string | null;
+          parent_phone_number: string | null;
+        };
+        Insert: Omit<TournamentRegistration & {
+          email: string;
+          date_of_birth: string | null;
+          parent_name: string | null;
+          parent_phone_number: string | null;
+        }, 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<TournamentRegistration & {
+          email: string;
+          date_of_birth: string | null;
+          parent_name: string | null;
+          parent_phone_number: string | null;
+        }, 'id' | 'created_at' | 'updated_at'>>;
       };
       players: {
         Row: Player;

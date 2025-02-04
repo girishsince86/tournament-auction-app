@@ -62,4 +62,7 @@ export const TournamentRegistrationSchema = z.object({
   is_verified: z.boolean().default(false),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
+  date_of_birth: z.string().datetime().nullable(),
+  parent_name: z.string().min(1).nullable(),
+  parent_phone_number: z.string().min(10).nullable(),
 }); 

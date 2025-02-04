@@ -67,11 +67,11 @@ export function PersonalDetails({ onNext, onBack }: PersonalDetailsProps) {
 
   return (
     <Box component="form" onSubmit={handleSubmit}>
-      <Typography variant="h5" gutterBottom>
+      <Typography variant="h6" gutterBottom>
         Personal Details
       </Typography>
-      <Typography variant="body1" color="text.secondary" sx={{ mb: 4 }}>
-        Please provide your personal information for tournament registration.
+      <Typography variant="body1" color="text.secondary" paragraph>
+        Please provide your personal information for league registration.
       </Typography>
 
       <Grid container spacing={3}>

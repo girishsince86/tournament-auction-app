@@ -12,6 +12,7 @@ export interface RegistrationFormData {
   // Required fields from database schema
   first_name: string
   last_name: string
+  email: string
   phone_number: string
   flat_number: string
   height: number
@@ -26,12 +27,17 @@ export interface RegistrationFormData {
   payment_upi_id: string
   payment_transaction_id: string
   paid_to: string
+  // Optional fields for youth categories
+  date_of_birth?: string
+  parent_name?: string
+  parent_phone_number?: string
 }
 
 // Initial form state
 export const initialFormData: RegistrationFormData = {
   first_name: '',
   last_name: '',
+  email: '',
   phone_number: '',
   flat_number: '',
   height: 0,
@@ -45,7 +51,16 @@ export const initialFormData: RegistrationFormData = {
   tshirt_number: '',
   payment_upi_id: '',
   payment_transaction_id: '',
-  paid_to: ''
+  paid_to: '',
+  // Initialize optional fields as empty strings
+  date_of_birth: '',
+  parent_name: '',
+  parent_phone_number: '',
+}
+
+// Helper function to check if category requires youth fields
+export const isYouthCategory = (category: RegistrationCategory): boolean => {
+  return category === 'THROWBALL_13_17_MIXED' || category === 'THROWBALL_8_12_MIXED'
 }
 
 // Step configuration

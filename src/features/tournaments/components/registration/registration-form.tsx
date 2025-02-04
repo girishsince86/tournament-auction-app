@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Box, Paper, Stepper, Step, StepLabel, Container } from '@mui/material'
+import { Box, Paper, Stepper, Step, StepLabel, Container, Typography } from '@mui/material'
 import { useRegistrationForm } from '../../hooks/use-registration-form'
 import { CategorySelection } from './steps/category-selection'
 import { PersonalDetails } from './steps/personal-details'
@@ -12,6 +12,7 @@ import { ReviewSubmit } from './steps/review-submit'
 import { RegistrationStep } from '../../types/registration'
 import { FormContainer, FormButton } from '@/components/ui/form'
 import { RegistrationField } from './registration-form-field'
+import Image from 'next/image'
 
 const stepComponents: Record<RegistrationStep, React.FC<{ onNext: () => void; onBack: () => void }>> = {
   category: CategorySelection,
@@ -130,66 +131,111 @@ export function RegistrationForm({
   };
 
   return (
-    <FormContainer onSubmit={handleSubmit}>
-      <div className="space-y-6">
-        <RegistrationField
-          label="Player Name"
-          name="playerName"
-          value={formData.playerName}
-          onChange={handleChange('playerName')}
-          error={errors.playerName}
-          required
-          placeholder="Enter your full name"
-        />
+    <Container maxWidth="md">
+      {/* Logo Section */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center',
+        mb: 4 
+      }}>
+        <Box sx={{ 
+          position: 'relative', 
+          width: 120, 
+          height: 120,
+          mb: 2
+        }}>
+          <Image
+            src="/images/pbel-volleyball-logo.png"
+            alt="PBEL City Volleyball Club"
+            fill
+            style={{ objectFit: 'contain' }}
+            priority
+          />
+        </Box>
+        <Typography 
+          variant="h4" 
+          component="h1" 
+          align="center"
+          sx={{ 
+            fontWeight: 700,
+            color: 'primary.main',
+            mb: 1
+          }}
+        >
+          League Registration
+        </Typography>
+        <Typography 
+          variant="subtitle1" 
+          align="center" 
+          color="text.secondary"
+          sx={{ mb: 4 }}
+        >
+          Join PBEL City VolleyBall & ThrowBall League 2025
+        </Typography>
+      </Box>
 
-        <RegistrationField
-          label="Email"
-          name="email"
-          type="email"
-          value={formData.email}
-          onChange={handleChange('email')}
-          error={errors.email}
-          required
-          placeholder="Enter your email address"
-        />
+      <FormContainer onSubmit={handleSubmit}>
+        <div className="space-y-6">
+          <RegistrationField
+            label="Player Name"
+            name="playerName"
+            value={formData.playerName}
+            onChange={handleChange('playerName')}
+            error={errors.playerName}
+            required
+            placeholder="Enter your full name"
+          />
 
-        <RegistrationField
-          label="Phone Number"
-          name="phone"
-          type="tel"
-          value={formData.phone}
-          onChange={handleChange('phone')}
-          error={errors.phone}
-          required
-          placeholder="Enter your phone number"
-        />
+          <RegistrationField
+            label="Email"
+            name="email"
+            type="email"
+            value={formData.email}
+            onChange={handleChange('email')}
+            error={errors.email}
+            required
+            placeholder="Enter your email address"
+          />
 
-        <RegistrationField
-          label="Flat Number"
-          name="flatNumber"
-          value={formData.flatNumber}
-          onChange={handleChange('flatNumber')}
-          error={errors.flatNumber}
-          required
-          placeholder="Enter your flat number (e.g., A-123)"
-        />
+          <RegistrationField
+            label="Phone Number"
+            name="phone"
+            type="tel"
+            value={formData.phone}
+            onChange={handleChange('phone')}
+            error={errors.phone}
+            required
+            placeholder="Enter your phone number"
+          />
 
-        <div className="flex justify-end space-x-4">
-          <FormButton
-            type="button"
-            variant="tertiary"
-            disabled={isLoading}
-          >
-            Cancel
-          </FormButton>
-          <FormButton
-            type="submit"
-            isLoading={isLoading}
-          >
-            Register
-          </FormButton>
+          <RegistrationField
+            label="Flat Number"
+            name="flatNumber"
+            value={formData.flatNumber}
+            onChange={handleChange('flatNumber')}
+            error={errors.flatNumber}
+            required
+            placeholder="Enter your flat number (e.g., A-123)"
+          />
+
+          <div className="flex justify-end space-x-4">
+            <FormButton
+              type="button"
+              variant="tertiary"
+              disabled={isLoading}
+            >
+              Cancel
+            </FormButton>
+            <FormButton
+              type="submit"
+              isLoading={isLoading}
+            >
+              Register
+            </FormButton>
+          </div>
         </div>
-      </div>
-    </FormContainer>
+      </FormContainer>
+    </Container>
   );
 } 

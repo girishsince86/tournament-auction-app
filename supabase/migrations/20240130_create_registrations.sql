@@ -1,0 +1,1 @@
+CREATE TABLE IF NOT EXISTS registrations (id UUID PRIMARY KEY DEFAULT uuid_generate_v4(), first_name TEXT NOT NULL, last_name TEXT NOT NULL, phone_number TEXT NOT NULL, registration_category TEXT NOT NULL, is_verified BOOLEAN DEFAULT FALSE, created_at TIMESTAMPTZ DEFAULT NOW(), updated_at TIMESTAMPTZ DEFAULT NOW());

@@ -17,7 +17,7 @@ interface SidebarProps {
 
 const navigationItems = [
   { text: 'Dashboard', icon: <DashboardIcon />, href: '/dashboard' },
-  { text: 'Tournaments', icon: <EmojiEventsIcon />, href: '/tournaments' },
+  { text: 'Leagues', icon: <EmojiEventsIcon />, href: '/tournaments' },
   { text: 'Teams', icon: <GroupsIcon />, href: '/teams' },
   { text: 'Players', icon: <PeopleIcon />, href: '/players' },
   { text: 'Auctions', icon: <GavelIcon />, href: '/auctions' },
