@@ -7,9 +7,19 @@ interface RouteParams {
   }
 }
 
+// Force dynamic to ensure we don't try to use during static build
+export const dynamic = 'force-dynamic'
+
 export async function GET(request: Request, { params }: RouteParams) {
   try {
     const supabase = createServerSupabaseClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database client not available' },
+        { status: 503 }
+      )
+    }
+
     const { id } = params
 
     const { data, error } = await supabase
@@ -46,6 +56,13 @@ export async function GET(request: Request, { params }: RouteParams) {
 export async function PUT(request: Request, { params }: RouteParams) {
   try {
     const supabase = createServerSupabaseClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database client not available' },
+        { status: 503 }
+      )
+    }
+
     const { id } = params
     const updates = await request.json()
 
@@ -77,6 +94,13 @@ export async function PUT(request: Request, { params }: RouteParams) {
 export async function DELETE(request: Request, { params }: RouteParams) {
   try {
     const supabase = createServerSupabaseClient()
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Database client not available' },
+        { status: 503 }
+      )
+    }
+
     const { id } = params
 
     const { error } = await supabase
