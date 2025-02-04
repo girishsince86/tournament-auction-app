@@ -31,6 +31,32 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
+  // During static page generation, render without auth
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return (
+      <html lang="en" className={cn(
+        poppins.variable,
+        dmSans.variable,
+        jetbrainsMono.variable,
+      )}>
+        <body className={cn(
+          'min-h-screen',
+          'bg-background-primary',
+          'text-text-primary',
+          'antialiased',
+          'font-body'
+        )}>
+          <ThemeProvider theme={theme}>
+            <CssBaseline />
+            <main className="min-h-screen">
+              {children}
+            </main>
+          </ThemeProvider>
+        </body>
+      </html>
+    )
+  }
+
   return (
     <html lang="en" className={cn(
       poppins.variable,
