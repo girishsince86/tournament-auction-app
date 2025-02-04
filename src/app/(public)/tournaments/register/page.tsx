@@ -1,7 +1,10 @@
-import { RegistrationFormSingle } from '@/features/tournaments/components/registration/registration-form-single'
+import { Suspense } from 'react'
+import { RegistrationPageContent } from '@/features/tournaments/components/registration/registration-page-content'
 
-export default function TournamentRegistrationPage() {
+export default function RegisterPage() {
   return (
-    <RegistrationFormSingle />
+    <Suspense fallback={<div>Loading...</div>}>
+      <RegistrationPageContent />
+    </Suspense>
   )
 } 

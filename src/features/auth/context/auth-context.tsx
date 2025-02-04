@@ -1,225 +1,104 @@
 'use client'
 
-import { createContext, useContext, useEffect, useState, useRef } from 'react'
-import { AuthContextType, AuthUser } from '@/types/auth'
-import { useRouter, usePathname } from 'next/navigation'
-import { toast } from 'react-hot-toast'
-import type { SupabaseClient } from '@supabase/supabase-js'
-import { createClientComponentClient } from '@supabase/auth-helpers-nextjs'
+import { createContext, useContext, useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
+import { User } from '@supabase/supabase-js'
+import { createBrowserClient } from '@supabase/ssr'
+import { Database } from '@/lib/supabase/types/supabase'
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined)
-
-// Create a ClientComponent wrapper
-function ClientOnly({ children }: { children: React.ReactNode }) {
-  const [hasMounted, setHasMounted] = useState(false)
-
-  useEffect(() => {
-    setHasMounted(true)
-  }, [])
-
-  if (!hasMounted) {
-    return null
-  }
-
-  return <>{children}</>
+interface AuthContextType {
+  user: User | null
+  isLoading: boolean
+  signIn: (email: string, password: string) => Promise<void>
+  signUp: (email: string, password: string) => Promise<void>
+  signOut: () => Promise<void>
 }
 
+const AuthContext = createContext<AuthContextType>({
+  user: null,
+  isLoading: true,
+  signIn: async () => {},
+  signUp: async () => {},
+  signOut: async () => {},
+})
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null)
+  const [user, setUser] = useState<User | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [error, setError] = useState<Error | null>(null)
   const router = useRouter()
-  const pathname = usePathname()
-  const supabaseRef = useRef<SupabaseClient | null>(null)
 
-  // Initialize auth state
+  const supabase = createBrowserClient<Database>(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+
   useEffect(() => {
-    let mounted = true
-    console.log('Auth provider mounted')
-
-    const initializeAuth = async () => {
-      try {
-        // Initialize Supabase client if not already initialized
-        if (!supabaseRef.current) {
-          console.log('Initializing Supabase client...')
-          supabaseRef.current = createClientComponentClient()
-        }
-
-        console.log('Checking session...')
-        const { data: { session }, error: sessionError } = await supabaseRef.current.auth.getSession()
-        
-        if (sessionError) {
-          console.error('Session fetch error:', sessionError)
-          throw sessionError
-        }
-
-        console.log('Session check:', {
-          hasSession: !!session,
-          user: session?.user?.email,
-          timestamp: new Date().toISOString()
-        })
-        
-        if (session?.user && mounted) {
-          console.log('Setting initial user:', session.user.email)
-          setUser(session.user)
-        } else {
-          console.log('No session found')
-          setUser(null)
-        }
-
-        // Set up auth state change listener
-        const {
-          data: { subscription },
-        } = supabaseRef.current.auth.onAuthStateChange(async (event, session) => {
-          console.log('Auth state change:', event, session?.user?.email)
-          
-          if (session?.user) {
-            setUser(session.user)
-          } else {
-            setUser(null)
-          }
-          setIsLoading(false)
-        })
-
-        if (mounted) {
-          setIsLoading(false)
-        }
-
-        return () => {
-          mounted = false
-          subscription.unsubscribe()
-        }
-      } catch (error) {
-        console.error('Auth initialization error:', error)
-        if (mounted) {
-          setError(error as Error)
-          setIsLoading(false)
-        }
-      }
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser()
+      setUser(user)
+      setIsLoading(false)
     }
 
-    const cleanup = initializeAuth()
-    
+    // Get user on mount
+    getUser()
+
+    // Listen for changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null)
+      setIsLoading(false)
+      router.refresh()
+    })
+
     return () => {
-      console.log('Auth provider unmounting')
-      cleanup.then(cleanupFn => cleanupFn?.())
+      subscription.unsubscribe()
     }
-  }, [])
+  }, [router, supabase])
 
-  // Handle navigation based on auth state
-  useEffect(() => {
-    if (!isLoading) {
-      const isLoginPage = pathname === '/login'
-      const isPublicRoute = pathname.startsWith('/tournaments/register')
-      const isAdminRoute = pathname.startsWith('/admin')
-      
-      console.log('Navigation check:', {
-        isAdminRoute,
-        isLoginPage,
-        isPublicRoute,
-        userEmail: user?.email,
-        pathname
-      })
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    })
 
-      if (isAdminRoute && !user?.email?.endsWith('@pbel.in')) {
-        console.log('Unauthorized access to admin route - redirecting to login')
-        router.push('/login')
-      } else if (user && isLoginPage) {
-        // If user is logged in and on login page, redirect to appropriate page
-        console.log('User is logged in on login page - redirecting')
-        if (user.email?.endsWith('@pbel.in')) {
-          router.push('/admin/registrations')
-        } else {
-          router.push('/dashboard')
-        }
-      }
+    if (error) {
+      throw error
     }
-  }, [user, isLoading, pathname, router])
 
-  const value = {
-    user,
-    isLoading,
-    error,
-    signIn: async (email: string, password: string) => {
-      try {
-        if (!supabaseRef.current) throw new Error('Supabase client not initialized')
-        setIsLoading(true)
-        const { data, error } = await supabaseRef.current.auth.signInWithPassword({
-          email,
-          password,
-        })
-        if (error) throw error
-        setUser(data.user)
-        toast.success('Signed in successfully')
-        
-        // Handle post-login navigation
-        if (data.user.email?.endsWith('@pbel.in')) {
-          router.push('/admin/registrations')
-        } else {
-          router.push('/dashboard')
-        }
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : 'Failed to sign in')
-        throw error
-      } finally {
-        setIsLoading(false)
-      }
-    },
-    signOut: async () => {
-      try {
-        if (!supabaseRef.current) throw new Error('Supabase client not initialized')
-        setIsLoading(true)
-        const { error } = await supabaseRef.current.auth.signOut()
-        if (error) throw error
-        setUser(null)
-        toast.success('Signed out successfully')
-        router.push('/login')
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : 'Failed to sign out')
-        throw error
-      } finally {
-        setIsLoading(false)
-      }
-    },
-    signUp: async (email: string, password: string) => {
-      try {
-        if (!supabaseRef.current) throw new Error('Supabase client not initialized')
-        const { error } = await supabaseRef.current.auth.signUp({
-          email,
-          password,
-        })
-        if (error) throw error
-        toast.success('Verification email sent')
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : 'Failed to sign up')
-        throw error
-      }
-    },
-    resetPassword: async (email: string) => {
-      try {
-        if (!supabaseRef.current) throw new Error('Supabase client not initialized')
-        const { error } = await supabaseRef.current.auth.resetPasswordForEmail(email)
-        if (error) throw error
-        toast.success('Password reset email sent')
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : 'Failed to reset password')
-        throw error
-      }
-    },
+    router.push('/dashboard')
+  }
+
+  const signUp = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    })
+
+    if (error) {
+      throw error
+    }
+
+    // After signup, redirect to a confirmation page
+    router.push('/auth/confirm-email')
+  }
+
+  const signOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
   }
 
   return (
-    <AuthContext.Provider value={value}>
-      <ClientOnly>
-        {children}
-      </ClientOnly>
+    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut }}>
+      {children}
     </AuthContext.Provider>
   )
 }
 
-export function useAuth() {
+export const useAuth = () => {
   const context = useContext(AuthContext)
-  if (context === undefined) {
+  if (!context) {
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return context

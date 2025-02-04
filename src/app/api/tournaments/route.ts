@@ -1,66 +1,85 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
-import { Database } from '@/lib/supabase/types/supabase'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient<Database>({ cookies })
+    const supabase = createServerSupabaseClient()
 
     // Get the current user's ID
     const { data: { session }, error: sessionError } = await supabase.auth.getSession()
-    if (sessionError || !session?.user) {
+
+    if (sessionError || !session) {
       return NextResponse.json(
-        { error: 'Authentication required' },
+        { error: 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    // Create a default tournament
-    const tournament = {
-      name: 'Volleyball Tournament 2024',
-      description: 'Annual volleyball tournament',
-      start_date: new Date(2024, 1, 1).toISOString(),
-      end_date: new Date(2024, 12, 31).toISOString(),
-      registration_deadline: new Date(2024, 11, 31).toISOString(),
-      status: 'REGISTRATION_OPEN',
-      max_teams: 16,
-      created_by: session.user.id
+    // Verify admin access (check if email is from the admin domain)
+    if (!session.user.email?.endsWith('@admin.com')) {
+      return NextResponse.json(
+        { error: 'Unauthorized - Admin access required' },
+        { status: 403 }
+      )
     }
 
-    console.log('Creating tournament:', tournament)
+    const tournament = await request.json()
 
     const { data, error } = await supabase
       .from('tournaments')
-      .insert(tournament)
-      .select('id')
+      .insert({
+        ...tournament,
+        created_by: session.user.id
+      })
+      .select()
       .single()
 
     if (error) {
-      console.error('Tournament creation error:', error)
+      console.error('Error creating tournament:', error)
       return NextResponse.json(
-        { 
-          error: 'Failed to create tournament', 
-          details: error.message,
-          code: error.code,
-          hint: error.hint 
-        },
+        { error: 'Failed to create tournament' },
         { status: 500 }
       )
     }
 
     return NextResponse.json({
-      success: true,
-      tournamentId: data.id,
+      tournament: data,
       message: 'Tournament created successfully'
     })
   } catch (error) {
     console.error('Unexpected error:', error)
     return NextResponse.json(
-      { 
-        error: 'An unexpected error occurred',
-        details: error instanceof Error ? error.message : 'Unknown error'
-      },
+      { error: 'An unexpected error occurred' },
+      { status: 500 }
+    )
+  }
+}
+
+export async function GET() {
+  try {
+    const supabase = createServerSupabaseClient()
+
+    const { data, error } = await supabase
+      .from('tournaments')
+      .select('*')
+      .order('created_at', { ascending: false })
+
+    if (error) {
+      console.error('Error fetching tournaments:', error)
+      return NextResponse.json(
+        { error: 'Failed to fetch tournaments' },
+        { status: 500 }
+      )
+    }
+
+    return NextResponse.json({
+      tournaments: data,
+      message: 'Tournaments retrieved successfully'
+    })
+  } catch (error) {
+    console.error('Unexpected error:', error)
+    return NextResponse.json(
+      { error: 'An unexpected error occurred' },
       { status: 500 }
     )
   }

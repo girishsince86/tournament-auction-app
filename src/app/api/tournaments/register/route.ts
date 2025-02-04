@@ -1,13 +1,11 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
-import { Database } from '@/lib/supabase/types/supabase'
-import { RegistrationCategory } from '@/lib/supabase/schema/tournaments'
-import { SkillLevel, TShirtSize } from '@/lib/supabase/schema/players'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
 
-export async function POST(request: NextRequest) {
+export const dynamic = 'force-dynamic'
+
+export async function POST(request: Request) {
   try {
-    const supabase = createRouteHandlerClient<Database>({ cookies })
+    const supabase = createServerSupabaseClient()
     const registration = await request.json()
 
     console.log('Received registration data:', registration)
@@ -138,7 +136,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient<Database>({ cookies })
+    const supabase = createServerSupabaseClient()
     const { searchParams } = new URL(request.url)
     
     // Check registration status

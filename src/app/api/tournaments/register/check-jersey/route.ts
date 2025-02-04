@@ -1,11 +1,11 @@
-import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
-import { cookies } from 'next/headers'
 import { NextRequest, NextResponse } from 'next/server'
-import { Database } from '@/lib/supabase/types/supabase'
+import { createServerSupabaseClient } from '@/lib/supabase/server'
+
+export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient<Database>({ cookies })
+    const supabase = createServerSupabaseClient()
     const { searchParams } = new URL(request.url)
     const jerseyNumber = searchParams.get('jersey_number')
 
@@ -23,16 +23,16 @@ export async function GET(request: NextRequest) {
       .single()
 
     if (error && error.code !== 'PGRST116') {
-      console.error('Jersey check error:', error)
+      console.error('Error checking jersey number:', error)
       return NextResponse.json(
-        { error: 'Failed to check jersey number', details: error.message },
+        { error: 'Failed to check jersey number' },
         { status: 500 }
       )
     }
 
     return NextResponse.json({
-      available: !data,
-      jerseyNumber
+      isAvailable: !data,
+      message: data ? 'Jersey number is already taken' : 'Jersey number is available'
     })
   } catch (error) {
     console.error('Unexpected error:', error)
