@@ -2,6 +2,7 @@
 
 import { Box, Button, Card, CardContent, Typography, Grid } from '@mui/material'
 import { useRegistrationForm } from '../../../hooks/use-registration-form'
+import { RegistrationCategory } from '../../../types/registration'
 
 interface CategorySelectionProps {
   onNext: () => void
@@ -11,14 +12,30 @@ interface CategorySelectionProps {
 export function CategorySelection({ onNext, onBack }: CategorySelectionProps) {
   const { formData, updateFormData } = useRegistrationForm()
 
-  const categories = [
-    { id: 'mens_open', label: "Men's Open", description: 'Open division for men of all skill levels' },
-    { id: 'womens_open', label: "Women's Open", description: 'Open division for women of all skill levels' },
-    { id: 'mixed_open', label: 'Mixed Open', description: 'Open division for mixed teams' },
-    { id: 'masters', label: 'Masters', description: 'For players aged 35 and above' },
+  const categories: { id: RegistrationCategory; label: string; description: string }[] = [
+    { 
+      id: 'VOLLEYBALL_OPEN_MEN', 
+      label: "Men's Volleyball", 
+      description: 'Open division for men of all skill levels' 
+    },
+    { 
+      id: 'THROWBALL_WOMEN', 
+      label: "Women's Throwball", 
+      description: 'Open division for women of all skill levels' 
+    },
+    { 
+      id: 'THROWBALL_13_17_MIXED', 
+      label: 'Youth Throwball (13-17)', 
+      description: 'Mixed division for ages 13-17' 
+    },
+    { 
+      id: 'THROWBALL_8_12_MIXED', 
+      label: 'Youth Throwball (8-12)', 
+      description: 'Mixed division for ages 8-12' 
+    },
   ]
 
-  const handleCategorySelect = (categoryId: string) => {
+  const handleCategorySelect = (categoryId: RegistrationCategory) => {
     updateFormData({ registration_category: categoryId })
     onNext()
   }
