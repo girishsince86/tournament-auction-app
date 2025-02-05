@@ -7,6 +7,8 @@ export type RegistrationCategory = '' | 'VOLLEYBALL_OPEN_MEN' | 'THROWBALL_WOMEN
 
 export type LastPlayedStatus = 'PLAYING_ACTIVELY' | 'NOT_PLAYED_SINCE_LAST_YEAR' | 'NOT_PLAYED_IN_FEW_YEARS'
 
+export type TShirtSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | '2XL' | '3XL';
+
 // Form data interface
 export interface RegistrationFormData {
   // Required fields from database schema
@@ -21,7 +23,7 @@ export interface RegistrationFormData {
   registration_type: string
   playing_positions: string[]
   skill_level: 'RECREATIONAL_C' | 'INTERMEDIATE_B' | 'UPPER_INTERMEDIATE_BB' | 'COMPETITIVE_A'
-  tshirt_size: 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | '3XL' | '4XL'
+  tshirt_size: TShirtSize
   tshirt_name: string
   tshirt_number: string
   payment_upi_id: string
@@ -46,7 +48,7 @@ export const initialFormData: RegistrationFormData = {
   registration_type: 'INDIVIDUAL',
   playing_positions: [],
   skill_level: '' as 'RECREATIONAL_C' | 'INTERMEDIATE_B' | 'UPPER_INTERMEDIATE_BB' | 'COMPETITIVE_A',
-  tshirt_size: '' as 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | '3XL' | '4XL',
+  tshirt_size: '' as TShirtSize,
   tshirt_name: '',
   tshirt_number: '',
   payment_upi_id: '',

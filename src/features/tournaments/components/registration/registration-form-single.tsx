@@ -55,6 +55,7 @@ import ArticleIcon from '@mui/icons-material/Article'
 import GavelIcon from '@mui/icons-material/Gavel'
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
 import DoneAllIcon from '@mui/icons-material/DoneAll'
+import StraightenIcon from '@mui/icons-material/Straighten'
 import Image from 'next/image'
 
 // Styled components
@@ -141,15 +142,14 @@ const PAYMENT_RECEIVERS = [
 ]
 
 const TSHIRT_SIZES = [
-  { value: 'XS', label: 'XS(36)' },
-  { value: 'S', label: 'S(38)' },
-  { value: 'M', label: 'M(40)' },
-  { value: 'L', label: 'L(42)' },
-  { value: 'XL', label: 'XL(44)' },
-  { value: 'XXL', label: 'XXL(46)' },
-  { value: '3XL', label: '3XL(48)' },
-  { value: '4XL', label: '4XL(50)' },
-]
+  { value: 'XS', label: 'XS (34")', details: 'Chest: 34", Length: 24", Sleeve: 7.5"' },
+  { value: 'S', label: 'S (36")', details: 'Chest: 36", Length: 25", Sleeve: 8"' },
+  { value: 'M', label: 'M (38")', details: 'Chest: 38", Length: 26", Sleeve: 8"' },
+  { value: 'L', label: 'L (40")', details: 'Chest: 40", Length: 27", Sleeve: 8.5"' },
+  { value: 'XL', label: 'XL (42")', details: 'Chest: 42", Length: 28", Sleeve: 8.5"' },
+  { value: '2XL', label: '2XL (44")', details: 'Chest: 44", Length: 29", Sleeve: 9"' },
+  { value: '3XL', label: '3XL (46")', details: 'Chest: 46", Length: 30", Sleeve: 10"' },
+] as const;
 
 const REGISTRATION_CATEGORIES = [
   { value: 'VOLLEYBALL_OPEN_MEN', label: 'Volleyball - Open' },
@@ -315,45 +315,76 @@ export function RegistrationFormSingle() {
   const [rulesDialogOpen, setRulesDialogOpen] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [registrationId, setRegistrationId] = useState<string>('')
+  const [sizeChartOpen, setSizeChartOpen] = useState(false)
 
   // Tournament Rules Content
   const tournamentRules = [
     {
-      title: 'General Rules',
+      title: 'Categories & Registration',
       rules: [
-        'All players must be residents of PBEL City',
-        'Players can only register for one category',
-        'Players must arrive 15 minutes before their scheduled match time',
-        'Tournament schedule will be shared after registration closes',
+        'Categories: Volleyball - Open, Women\'s Throwball, Throwball 8-12 Mixed, Throwball 13-17 Mixed',
+        'Only PBEL City residents can participate',
+        'Individual registrations only (no team registrations)',
+        'Players can register for only one category',
+        'Registration fee: INR 600 per player',
+        'Registration deadline strictly enforced',
+        'No late registrations accepted',
       ]
     },
     {
-      title: 'Volleyball Rules',
+      title: 'Age Requirements',
       rules: [
-        'Games will be played according to official volleyball rules',
-        'Each match will be best of 3 sets',
-        'First two sets will be played to 25 points',
-        'Final set (if needed) will be played to 15 points',
-        'Teams must win by 2 points in all sets',
+        'Throwball 8-12 Mixed: Must be born on or after May 1, 2012',
+        'Throwball 13-17 Mixed: Must be born on or after May 1, 2008',
+        'Parent/Guardian information required for youth categories',
+        'Age verification may be required during the tournament',
       ]
     },
     {
-      title: 'Throwball Rules',
+      title: 'Team Formation',
       rules: [
-        'Standard throwball rules apply',
-        'Each match will consist of 3 sets',
-        'Each set will be played to 25 points',
-        'Service rotation is mandatory',
-        'Double throw is not allowed',
+        'Volleyball - Open:',
+        '• Players will be drafted through skill-based allocation',
+        '• Teams formed considering playing positions and experience',
+        'Throwball Categories:',
+        '• Teams formed through balanced distribution of skill levels',
+        '• Random allocation within skill groups',
       ]
     },
     {
-      title: 'Code of Conduct',
+      title: 'Jersey & Equipment',
       rules: [
-        'Maintain sportsmanship at all times',
-        'Respect officials\' decisions',
-        'No inappropriate behavior or language',
-        'Follow all safety protocols',
+        'Each player receives a tournament jersey',
+        'Jersey numbers may need to be revised after team formation to avoid conflicts',
+        'Team captains will coordinate jersey number changes if needed',
+        'Jersey name customization available',
+        'Size options available from XS(34") to 3XL(46") with detailed measurements',
+      ]
+    },
+    {
+      title: 'Match Rules & Conduct',
+      rules: [
+        'Teams must arrive 15 minutes before scheduled match time',
+        'Teams must maintain sportsmanlike conduct',
+        'Referee decisions are final',
+      ]
+    },
+    {
+      title: 'Medical & Safety',
+      rules: [
+        'Basic first aid will be available at venue',
+        'Players participate at their own risk',
+        'Report any injuries to tournament officials immediately',
+      ]
+    },
+    {
+      title: 'Communication & Administration',
+      rules: [
+        'Official WhatsApp group for tournament updates',
+        'Schedule changes will be notified 24 hours in advance',
+        'Team captains responsible for relay of information',
+        'Organizing Committee reserves rights to verify residency, modify rules, take disciplinary action, and adjust schedule',
+        'All decisions by the organizing committee are final',
       ]
     },
   ]
@@ -858,6 +889,48 @@ export function RegistrationFormSingle() {
       PLAYING_POSITIONS.find(pos => pos.value === p)?.label
     ).join(', ') || '' },
   ];
+
+  // Add size chart dialog component
+  const SizeChartDialog = () => (
+    <Dialog
+      open={sizeChartOpen}
+      onClose={() => setSizeChartOpen(false)}
+      maxWidth="md"
+      fullWidth
+    >
+      <DialogTitle sx={{ 
+        pb: 1,
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+      }}>
+        <StraightenIcon color="primary" />
+        T-Shirt Size Chart
+      </DialogTitle>
+      <DialogContent>
+        <Box sx={{ position: 'relative', width: '100%', height: 'auto' }}>
+          <Image
+            src="/images/tshirt-size-chart.png"
+            alt="T-Shirt Size Chart"
+            width={800}
+            height={600}
+            style={{ 
+              width: '100%',
+              height: 'auto',
+              objectFit: 'contain'
+            }}
+            priority
+          />
+          <Typography variant="caption" sx={{ mt: 2, display: 'block', textAlign: 'center' }}>
+            * All measurements are in inches with ±3% tolerance permissible
+          </Typography>
+        </Box>
+      </DialogContent>
+      <DialogActions>
+        <Button onClick={() => setSizeChartOpen(false)}>Close</Button>
+      </DialogActions>
+    </Dialog>
+  )
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -1597,24 +1670,39 @@ export function RegistrationFormSingle() {
             <CardContent>
               <Grid container spacing={3}>
                 <Grid item xs={12} sm={6}>
-                  <StyledFormControl fullWidth error={!!errors.tshirt_size} required>
-                    <InputLabel>T-shirt Size</InputLabel>
-                    <Select
-                      name="tshirt_size"
-                      value={formData.tshirt_size}
-                      label="T-shirt Size"
-                      onChange={handleSelectChange}
+                  <Box sx={{ position: 'relative' }}>
+                    <StyledFormControl fullWidth error={!!errors.tshirt_size} required>
+                      <InputLabel>T-shirt Size</InputLabel>
+                      <Select
+                        name="tshirt_size"
+                        value={formData.tshirt_size}
+                        label="T-shirt Size"
+                        onChange={handleSelectChange}
+                      >
+                        {TSHIRT_SIZES.map(size => (
+                          <MenuItem key={size.value} value={size.value}>
+                            <Box>
+                              <Typography variant="body1">{size.label}</Typography>
+                              <Typography variant="caption" color="text.secondary">
+                                {size.details}
+                              </Typography>
+                            </Box>
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {errors.tshirt_size && (
+                        <FormHelperText>{errors.tshirt_size}</FormHelperText>
+                      )}
+                    </StyledFormControl>
+                    <Button
+                      size="small"
+                      startIcon={<StraightenIcon />}
+                      onClick={() => setSizeChartOpen(true)}
+                      sx={{ mt: 1 }}
                     >
-                      {TSHIRT_SIZES.map(size => (
-                        <MenuItem key={size.value} value={size.value}>
-                          {size.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {errors.tshirt_size && (
-                      <FormHelperText>{errors.tshirt_size}</FormHelperText>
-                    )}
-                  </StyledFormControl>
+                      View Size Chart
+                    </Button>
+                  </Box>
                 </Grid>
                 <Grid item xs={12} sm={6}>
                   <StyledTextField
@@ -1833,6 +1921,9 @@ export function RegistrationFormSingle() {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Size Chart Dialog */}
+      <SizeChartDialog />
     </Container>
   )
 } 

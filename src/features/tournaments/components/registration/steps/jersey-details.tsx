@@ -22,14 +22,13 @@ interface JerseyDetailsProps {
 }
 
 const jerseySizes = [
-  { value: 'XS', label: 'XS' },
-  { value: 'S', label: 'S' },
-  { value: 'M', label: 'M' },
-  { value: 'L', label: 'L' },
-  { value: 'XL', label: 'XL' },
-  { value: 'XXL', label: '2XL' },
-  { value: '3XL', label: '3XL' },
-  { value: '4XL', label: '4XL' },
+  { value: 'XS', label: 'XS (34")', details: 'Chest: 34", Length: 24", Sleeve: 7.5"' },
+  { value: 'S', label: 'S (36")', details: 'Chest: 36", Length: 25", Sleeve: 8"' },
+  { value: 'M', label: 'M (38")', details: 'Chest: 38", Length: 26", Sleeve: 8"' },
+  { value: 'L', label: 'L (40")', details: 'Chest: 40", Length: 27", Sleeve: 8.5"' },
+  { value: 'XL', label: 'XL (42")', details: 'Chest: 42", Length: 28", Sleeve: 8.5"' },
+  { value: '2XL', label: '2XL (44")', details: 'Chest: 44", Length: 29", Sleeve: 9"' },
+  { value: '3XL', label: '3XL (46")', details: 'Chest: 46", Length: 30", Sleeve: 10"' },
 ]
 
 export function JerseyDetails({ onNext, onBack }: JerseyDetailsProps) {
@@ -56,7 +55,7 @@ export function JerseyDetails({ onNext, onBack }: JerseyDetailsProps) {
     const value = event.target.value
     const error = validateField('tshirt_size', value)
     setErrors(prev => ({ ...prev, tshirt_size: error }))
-    updateFormData({ tshirt_size: value as 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | '3XL' | '4XL' })
+    updateFormData({ tshirt_size: value as 'XS' | 'S' | 'M' | 'L' | 'XL' | '2XL' | '3XL' })
   }
 
   const handleNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -111,7 +110,12 @@ export function JerseyDetails({ onNext, onBack }: JerseyDetailsProps) {
             >
               {jerseySizes.map(size => (
                 <MenuItem key={size.value} value={size.value}>
-                  {size.label}
+                  <Box>
+                    <Typography variant="body1">{size.label}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {size.details}
+                    </Typography>
+                  </Box>
                 </MenuItem>
               ))}
             </Select>
