@@ -8,8 +8,7 @@ export function RegistrationPageContent() {
   const registrationId = searchParams.get('registration_id')
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-8">Tournament Registration</h1>
+    <div className="container mx-auto px-4 py-4">
       {registrationId ? (
         <div>Registration Status: {registrationId}</div>
       ) : (

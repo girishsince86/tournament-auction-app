@@ -152,7 +152,7 @@ const TSHIRT_SIZES = [
 ]
 
 const REGISTRATION_CATEGORIES = [
-  { value: 'VOLLEYBALL_OPEN_MEN', label: 'Volleyball - Open Men' },
+  { value: 'VOLLEYBALL_OPEN_MEN', label: 'Volleyball - Open' },
   { value: 'THROWBALL_WOMEN', label: 'Throwball - Women' },
   { value: 'THROWBALL_13_17_MIXED', label: 'Throwball - 13-17 Mixed' },
   { value: 'THROWBALL_8_12_MIXED', label: 'Throwball - 8-12 Mixed' },
@@ -465,16 +465,15 @@ export function RegistrationFormSingle() {
     return sections.find(section => !isSectionComplete(section)) || null;
   };
 
-  // Add this function to handle section completion
+  // Update this function to keep sections expanded
   const handleSectionCompletion = (currentSection: SectionName) => {
     if (isSectionComplete(currentSection)) {
       const nextIncomplete = findNextIncompleteSection();
       if (nextIncomplete) {
-        // Expand next section
+        // Only expand the next section, don't collapse the current one
         setExpandedSections(prev => ({
           ...prev,
-          [currentSection]: false,
-          [nextIncomplete]: true,
+          [nextIncomplete]: true
         }));
         
         // Scroll to next section
@@ -625,20 +624,41 @@ export function RegistrationFormSingle() {
             return 'Date of birth is required'
           }
           const dob = new Date(value)
-          const today = new Date()
-          const age = today.getFullYear() - dob.getFullYear()
-          const monthDiff = today.getMonth() - dob.getMonth()
-          const finalAge = monthDiff < 0 || (monthDiff === 0 && today.getDate() < dob.getDate()) 
+          const cutoffDate = new Date('2025-04-30')
+          const age = cutoffDate.getFullYear() - dob.getFullYear()
+          const monthDiff = cutoffDate.getMonth() - dob.getMonth()
+          const finalAge = monthDiff < 0 || (monthDiff === 0 && cutoffDate.getDate() < dob.getDate()) 
             ? age - 1 
             : age
 
           if (formData.registration_category === 'THROWBALL_8_12_MIXED') {
-            if (finalAge < 8 || finalAge > 12) {
-              return 'Age must be between 8 and 12 years for this category'
+            if (finalAge < 8) {
+              return 'Player must be at least 8 years old as of April 30, 2025'
+            }
+            if (finalAge > 12) {
+              return 'Player must not be older than 12 years as of April 30, 2025'
             }
           } else if (formData.registration_category === 'THROWBALL_13_17_MIXED') {
-            if (finalAge < 13 || finalAge > 17) {
-              return 'Age must be between 13 and 17 years for this category'
+            if (finalAge < 13) {
+              return 'Player must be at least 13 years old as of April 30, 2025'
+            }
+            if (finalAge > 17) {
+              return 'Player must not be older than 17 years as of April 30, 2025'
+            }
+          }
+        } else {
+          // For non-youth categories (Volleyball Open and Women's Throwball)
+          if (value) {
+            const dob = new Date(value)
+            const cutoffDate = new Date('2025-04-30')
+            const age = cutoffDate.getFullYear() - dob.getFullYear()
+            const monthDiff = cutoffDate.getMonth() - dob.getMonth()
+            const finalAge = monthDiff < 0 || (monthDiff === 0 && cutoffDate.getDate() < dob.getDate()) 
+              ? age - 1 
+              : age
+
+            if (finalAge < 8) {
+              return 'Player must be at least 8 years old as of April 30, 2025'
             }
           }
         }
@@ -888,31 +908,43 @@ export function RegistrationFormSingle() {
 
         {/* Payment Instructions Alert */}
         <Alert 
-          severity="info" 
+          severity="warning" 
           sx={{ 
             mb: 3,
             '& .MuiAlert-message': {
               width: '100%'
+            },
+            '& .MuiTypography-root': {
+              color: 'text.primary'
             }
           }}
         >
           <Box>
-            <Typography variant="subtitle1" sx={{ mb: 1, fontWeight: 'medium' }}>
-              Important Payment Instructions
+            <Typography variant="h6" sx={{ mb: 1, color: 'warning.dark' }}>
+              Payment Required
             </Typography>
-            <Typography variant="body2" paragraph>
-              Before proceeding with the registration, please ensure you have completed the payment and have the transaction details ready.
+            <Typography variant="body1" paragraph sx={{ fontWeight: 500 }}>
+              Registration fee: INR 600
             </Typography>
             <Box sx={{ pl: 2 }}>
-              <Typography variant="body2" sx={{ mb: 1 }}>
-                Please make the registration fee payment of INR 600 via UPI to either:
+              <Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
+                Payment Options:
               </Typography>
-              <Box sx={{ pl: 2, mb: 1 }}>
-                <Typography variant="body2">• Vasu Chepuru (9849521594)</Typography>
-                <Typography variant="body2">• Amit Saxena (9866674460)</Typography>
+              <Box sx={{ pl: 2, mb: 2 }}>
+                <Typography variant="body1" sx={{ mb: 1 }}>• Vasu Chepuru (9849521594)</Typography>
+                <Typography variant="body1">• Amit Saxena (9866674460)</Typography>
               </Box>
-              <Typography variant="body2" color="warning.main">
-                Note: You will need to provide the UPI transaction details to complete the registration form.
+              <Typography 
+                variant="body1" 
+                sx={{ 
+                  fontWeight: 600,
+                  color: 'warning.dark',
+                  bgcolor: 'warning.light',
+                  p: 1,
+                  borderRadius: 1
+                }}
+              >
+                Important: You must complete the payment and have the transaction details ready before proceeding with the registration.
               </Typography>
             </Box>
           </Box>
@@ -1169,37 +1201,70 @@ export function RegistrationFormSingle() {
           />
           <Collapse in={expandedSections.category}>
             <CardContent>
+              {formData.registration_category === 'VOLLEYBALL_OPEN_MEN' && (
+                <Alert 
+                  severity="info" 
+                  sx={{ 
+                    mb: 3,
+                    borderLeft: '4px solid',
+                    borderColor: 'primary.main',
+                    '& .MuiAlert-message': {
+                      width: '100%'
+                    },
+                    bgcolor: 'primary.lighter'
+                  }}
+                >
+                  <Box>
+                    <Typography variant="h6" sx={{ color: 'primary.main', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <EmojiEventsIcon /> New: Team Formation through Auction System!
+                    </Typography>
+                    <Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
+                      For the first time in PBEL City Volleyball League, teams will be formed through an exciting auction process!
+                    </Typography>
+                    <Typography variant="body2">
+                      • All registered players will be part of an auction pool<br />
+                      • Team Mascots will bid for players based on their profiles<br />
+                      • This ensures balanced teams and makes the league more competitive and fun
+                    </Typography>
+                  </Box>
+                </Alert>
+              )}
+              
               <Grid container spacing={3}>
                 {REGISTRATION_CATEGORIES.map((category) => (
                   <Grid item xs={12} sm={6} md={3} key={category.value}>
-                    <CategoryCard 
-                      className={formData.registration_category === category.value ? 'selected' : ''}
-                      onClick={() => {
-                        const event = {
-                          target: { name: 'registration_category', value: category.value }
-                        } as SelectChangeEvent;
-                        handleSelectChange(event);
-                      }}
+                    <Paper
+                      elevation={formData.registration_category === category.value ? 3 : 1}
                       sx={{
+                        p: 3,
+                        cursor: 'pointer',
+                        textAlign: 'center',
+                        transition: 'all 0.3s ease',
+                        border: t => `2px solid ${formData.registration_category === category.value ? t.palette.primary.main : t.palette.divider}`,
                         '&:hover': {
-                          bgcolor: alpha(theme.palette.primary.main, 0.04),
+                          borderColor: 'primary.main',
+                          bgcolor: 'primary.lighter'
                         }
                       }}
+                      onClick={() => {
+                        setFormData(prev => ({
+                          ...prev,
+                          registration_category: category.value as RegistrationCategory
+                        }));
+                        handleSectionCompletion('category');
+                      }}
                     >
-                      <CategoryIcon className="category-icon">
+                      <Box sx={{ mb: 2 }}>
                         {category.value.includes('VOLLEYBALL') ? (
-                          <SportsVolleyballIcon />
+                          <SportsVolleyballIcon sx={{ fontSize: 40, color: 'primary.main' }} />
                         ) : (
-                          <SportsHandballIcon />
+                          <SportsHandballIcon sx={{ fontSize: 40, color: 'primary.main' }} />
                         )}
-                      </CategoryIcon>
+                      </Box>
                       <Typography 
                         variant="subtitle1" 
                         fontWeight="bold"
-                        sx={{ 
-                          transition: 'color 0.3s ease',
-                          fontSize: '1rem',
-                        }}
+                        sx={{ mb: 1 }}
                       >
                         {category.label}
                       </Typography>
@@ -1215,16 +1280,18 @@ export function RegistrationFormSingle() {
                       >
                         {category.value.includes('MIXED') ? (
                           <>
-                            <PeopleIcon sx={{ fontSize: 16, verticalAlign: 'text-bottom' }} />
+                            <PeopleIcon sx={{ fontSize: 16 }} />
                             Mixed Category
                           </>
                         ) : category.value.includes('WOMEN') ? (
                           'Women Only'
+                        ) : category.value.includes('VOLLEYBALL') ? (
+                          'Open for All'
                         ) : (
                           'Men Only'
                         )}
                       </Typography>
-                    </CategoryCard>
+                    </Paper>
                   </Grid>
                 ))}
               </Grid>
