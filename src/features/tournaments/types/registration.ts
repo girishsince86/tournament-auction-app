@@ -3,11 +3,24 @@ import { Database } from '@/lib/supabase/types/supabase'
 // Form step type
 export type RegistrationStep = 'category' | 'personal' | 'profile' | 'jersey' | 'payment' | 'review'
 
-export type RegistrationCategory = '' | 'VOLLEYBALL_OPEN_MEN' | 'THROWBALL_WOMEN' | 'THROWBALL_13_17_MIXED' | 'THROWBALL_8_12_MIXED'
+export enum RegistrationCategory {
+  VOLLEYBALL_OPEN_MEN = 'VOLLEYBALL_OPEN_MEN',
+  THROWBALL_WOMEN = 'THROWBALL_WOMEN',
+  THROWBALL_13_17_MIXED = 'THROWBALL_13_17_MIXED',
+  THROWBALL_8_12_MIXED = 'THROWBALL_8_12_MIXED',
+}
+
+export enum TShirtSize {
+  XS = 'XS',
+  S = 'S',
+  M = 'M',
+  L = 'L',
+  XL = 'XL',
+  XXL = '2XL',
+  XXXL = '3XL'
+}
 
 export type LastPlayedStatus = 'PLAYING_ACTIVELY' | 'NOT_PLAYED_SINCE_LAST_YEAR' | 'NOT_PLAYED_IN_FEW_YEARS'
-
-export type TShirtSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | '2XL' | '3XL';
 
 // Form data interface
 export interface RegistrationFormData {
@@ -33,6 +46,10 @@ export interface RegistrationFormData {
   date_of_birth?: string
   parent_name?: string
   parent_phone_number?: string
+  payment_screenshot_url: string
+  is_verified?: boolean
+  created_at?: string
+  id?: string
 }
 
 // Initial form state
@@ -44,7 +61,7 @@ export const initialFormData: RegistrationFormData = {
   flat_number: '',
   height: 0,
   last_played_date: '' as LastPlayedStatus,
-  registration_category: '' as RegistrationCategory,
+  registration_category: RegistrationCategory.VOLLEYBALL_OPEN_MEN,
   registration_type: 'INDIVIDUAL',
   playing_positions: [],
   skill_level: '' as 'RECREATIONAL_C' | 'INTERMEDIATE_B' | 'UPPER_INTERMEDIATE_BB' | 'COMPETITIVE_A',
@@ -58,11 +75,15 @@ export const initialFormData: RegistrationFormData = {
   date_of_birth: '',
   parent_name: '',
   parent_phone_number: '',
+  payment_screenshot_url: '',
+  is_verified: false,
+  created_at: '',
+  id: '',
 }
 
 // Helper function to check if category requires youth fields
 export const isYouthCategory = (category: RegistrationCategory): boolean => {
-  return category === 'THROWBALL_13_17_MIXED' || category === 'THROWBALL_8_12_MIXED'
+  return category === RegistrationCategory.THROWBALL_13_17_MIXED || category === RegistrationCategory.THROWBALL_8_12_MIXED
 }
 
 // Step configuration

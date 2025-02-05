@@ -2,7 +2,7 @@ export type RegistrationCategory = 'VOLLEYBALL_OPEN_MEN' | 'THROWBALL_WOMEN' | '
 export type SkillLevel = 'RECREATIONAL_C' | 'INTERMEDIATE_B' | 'UPPER_INTERMEDIATE_BB' | 'COMPETITIVE_A';
 export type LastPlayedStatus = 'PLAYING_ACTIVELY' | 'NOT_PLAYED_SINCE_LAST_YEAR' | 'NOT_PLAYED_IN_FEW_YEARS';
 export type PlayingPosition = 'P1_RIGHT_BACK' | 'P2_RIGHT_FRONT' | 'P3_MIDDLE_FRONT' | 'P4_LEFT_FRONT' | 'P5_LEFT_BACK' | 'P6_MIDDLE_BACK';
-export type TshirtSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL' | '3XL' | '4XL';
+export type TshirtSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | '2XL' | '3XL';
 
 export interface Registration {
   id: string;

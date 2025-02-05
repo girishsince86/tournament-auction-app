@@ -15,6 +15,7 @@ import {
 } from '@mui/material'
 import { useRegistrationForm } from '../../../hooks/use-registration-form'
 import { useState } from 'react'
+import { TShirtSize } from '@/features/tournaments/types/registration'
 
 interface JerseyDetailsProps {
   onNext: () => void
@@ -55,7 +56,7 @@ export function JerseyDetails({ onNext, onBack }: JerseyDetailsProps) {
     const value = event.target.value
     const error = validateField('tshirt_size', value)
     setErrors(prev => ({ ...prev, tshirt_size: error }))
-    updateFormData({ tshirt_size: value as 'XS' | 'S' | 'M' | 'L' | 'XL' | '2XL' | '3XL' })
+    updateFormData({ tshirt_size: value as TShirtSize })
   }
 
   const handleNumberChange = (event: React.ChangeEvent<HTMLInputElement>) => {

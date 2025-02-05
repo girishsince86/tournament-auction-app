@@ -57,6 +57,7 @@ import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
 import DoneAllIcon from '@mui/icons-material/DoneAll'
 import StraightenIcon from '@mui/icons-material/Straighten'
 import Image from 'next/image'
+import { RegistrationCategory as AdminRegistrationCategory } from '@/features/admin/types/registration-admin'
 
 // Styled components
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -628,7 +629,18 @@ export function RegistrationFormSingle() {
 
   // Validation functions
   const validateField = (name: keyof RegistrationFormData, value: any): string => {
+    // Skip validation for optional fields if they're empty
+    if (!value && !['registration_category', 'first_name', 'last_name', 'email', 'phone_number', 'flat_number', 'height', 'last_played_date', 'skill_level', 'tshirt_size', 'tshirt_name', 'tshirt_number', 'payment_upi_id', 'payment_transaction_id', 'paid_to'].includes(name)) {
+      return '';
+    }
+
     switch (name) {
+      case 'first_name':
+      case 'last_name':
+        if (!value || value.trim().length < 2) {
+          return `Please enter a valid ${name === 'first_name' ? 'first' : 'last'} name (minimum 2 characters)`;
+        }
+        return '';
       case 'email':
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
         if (!value || !emailRegex.test(value)) {
@@ -649,6 +661,68 @@ export function RegistrationFormSingle() {
           }
         }
         return ''
+      case 'flat_number':
+        if (!value || !value.trim().match(/^[A-Z0-9-]{1,10}$/i)) {
+          return 'Please enter a valid flat number (e.g., A-123)';
+        }
+        return '';
+      case 'height':
+        const heightNum = Number(value);
+        if (isNaN(heightNum) || heightNum < 100 || heightNum > 250) {
+          return 'Please enter a valid height in centimeters (100-250)';
+        }
+        return '';
+      case 'registration_category':
+        if (!value || !Object.values(RegistrationCategory).includes(value)) {
+          return 'Please select a registration category';
+        }
+        return '';
+      case 'last_played_date':
+        if (!value || !LAST_PLAYED_OPTIONS.some(opt => opt.value === value)) {
+          return 'Please select when you last played';
+        }
+        return '';
+      case 'skill_level':
+        if (!value || !SKILL_LEVELS.some(level => level.value === value)) {
+          return 'Please select your skill level';
+        }
+        return '';
+      case 'playing_positions':
+        if (isVolleyballCategory(formData.registration_category) && (!Array.isArray(value) || value.length === 0)) {
+          return 'Please select at least one playing position';
+        }
+        return '';
+      case 'tshirt_size':
+        if (!value || !TSHIRT_SIZES.some(size => size.value === value)) {
+          return 'Please select a t-shirt size';
+        }
+        return '';
+      case 'tshirt_name':
+        if (!value || value.trim().length < 2 || value.trim().length > 15) {
+          return 'Please enter a valid name for your jersey (2-15 characters)';
+        }
+        return '';
+      case 'tshirt_number':
+        const numberValue = Number(value);
+        if (isNaN(numberValue) || numberValue < 1 || numberValue > 99) {
+          return 'Please enter a valid jersey number (1-99)';
+        }
+        return '';
+      case 'payment_upi_id':
+        if (!value) {
+          return 'Please enter your UPI ID or phone number';
+        }
+        return '';
+      case 'payment_transaction_id':
+        if (!value) {
+          return 'Please enter the transaction ID';
+        }
+        return '';
+      case 'paid_to':
+        if (!value || !PAYMENT_RECEIVERS.some(receiver => receiver.value === value)) {
+          return 'Please select who you paid to';
+        }
+        return '';
       case 'date_of_birth':
         if (isYouthCategory(formData.registration_category)) {
           if (!value) {
@@ -667,14 +741,15 @@ export function RegistrationFormSingle() {
               return 'Player must be at least 8 years old as of April 30, 2025'
             }
             if (finalAge > 12) {
-              return 'Player must not be older than 12 years as of April 30, 2025'
+              return 'Player must be under 12 years old as of April 30, 2025'
             }
-          } else if (formData.registration_category === 'THROWBALL_13_17_MIXED') {
+          }
+          if (formData.registration_category === 'THROWBALL_13_17_MIXED') {
             if (finalAge < 13) {
               return 'Player must be at least 13 years old as of April 30, 2025'
             }
             if (finalAge > 17) {
-              return 'Player must not be older than 17 years as of April 30, 2025'
+              return 'Player must be under 17 years old as of April 30, 2025'
             }
           }
         } else {
@@ -696,53 +771,15 @@ export function RegistrationFormSingle() {
         return ''
       case 'parent_name':
         if (isYouthCategory(formData.registration_category)) {
-          if (!value || !value.trim()) {
-            return 'Parent name is required'
-          }
-          if (value.length < 3) {
-            return 'Parent name must be at least 3 characters long'
+          if (!value || value.trim().length < 2) {
+            return 'Please enter a valid parent/guardian name';
           }
         }
-        return ''
-      case 'flat_number':
-        return !value.match(/^[a-zA-Z]-\d{3,4}$/)
-          ? 'Please enter a valid flat number (e.g., A-123 or a-123)'
-          : ''
-      case 'height':
-        const height = parseFloat(value)
-        return isNaN(height) || height < 100 || height > 250
-          ? 'Height must be between 100cm and 250cm (1m to 2.5m)'
-          : ''
-      case 'skill_level':
-        return !value
-          ? 'Please select your skill level'
-          : ''
-      case 'tshirt_name':
-        return !value || !value.trim()
-          ? 'Please enter the name for your jersey'
-          : ''
-      case 'tshirt_size':
-        return !value
-          ? 'Please select a t-shirt size'
-          : ''
-      case 'tshirt_number':
-        if (!value || !value.trim()) {
-          return 'Please enter a jersey number'
-        }
-        if (!value.match(/^\d{1,3}$/)) {
-          return 'Jersey number must be a 1-3 digit number'
-        }
-        const number = parseInt(value)
-        if (isNaN(number) || number < 1 || number > 999) {
-          return 'Jersey number must be between 1 and 999'
-        }
-        return ''
+        return '';
       default:
-        return !value || (typeof value === 'string' && !value.trim())
-          ? 'This field is required'
-          : ''
+        return '';
     }
-  }
+  };
 
   // Function to format the registration details for display
   const getFormattedDetails = () => [
@@ -795,7 +832,7 @@ export function RegistrationFormSingle() {
     },
   ]
 
-  // Handle submit
+  // Handle form submission
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
 
@@ -935,11 +972,10 @@ export function RegistrationFormSingle() {
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       <PrintStyles />
-      <Box 
-        component="form" 
+      <form 
         onSubmit={handleSubmit} 
         noValidate 
-        sx={{ position: 'relative' }}
+        style={{ position: 'relative' }}
       >
         {/* Loading overlay */}
         {isSubmitting && (
@@ -1679,6 +1715,9 @@ export function RegistrationFormSingle() {
                         label="T-shirt Size"
                         onChange={handleSelectChange}
                       >
+                        <MenuItem value="">
+                          <em>Select a size</em>
+                        </MenuItem>
                         {TSHIRT_SIZES.map(size => (
                           <MenuItem key={size.value} value={size.value}>
                             <Box>
@@ -1830,7 +1869,7 @@ export function RegistrationFormSingle() {
             {isSubmitting ? 'Submitting...' : 'Submit Registration'}
           </Button>
         </Box>
-      </Box>
+      </form>
 
       {/* Success Dialog */}
       <Dialog

@@ -20,6 +20,7 @@ import {
   Box,
   FormControlLabel,
   Switch,
+  Typography,
 } from '@mui/material';
 import { 
   Registration, 
@@ -55,7 +56,6 @@ export function RegistrationDetailModal({
   onDelete,
 }: RegistrationDetailModalProps) {
   const [isEditing, setIsEditing] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
   const [formData, setFormData] = useState<Partial<Registration>>({});
   const [error, setError] = useState<string | null>(null);
@@ -65,7 +65,6 @@ export function RegistrationDetailModal({
       setFormData(registration);
     }
     setIsEditing(false);
-    setIsDeleting(false);
     setError(null);
   }, [registration]);
 
@@ -79,21 +78,6 @@ export function RegistrationDetailModal({
       setIsEditing(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to save changes');
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (!registration) return;
-    
-    try {
-      setIsSaving(true);
-      setError(null);
-      await onDelete(registration.id);
-      onClose();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete registration');
     } finally {
       setIsSaving(false);
     }
@@ -187,8 +171,21 @@ export function RegistrationDetailModal({
                 onChange={(e) => setFormData({ ...formData, tshirt_size: e.target.value as TshirtSize })}
                 label="T-shirt Size"
               >
-                {['XS', 'S', 'M', 'L', 'XL', 'XXL', '3XL', '4XL'].map((size) => (
-                  <MenuItem key={size} value={size}>{size}</MenuItem>
+                {['XS', 'S', 'M', 'L', 'XL', '2XL', '3XL'].map((size) => (
+                  <MenuItem key={size} value={size}>
+                    <Box>
+                      <Typography variant="body1">{size}</Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {size === 'XS' && 'Chest: 34", Length: 24", Sleeve: 7.5", Shoulder: 15.5"'}
+                        {size === 'S' && 'Chest: 36", Length: 25", Sleeve: 8", Shoulder: 16"'}
+                        {size === 'M' && 'Chest: 38", Length: 26", Sleeve: 8", Shoulder: 17"'}
+                        {size === 'L' && 'Chest: 40", Length: 27", Sleeve: 8.5", Shoulder: 17.5"'}
+                        {size === 'XL' && 'Chest: 42", Length: 28", Sleeve: 8.5", Shoulder: 18"'}
+                        {size === '2XL' && 'Chest: 44", Length: 29", Sleeve: 9", Shoulder: 19"'}
+                        {size === '3XL' && 'Chest: 46", Length: 30", Sleeve: 10", Shoulder: 20"'}
+                      </Typography>
+                    </Box>
+                  </MenuItem>
                 ))}
               </Select>
             </FormControl>
@@ -275,45 +272,6 @@ export function RegistrationDetailModal({
             </div>
           </div>
         </Grid>
-        <Grid item xs={12} sm={6}>
-          <div>
-            <div className="text-sm font-medium text-gray-500">Last Played</div>
-            <div className="mt-1 text-sm text-gray-900">
-              {registration?.last_played_date === 'PLAYING_ACTIVELY' && 'Playing Actively'}
-              {registration?.last_played_date === 'NOT_PLAYED_SINCE_LAST_YEAR' && 'Not Played since last year'}
-              {registration?.last_played_date === 'NOT_PLAYED_IN_FEW_YEARS' && 'Not played in few years'}
-            </div>
-          </div>
-        </Grid>
-        <Grid item xs={12} sm={6}>
-          <div>
-            <div className="text-sm font-medium text-gray-500">T-shirt Size</div>
-            <div className="mt-1 text-sm text-gray-900">{registration?.tshirt_size}</div>
-          </div>
-        </Grid>
-        <Grid item xs={12}>
-          <div>
-            <div className="text-sm font-medium text-gray-500">Playing Positions</div>
-            <div className="mt-1 text-sm text-gray-900">
-              {registration?.playing_positions?.map((position) => (
-                <Chip
-                  key={position}
-                  label={
-                    position === 'P1_RIGHT_BACK' ? 'Right Back (P1)' :
-                    position === 'P2_RIGHT_FRONT' ? 'Right Front (P2)' :
-                    position === 'P3_MIDDLE_FRONT' ? 'Middle Front (P3)' :
-                    position === 'P4_LEFT_FRONT' ? 'Left Front (P4)' :
-                    position === 'P5_LEFT_BACK' ? 'Left Back (P5)' :
-                    position === 'P6_MIDDLE_BACK' ? 'Middle Back (P6)' :
-                    position
-                  }
-                  size="small"
-                  style={{ marginRight: 4, marginBottom: 4 }}
-                />
-              ))}
-            </div>
-          </div>
-        </Grid>
         <Grid item xs={12}>
           <div>
             <div className="text-sm font-medium text-gray-500">Status</div>
@@ -328,94 +286,59 @@ export function RegistrationDetailModal({
         </Grid>
       </Grid>
     );
-  };
+  }
 
   return (
-    <>
-      <Dialog
-        open={isOpen}
-        onClose={onClose}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          Registration Details
-        </DialogTitle>
+    <Dialog
+      open={isOpen}
+      onClose={onClose}
+      maxWidth="md"
+      fullWidth
+    >
+      <DialogTitle>
+        Registration Details
+      </DialogTitle>
 
-        <DialogContent>
-          {error && (
-            <div className="mb-4 rounded-md bg-red-50 p-4">
-              <div className="text-sm text-red-700">{error}</div>
-            </div>
-          )}
-          {renderContent()}
-        </DialogContent>
+      <DialogContent>
+        {error && (
+          <div className="mb-4 rounded-md bg-red-50 p-4">
+            <div className="text-sm text-red-700">{error}</div>
+          </div>
+        )}
+        {renderContent()}
+      </DialogContent>
 
-        <DialogActions>
-          {isEditing ? (
-            <>
-              <Button onClick={() => setIsEditing(false)}>
-                Cancel
-              </Button>
-              <Button
-                onClick={handleSave}
-                variant="contained"
-                disabled={isSaving}
-              >
-                {isSaving ? 'Saving...' : 'Save Changes'}
-              </Button>
-            </>
-          ) : (
-            <>
-              <Button
-                onClick={onClose}
-                color="inherit"
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => setIsDeleting(true)}
-                color="error"
-              >
-                Delete
-              </Button>
-              <Button
-                onClick={() => setIsEditing(true)}
-                variant="contained"
-              >
-                Edit
-              </Button>
-            </>
-          )}
-        </DialogActions>
-      </Dialog>
-
-      <Dialog
-        open={isDeleting}
-        onClose={() => setIsDeleting(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          Delete Registration
-        </DialogTitle>
-        <DialogContent>
-          <p>Are you sure you want to delete this registration? This action cannot be undone.</p>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setIsDeleting(false)}>
-            Cancel
-          </Button>
-          <Button
-            onClick={handleDelete}
-            color="error"
-            variant="contained"
-            disabled={isSaving}
-          >
-            {isSaving ? 'Deleting...' : 'Delete'}
-          </Button>
-        </DialogActions>
-      </Dialog>
-    </>
+      <DialogActions>
+        {isEditing ? (
+          <>
+            <Button onClick={() => setIsEditing(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              variant="contained"
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving...' : 'Save Changes'}
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button
+              onClick={onClose}
+              color="inherit"
+            >
+              Close
+            </Button>
+            <Button
+              onClick={() => setIsEditing(true)}
+              variant="contained"
+            >
+              Edit
+            </Button>
+          </>
+        )}
+      </DialogActions>
+    </Dialog>
   );
 } 

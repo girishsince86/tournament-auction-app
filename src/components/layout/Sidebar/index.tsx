@@ -1,11 +1,8 @@
 'use client'
 
-import { Drawer, List, Box, Toolbar } from '@mui/material'
+import { Drawer, List, Box, Toolbar, useMediaQuery, useTheme } from '@mui/material'
 import DashboardIcon from '@mui/icons-material/Dashboard'
-import EmojiEventsIcon from '@mui/icons-material/EmojiEvents'
-import GroupsIcon from '@mui/icons-material/Groups'
-import PeopleIcon from '@mui/icons-material/People'
-import GavelIcon from '@mui/icons-material/Gavel'
+import HowToRegIcon from '@mui/icons-material/HowToReg'
 import { SidebarItem } from './SidebarItem'
 
 const DRAWER_WIDTH = 240
@@ -15,27 +12,39 @@ interface SidebarProps {
   onClose: () => void
 }
 
+// Only show Dashboard and Registrations in both environments
 const navigationItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, href: '/dashboard' },
-  { text: 'Leagues', icon: <EmojiEventsIcon />, href: '/tournaments' },
-  { text: 'Teams', icon: <GroupsIcon />, href: '/teams' },
-  { text: 'Players', icon: <PeopleIcon />, href: '/players' },
-  { text: 'Auctions', icon: <GavelIcon />, href: '/auctions' },
+  { text: 'Dashboard', icon: <DashboardIcon />, href: '/admin' },
+  { text: 'Registrations', icon: <HowToRegIcon />, href: '/admin/registrations' },
 ]
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+
   return (
     <Drawer
-      variant="permanent"
+      variant={isMobile ? 'temporary' : 'persistent'}
+      anchor="left"
+      open={isOpen}
+      onClose={onClose}
       sx={{
-        width: DRAWER_WIDTH,
+        width: isOpen ? DRAWER_WIDTH : 0,
         flexShrink: 0,
         '& .MuiDrawer-paper': {
           width: DRAWER_WIDTH,
           boxSizing: 'border-box',
+          backgroundColor: theme.palette.background.paper,
+          borderRight: `1px solid ${theme.palette.divider}`,
+          transition: theme.transitions.create(['width', 'margin'], {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
         },
       }}
-      open={isOpen}
+      ModalProps={{
+        keepMounted: true, // Better mobile performance
+      }}
     >
       <Toolbar /> {/* This creates space for the header */}
       <Box sx={{ overflow: 'auto', mt: 2 }}>
@@ -46,6 +55,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               icon={item.icon}
               text={item.text}
               href={item.href}
+              onClick={isMobile ? onClose : undefined}
             />
           ))}
         </List>

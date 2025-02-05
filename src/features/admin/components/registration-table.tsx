@@ -7,6 +7,7 @@ import {
   DataGrid, 
   GridColDef,
   GridRenderCellParams,
+  GridValueGetter,
 } from '@mui/x-data-grid';
 import { 
   Chip, 
@@ -20,7 +21,7 @@ import {
   DialogActions,
   Button,
 } from '@mui/material';
-import { Visibility, Delete } from '@mui/icons-material';
+import { Visibility, Delete, Edit } from '@mui/icons-material';
 
 const REGISTRATION_CATEGORIES = [
   { value: 'VOLLEYBALL_OPEN_MEN', label: 'Volleyball - Open Men' },
@@ -62,7 +63,6 @@ export function RegistrationTable({
 }: RegistrationTableProps) {
   const [selectedRegistration, setSelectedRegistration] = useState<Registration | null>(null);
   const [updatingVerification, setUpdatingVerification] = useState<string | null>(null);
-  const [deletingRegistration, setDeletingRegistration] = useState<Registration | null>(null);
 
   // Transform registrations to include Date objects for created_at
   const rows: RegistrationWithDateObject[] = registrations.map(reg => ({
@@ -103,17 +103,6 @@ export function RegistrationTable({
       console.error('Error updating verification status:', error);
     } finally {
       setUpdatingVerification(null);
-    }
-  };
-
-  const handleDeleteClick = async () => {
-    if (!onDelete || !deletingRegistration) return;
-    
-    try {
-      await onDelete(deletingRegistration.id);
-      setDeletingRegistration(null);
-    } catch (error) {
-      console.error('Error deleting registration:', error);
     }
   };
 
@@ -161,7 +150,7 @@ export function RegistrationTable({
     {
       field: 'actions',
       headerName: 'Actions',
-      width: 160,
+      width: 120,
       sortable: false,
       filterable: false,
       renderCell: (params: GridRenderCellParams<RegistrationWithDateObject>) => {
@@ -202,21 +191,9 @@ export function RegistrationTable({
                 />
               </div>
             </Tooltip>
-            <Tooltip title="Delete Registration">
-              <IconButton
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setDeletingRegistration(registration);
-                }}
-                color="error"
-                size="small"
-              >
-                <Delete />
-              </IconButton>
-            </Tooltip>
           </Stack>
         );
-      },
+      }
     },
   ];
 
@@ -255,42 +232,6 @@ export function RegistrationTable({
         onSave={onUpdate || (() => Promise.resolve())}
         onDelete={onDelete || (() => Promise.resolve())}
       />
-
-      {/* Delete Confirmation Dialog */}
-      <Dialog
-        open={!!deletingRegistration}
-        onClose={() => setDeletingRegistration(null)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          Delete Registration
-        </DialogTitle>
-        <DialogContent>
-          <p className="text-gray-700">
-            Are you sure you want to delete the registration for{' '}
-            <span className="font-medium">
-              {deletingRegistration?.first_name} {deletingRegistration?.last_name}
-            </span>
-            ? This action cannot be undone.
-          </p>
-        </DialogContent>
-        <DialogActions>
-          <Button 
-            onClick={() => setDeletingRegistration(null)}
-            color="inherit"
-          >
-            Cancel
-          </Button>
-          <Button
-            onClick={handleDeleteClick}
-            color="error"
-            variant="contained"
-          >
-            Delete
-          </Button>
-        </DialogActions>
-      </Dialog>
     </>
   );
 } 

@@ -8,9 +8,10 @@ interface SidebarItemProps {
   icon: React.ReactNode
   text: string
   href: string
+  onClick?: () => void
 }
 
-export function SidebarItem({ icon, text, href }: SidebarItemProps) {
+export function SidebarItem({ icon, text, href, onClick }: SidebarItemProps) {
   const pathname = usePathname()
   const isActive = pathname === href
 
@@ -20,6 +21,7 @@ export function SidebarItem({ icon, text, href }: SidebarItemProps) {
         component={Link}
         href={href}
         selected={isActive}
+        onClick={onClick}
         sx={{
           '&.Mui-selected': {
             backgroundColor: 'primary.light',
