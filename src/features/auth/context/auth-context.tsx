@@ -51,9 +51,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getUser()
 
     // Listen for changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
       setIsLoading(false)
+      
+      // If user is not authenticated and trying to access the app, redirect to login
+      if (!session?.user) {
+        router.push('/login')
+      }
+      
       router.refresh()
     })
 
@@ -72,7 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw error
     }
 
-    router.push('/dashboard')
+    router.push('/registration-summary')
   }
 
   const signUp = async (email: string, password: string) => {
@@ -89,7 +95,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // After signup, redirect to a confirmation page
-    router.push('/auth/confirm-email')
+    router.push('/registration-summary')
   }
 
   const signOut = async () => {

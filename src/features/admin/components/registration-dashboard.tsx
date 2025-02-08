@@ -7,17 +7,16 @@ import {
   Grid,
   Typography,
   Paper,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Chip,
   CircularProgress,
   Alert,
   IconButton,
   Tooltip,
+  Divider,
+  Chip,
+  Stack,
+  Modal,
+  Backdrop,
+  Fade,
 } from '@mui/material'
 import {
   PeopleAlt as PeopleIcon,
@@ -27,14 +26,68 @@ import {
   School as TeenIcon,
   Straighten as SizeIcon,
   Refresh as RefreshIcon,
+  TrendingUp as TrendingUpIcon,
+  ArrowUpward as ArrowUpIcon,
+  ArrowDownward as ArrowDownIcon,
+  CurrencyRupee as RupeeIcon,
+  Fullscreen as FullscreenIcon,
+  FullscreenExit as FullscreenExitIcon,
 } from '@mui/icons-material'
 import { useEffect, useState, useCallback } from 'react'
 import { RegistrationSummary } from '../types/dashboard'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip as RechartsTooltip,
+  Legend,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
+  LabelList,
+} from 'recharts'
+
+const COLORS = ['#2196f3', '#4caf50', '#ff9800', '#e91e63', '#9c27b0']
+
+// Category display names mapping
+const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
+  'VOLLEYBALL_OPEN_MEN': 'Volleyball - Open',
+  'THROWBALL_WOMEN': 'Throwball - Women',
+  'THROWBALL_13_17_MIXED': 'Throwball - 13-17 Mixed',
+  'THROWBALL_8_12_MIXED': 'Throwball - 8-12 Mixed',
+}
+
+// T-shirt size display names
+const TSHIRT_SIZE_DISPLAY: Record<string, string> = {
+  'XS': 'XS (34")',
+  'S': 'S (36")',
+  'M': 'M (38")',
+  'L': 'L (40")',
+  'XL': 'XL (42")',
+  '2XL': '2XL (44")',
+  '3XL': '3XL (46")',
+}
+
+// Payment receiver display names
+const PAYMENT_RECEIVER_DISPLAY: Record<string, string> = {
+  'Vasu Chepuru': 'Vasu',
+  'Amit Saxena': 'Amit',
+}
 
 export function RegistrationDashboard() {
   const [summary, setSummary] = useState<RegistrationSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
+  const [expandedCharts, setExpandedCharts] = useState<Record<string, boolean>>({
+    category: false,
+    jersey: false,
+    timeline: false,
+    payment: false
+  })
 
   const fetchSummary = useCallback(async () => {
     try {
@@ -45,18 +98,25 @@ export function RegistrationDashboard() {
         throw new Error('Failed to fetch registration summary')
       }
       const data = await response.json()
-      console.log('Dashboard data:', data)
       setSummary(data)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load dashboard data')
     } finally {
       setLoading(false)
+      setLastUpdate(new Date())
     }
   }, [])
 
   useEffect(() => {
     fetchSummary()
   }, [fetchSummary])
+
+  const toggleChart = (chartId: string) => {
+    setExpandedCharts(prev => ({
+      ...prev,
+      [chartId]: !prev[chartId]
+    }))
+  }
 
   if (loading) {
     return (
@@ -78,198 +138,508 @@ export function RegistrationDashboard() {
     return null
   }
 
-  const StatCard = ({ title, value, icon: Icon, color }: {
-    title: string
-    value: number | string
-    icon: React.ElementType
-    color: string
+  // Prepare data for charts
+  const categoryChartData = summary.categoryDistribution.map((category, index) => ({
+    name: CATEGORY_DISPLAY_NAMES[category.name] || category.name,
+    value: category.count,
+    color: COLORS[index % COLORS.length],
+  }))
+
+  const jerseyChartData = summary.jerseySizes.map((size, index) => ({
+    name: TSHIRT_SIZE_DISPLAY[size.size] || size.size,
+    value: size.count,
+    color: COLORS[index % COLORS.length],
+  }))
+
+  // Prepare timeline data
+  const timelineData = summary.timelineData.reduce((acc: Record<string, any>[], registration: { created_at: string; registration_category: string }) => {
+    const date = new Date(registration.created_at).toLocaleDateString()
+    const existingDate = acc.find(item => item.date === date)
+    const categoryName = CATEGORY_DISPLAY_NAMES[registration.registration_category]
+    
+    if (existingDate) {
+      existingDate[categoryName] = (existingDate[categoryName] || 0) + 1
+      existingDate.total = (existingDate.total || 0) + 1
+    } else {
+      const newDate = { 
+        date,
+        [categoryName]: 1,
+        total: 1
+      }
+      acc.push(newDate)
+    }
+    
+    return acc
+  }, []).sort((a: Record<string, any>, b: Record<string, any>) => new Date(a.date).getTime() - new Date(b.date).getTime())
+
+  // Get unique categories for timeline chart
+  const uniqueCategories = Object.values(CATEGORY_DISPLAY_NAMES)
+
+  // Calculate insights
+  const totalParticipants = summary.totalRegistrations
+  const youthPercentage = ((summary.youth8To12Count + summary.youth13To17Count) / totalParticipants * 100).toFixed(1)
+  const mostPopularCategory = {
+    ...summary.categoryDistribution.reduce((prev, current) => 
+      (current.count > prev.count) ? current : prev
+    ),
+    name: CATEGORY_DISPLAY_NAMES[summary.categoryDistribution.reduce((prev, current) => 
+      (current.count > prev.count) ? current : prev
+    ).name]
+  }
+  const mostPopularSize = {
+    ...summary.jerseySizes.reduce((prev, current) => 
+      (current.count > prev.count) ? current : prev
+    ),
+    size: TSHIRT_SIZE_DISPLAY[summary.jerseySizes.reduce((prev, current) => 
+      (current.count > prev.count) ? current : prev
+    ).size]
+  }
+
+  // Prepare payment data
+  const paymentChartData = summary.paymentCollections.map((collection: { receiver: string; totalAmount: number; verifiedAmount: number }, index: number) => ({
+    name: PAYMENT_RECEIVER_DISPLAY[collection.receiver] || collection.receiver,
+    verified: collection.verifiedAmount,
+    pending: collection.totalAmount - collection.verifiedAmount,
+    total: collection.totalAmount,
+    color: COLORS[index % COLORS.length],
+  }))
+
+  // Calculate total collections
+  const totalCollections = paymentChartData.reduce((sum: number, item: { total: number }) => sum + item.total, 0)
+  const totalVerified = paymentChartData.reduce((sum: number, item: { verified: number }) => sum + item.verified, 0)
+
+  // Format currency
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IN', {
+      style: 'currency',
+      currency: 'INR',
+      maximumFractionDigits: 0
+    }).format(amount)
+  }
+
+  const ChartContainer = ({ 
+    id,
+    title,
+    children 
+  }: { 
+    id: string,
+    title: string,
+    children: React.ReactNode 
   }) => {
-    console.log(`StatCard ${title}:`, value)
+    const isExpanded = expandedCharts[id]
+    
     return (
-      <Card sx={{ height: '100%', minWidth: '200px' }}>
-        <CardContent>
-          <Box display="flex" alignItems="center" mb={2}>
-            <Icon sx={{ color, fontSize: 32, mr: 1 }} />
-            <Typography variant="h6" color="text.secondary" noWrap>
+      <>
+        <Paper sx={{ p: 3 }}>
+          <Box 
+            display="flex" 
+            alignItems="center" 
+            justifyContent="space-between" 
+            sx={{ cursor: 'pointer' }}
+            onClick={() => toggleChart(id)}
+          >
+            <Typography variant="h6" gutterBottom>
               {title}
             </Typography>
+            <Tooltip title={isExpanded ? "Exit Full Screen" : "Full Screen"}>
+              <IconButton size="small">
+                {isExpanded ? <FullscreenExitIcon /> : <FullscreenIcon />}
+              </IconButton>
+            </Tooltip>
           </Box>
-          <Typography 
-            variant="h4" 
-            component="div" 
-            sx={{ 
-              fontWeight: 'bold',
-              textAlign: 'center',
-              mt: 1
+          <Box
+            sx={{
+              height: '400px',
+              overflow: 'hidden',
             }}
           >
-            {typeof value === 'number' ? value : value || 0}
-          </Typography>
-        </CardContent>
-      </Card>
+            {children}
+          </Box>
+        </Paper>
+
+        <Modal
+          open={isExpanded}
+          onClose={() => toggleChart(id)}
+          closeAfterTransition
+          slots={{ backdrop: Backdrop }}
+          slotProps={{
+            backdrop: {
+              timeout: 500,
+            },
+          }}
+        >
+          <Fade in={isExpanded}>
+            <Box
+              sx={{
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: 'translate(-50%, -50%)',
+                width: '90vw',
+                height: '90vh',
+                bgcolor: 'background.paper',
+                boxShadow: 24,
+                p: 4,
+                borderRadius: 1,
+              }}
+            >
+              <Box 
+                display="flex" 
+                alignItems="center" 
+                justifyContent="space-between" 
+                mb={2}
+              >
+                <Typography variant="h6">
+                  {title}
+                </Typography>
+                <Tooltip title="Exit Full Screen">
+                  <IconButton onClick={() => toggleChart(id)} size="small">
+                    <FullscreenExitIcon />
+                  </IconButton>
+                </Tooltip>
+              </Box>
+              <Box sx={{ height: 'calc(100% - 48px)' }}>
+                {children}
+              </Box>
+            </Box>
+          </Fade>
+        </Modal>
+      </>
     )
   }
 
   return (
     <Box sx={{ p: 3 }}>
-      <Box display="flex" justifyContent="space-between" alignItems="center" mb={4}>
-        <Typography variant="h4" gutterBottom sx={{ mb: 0 }}>
-          Registration Dashboard
-        </Typography>
-        <Tooltip title="Refresh Data">
-          <IconButton 
-            onClick={fetchSummary}
-            disabled={loading}
-            color="primary"
-          >
-            <RefreshIcon />
-          </IconButton>
-        </Tooltip>
+      <Box mb={4}>
+        <Paper sx={{ p: 2, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <Box display="flex" alignItems="center" justifyContent="space-between">
+                <Box display="flex" alignItems="center" gap={1}>
+                  <TrendingUpIcon />
+                  <Typography variant="h6">Quick Insights</Typography>
+                </Box>
+                <Box display="flex" alignItems="center" gap={1}>
+                  <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                    Last updated: {lastUpdate.toLocaleTimeString()}
+                  </Typography>
+                  <Tooltip title="Refresh Data">
+                    <IconButton 
+                      onClick={fetchSummary}
+                      disabled={loading}
+                      sx={{ color: 'primary.contrastText' }}
+                    >
+                      <RefreshIcon />
+                    </IconButton>
+                  </Tooltip>
+                </Box>
+              </Box>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Box>
+                <Typography variant="subtitle2" sx={{ opacity: 0.9 }}>
+                  Registration Status
+                </Typography>
+                <Typography variant="body2">
+                  {totalParticipants} total registrations across {Object.keys(CATEGORY_DISPLAY_NAMES).length} categories
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 0.5 }}>
+                  Most popular: {mostPopularCategory.name} ({mostPopularCategory.count} players)
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Box>
+                <Typography variant="subtitle2" sx={{ opacity: 0.9 }}>
+                  Youth Participation
+                </Typography>
+                <Typography variant="body2">
+                  {summary.youth8To12Count + summary.youth13To17Count} youth players
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 0.5 }}>
+                  {youthPercentage}% of total registrations
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12} md={4}>
+              <Box>
+                <Typography variant="subtitle2" sx={{ opacity: 0.9 }}>
+                  Payment Overview
+                </Typography>
+                <Typography variant="body2">
+                  {formatCurrency(totalCollections)} total collections
+                </Typography>
+                <Typography variant="body2" sx={{ mt: 0.5 }}>
+                  {((totalVerified / totalCollections) * 100).toFixed(1)}% payments verified
+                  ({formatCurrency(totalVerified)})
+                </Typography>
+              </Box>
+            </Grid>
+            <Grid item xs={12}>
+              <Divider sx={{ my: 1, borderColor: 'primary.contrastText', opacity: 0.2 }} />
+              <Box display="flex" gap={2} alignItems="center">
+                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                  <strong>Key Trends:</strong>
+                </Typography>
+                <Stack direction="row" spacing={2}>
+                  <Chip 
+                    size="small"
+                    label={`Most common size: ${mostPopularSize.size}`}
+                    sx={{ 
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                      '& .MuiChip-label': { fontSize: '0.75rem' }
+                    }}
+                  />
+                  <Chip 
+                    size="small"
+                    label={`${summary.throwballCount} Throwball players`}
+                    sx={{ 
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                      '& .MuiChip-label': { fontSize: '0.75rem' }
+                    }}
+                  />
+                  <Chip 
+                    size="small"
+                    label={`${summary.volleyballCount} Volleyball players`}
+                    sx={{ 
+                      bgcolor: 'primary.main',
+                      color: 'primary.contrastText',
+                      '& .MuiChip-label': { fontSize: '0.75rem' }
+                    }}
+                  />
+                </Stack>
+              </Box>
+            </Grid>
+          </Grid>
+        </Paper>
       </Box>
 
-      {/* Summary Cards */}
+      {/* Key Summary */}
+      <Box mb={4}>
+        <Typography variant="h6" gutterBottom>
+          Quick Summary
+        </Typography>
+        <Grid container spacing={2}>
+          <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 2 }}>
+              <Box display="flex" alignItems="center" gap={2}>
+                <PeopleIcon color="primary" />
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Total Registrations</Typography>
+                  <Typography variant="h6">{totalParticipants}</Typography>
+                </Box>
+              </Box>
+            </Paper>
+          </Grid>
+          <Grid item xs={12} md={6}>
+            <Paper sx={{ p: 2 }}>
+              <Box display="flex" alignItems="center" gap={2}>
+                <RupeeIcon color="primary" />
+                <Box>
+                  <Typography variant="body2" color="text.secondary">Total Collections</Typography>
+                  <Typography variant="h6">
+                    {formatCurrency(totalCollections)}
+                    <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                      ({formatCurrency(totalVerified)} verified)
+                    </Typography>
+                  </Typography>
+                </Box>
+              </Box>
+            </Paper>
+          </Grid>
+        </Grid>
+      </Box>
+
+      {/* Charts Section */}
       <Grid container spacing={3} mb={4}>
-        <Grid item xs={12} sm={6} lg={2.4}>
-          <StatCard
-            title="Total"
-            value={summary.totalRegistrations}
-            icon={PeopleIcon}
-            color="#2196f3"
-          />
+        {/* Category Distribution Chart */}
+        <Grid item xs={12} md={6}>
+          <ChartContainer id="category" title="Category Distribution">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={categoryChartData}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, value, percent }) => `${value} (${(percent * 100).toFixed(0)}%)`}
+                  outerRadius={80}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {categoryChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                </Pie>
+                <RechartsTooltip 
+                  formatter={(value, name) => [`${value} registrations`, name]}
+                />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartContainer>
         </Grid>
-        <Grid item xs={12} sm={6} lg={2.4}>
-          <StatCard
-            title="Volleyball"
-            value={summary.volleyballCount}
-            icon={VolleyballIcon}
-            color="#4caf50"
-          />
+
+        {/* Jersey Size Distribution Chart */}
+        <Grid item xs={12} md={6}>
+          <ChartContainer id="jersey" title="Jersey Size Distribution">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart 
+                data={jerseyChartData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="name" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                  interval={0}
+                />
+                <YAxis />
+                <RechartsTooltip 
+                  formatter={(value) => [`${value} requests`]}
+                />
+                <Legend 
+                  verticalAlign="top"
+                  height={36}
+                />
+                <Bar dataKey="value" name="Count" fill="#8884d8">
+                  {jerseyChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.color} />
+                  ))}
+                  <LabelList dataKey="value" position="top" />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
         </Grid>
-        <Grid item xs={12} sm={6} lg={2.4}>
-          <StatCard
-            title="Throwball"
-            value={summary.throwballCount}
-            icon={ThrowballIcon}
-            color="#ff9800"
-          />
+
+        {/* Registration Timeline Chart */}
+        <Grid item xs={12}>
+          <ChartContainer id="timeline" title="Registration Timeline">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart 
+                data={timelineData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="date" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                  interval={0}
+                />
+                <YAxis />
+                <RechartsTooltip 
+                  formatter={(value, name) => [`${value} registrations`, name]}
+                  labelFormatter={(label) => `Date: ${label}`}
+                />
+                <Legend 
+                  verticalAlign="top"
+                  height={36}
+                />
+                {uniqueCategories.map((category, index) => (
+                  <Bar
+                    key={category}
+                    dataKey={category}
+                    stackId="registrations"
+                    fill={COLORS[index % COLORS.length]}
+                    name={category}
+                  >
+                    <LabelList 
+                      dataKey={category} 
+                      position="center"
+                      fill="#fff"
+                      formatter={(value: number) => (value > 0 ? value : '')}
+                      style={{ fontSize: '11px' }}
+                    />
+                  </Bar>
+                ))}
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
         </Grid>
-        <Grid item xs={12} sm={6} lg={2.4}>
-          <StatCard
-            title="Youth (8-12)"
-            value={summary.youth8To12Count}
-            icon={YouthIcon}
-            color="#e91e63"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} lg={2.4}>
-          <StatCard
-            title="Youth (13-17)"
-            value={summary.youth13To17Count}
-            icon={TeenIcon}
-            color="#9c27b0"
-          />
+
+        {/* Payment Collections Chart */}
+        <Grid item xs={12}>
+          <ChartContainer 
+            id="payment" 
+            title={`Payment Collections by Receiver (${formatCurrency(totalCollections)} total)`}
+          >
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart 
+                data={paymentChartData}
+                margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
+                barSize={60}
+              >
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis 
+                  dataKey="name" 
+                  angle={-45}
+                  textAnchor="end"
+                  height={60}
+                  interval={0}
+                />
+                <YAxis 
+                  label={{ 
+                    value: 'Amount (₹)', 
+                    angle: -90, 
+                    position: 'insideLeft',
+                    offset: -5
+                  }}
+                />
+                <RechartsTooltip
+                  formatter={(value, name) => {
+                    const formattedValue = formatCurrency(value as number)
+                    if (name === 'verified') return [`${formattedValue} verified`, 'Verified']
+                    if (name === 'pending') return [`${formattedValue} pending`, 'Pending']
+                    return [formattedValue, name]
+                  }}
+                  labelFormatter={(label) => `Receiver: ${label}`}
+                />
+                <Legend 
+                  verticalAlign="top"
+                  height={36}
+                />
+                <Bar 
+                  dataKey="verified" 
+                  name="Verified" 
+                  stackId="a" 
+                  fill="#4caf50"
+                  minPointSize={5}
+                >
+                  <LabelList 
+                    dataKey="verified" 
+                    position="center"
+                    fill="#fff"
+                    formatter={(value: number) => (value > 0 ? `₹${value}` : '')}
+                    style={{ fontSize: '11px' }}
+                  />
+                </Bar>
+                <Bar 
+                  dataKey="pending" 
+                  name="Pending" 
+                  stackId="a" 
+                  fill="#ff9800"
+                  minPointSize={5}
+                >
+                  <LabelList 
+                    dataKey="pending" 
+                    position="center"
+                    fill="#fff"
+                    formatter={(value: number) => (value > 0 ? `₹${value}` : '')}
+                    style={{ fontSize: '11px' }}
+                  />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          </ChartContainer>
         </Grid>
       </Grid>
-
-      {/* Category Distribution */}
-      <Typography variant="h6" gutterBottom>
-        Registration by Category
-      </Typography>
-      <TableContainer component={Paper} sx={{ mb: 4 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Category</TableCell>
-              <TableCell align="right">Registrations</TableCell>
-              <TableCell align="right">Percentage</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {summary.categoryDistribution.map((category) => (
-              <TableRow key={category.name}>
-                <TableCell component="th" scope="row">
-                  {category.name}
-                </TableCell>
-                <TableCell align="right">{category.count}</TableCell>
-                <TableCell align="right">
-                  {((category.count / summary.totalRegistrations) * 100).toFixed(1)}%
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* Jersey Sizes Distribution */}
-      <Typography variant="h6" gutterBottom>
-        Jersey Size Distribution
-      </Typography>
-      <TableContainer component={Paper} sx={{ mb: 4 }}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Size</TableCell>
-              <TableCell align="right">Count</TableCell>
-              <TableCell align="right">Percentage</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {summary.jerseySizes.map((size) => (
-              <TableRow key={size.size}>
-                <TableCell component="th" scope="row">
-                  <Box display="flex" alignItems="center">
-                    <SizeIcon sx={{ mr: 1, color: 'primary.main' }} />
-                    {size.size}
-                  </Box>
-                </TableCell>
-                <TableCell align="right">{size.count}</TableCell>
-                <TableCell align="right">
-                  {((size.count / summary.totalRegistrations) * 100).toFixed(1)}%
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
-
-      {/* Recent Registrations */}
-      <Typography variant="h6" gutterBottom>
-        Recent Registrations
-      </Typography>
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>Name</TableCell>
-              <TableCell>Category</TableCell>
-              <TableCell>Jersey Number</TableCell>
-              <TableCell>Registration Date</TableCell>
-              <TableCell>Status</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {summary.recentRegistrations.map((registration) => (
-              <TableRow key={registration.id}>
-                <TableCell>
-                  {registration.first_name} {registration.last_name}
-                </TableCell>
-                <TableCell>{registration.registration_category}</TableCell>
-                <TableCell>{registration.tshirt_number}</TableCell>
-                <TableCell>
-                  {new Date(registration.created_at).toLocaleDateString()}
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={registration.is_verified ? 'Verified' : 'Pending'}
-                    color={registration.is_verified ? 'success' : 'warning'}
-                    size="small"
-                  />
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
     </Box>
   )
 } 

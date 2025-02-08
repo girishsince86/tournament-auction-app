@@ -4,6 +4,7 @@ import { Drawer, List, Box, Toolbar, useMediaQuery, useTheme } from '@mui/materi
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import HowToRegIcon from '@mui/icons-material/HowToReg'
 import { SidebarItem } from './SidebarItem'
+import { useAuth } from '@/features/auth/context/auth-context'
 
 const DRAWER_WIDTH = 240
 
@@ -13,14 +14,25 @@ interface SidebarProps {
 }
 
 // Only show Dashboard and Registrations in both environments
-const navigationItems = [
-  { text: 'Dashboard', icon: <DashboardIcon />, href: '/admin' },
-  { text: 'Registrations', icon: <HowToRegIcon />, href: '/admin/registrations' },
-]
+const getNavigationItems = (isAdmin: boolean) => {
+  const items = []
+
+  if (isAdmin) {
+    items.push(
+      { text: 'Registration Summary', icon: <DashboardIcon />, href: '/registration-summary' },
+      { text: 'Registrations', icon: <HowToRegIcon />, href: '/admin/registrations' }
+    )
+  }
+
+  return items
+}
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const theme = useTheme()
   const isMobile = useMediaQuery(theme.breakpoints.down('md'))
+  const { user } = useAuth()
+  const isAdmin = Boolean(user?.email?.endsWith('@pbel.in'))
+  const navigationItems = getNavigationItems(isAdmin)
 
   return (
     <Drawer
