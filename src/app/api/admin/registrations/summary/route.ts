@@ -1,139 +1,127 @@
-import { createClient } from '@supabase/supabase-js'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
 import { Database } from '@/lib/supabase/types/supabase'
 
-// Create a Supabase client with the service role key for admin operations
-const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
-
-// Fixed registration fee for all categories
-const REGISTRATION_FEE = 600
-
 export const dynamic = 'force-dynamic'
+
+const REGISTRATION_CATEGORIES = [
+  'VOLLEYBALL_OPEN_MEN',
+  'THROWBALL_WOMEN',
+  'THROWBALL_13_17_MIXED',
+  'THROWBALL_8_12_MIXED',
+] as const;
+
+const DEFAULT_REGISTRATION_AMOUNT = 600;
 
 export async function GET() {
   try {
-    // Fetch total registrations
+    const supabase = createRouteHandlerClient<Database>({ cookies })
+
+    // Get total registrations
     const { count: totalRegistrations } = await supabase
       .from('tournament_registrations')
       .select('*', { count: 'exact', head: true })
 
-    // Fetch all registrations for category distribution and timeline
-    const { data: registrations } = await supabase
+    // Get verified registrations count
+    const { data: verifiedData, error: verifiedError } = await supabase
       .from('tournament_registrations')
-      .select('*')
+      .select('id')
+      .eq('is_verified', true)
+
+    if (verifiedError) {
+      throw verifiedError
+    }
+
+    const verifiedRegistrations = verifiedData?.length || 0
+
+    // Get category distribution
+    const categoryPromises = REGISTRATION_CATEGORIES.map(async (category) => {
+      const { count } = await supabase
+        .from('tournament_registrations')
+        .select('*', { count: 'exact', head: true })
+        .eq('registration_category', category)
+
+      return {
+        name: category,
+        count: count || 0
+      }
+    })
+
+    const categoryDistribution = await Promise.all(categoryPromises)
+
+    // Get jersey size distribution
+    const { data: jerseyData } = await supabase
+      .from('tournament_registrations')
+      .select('tshirt_size')
+
+    const jerseySizes = jerseyData?.reduce((acc: { size: string; count: number }[], curr) => {
+      const size = curr.tshirt_size
+      const existing = acc.find(item => item.size === size)
+      if (existing) {
+        existing.count++
+      } else {
+        acc.push({ size, count: 1 })
+      }
+      return acc
+    }, []) || []
+
+    // Get timeline data
+    const { data: timelineData } = await supabase
+      .from('tournament_registrations')
+      .select('created_at, registration_category')
       .order('created_at', { ascending: true })
 
-    if (!registrations) {
-      throw new Error('Failed to fetch registrations')
-    }
+    // Get payment collections by receiver
+    const { data: paymentData } = await supabase
+      .from('tournament_registrations')
+      .select('paid_to, amount_received, is_verified')
 
-    // Category distribution
-    const categoryDistribution = registrations.reduce((acc: Record<string, number>, curr) => {
-      const category = curr.registration_category
-      acc[category] = (acc[category] || 0) + 1
-      return acc
-    }, {})
+    // Initialize collections for known receivers
+    const paymentCollections = [
+      { receiver: 'Vasu Chepuru', totalAmount: 0, verifiedAmount: 0 },
+      { receiver: 'Amit Saxena', totalAmount: 0, verifiedAmount: 0 }
+    ];
 
-    // Count by sport type
-    const volleyballCount = registrations.filter(
-      (reg) => reg.registration_category === 'VOLLEYBALL_OPEN_MEN'
-    ).length
+    // Process payment data
+    paymentData?.forEach(registration => {
+      const receiver = registration.paid_to;
+      if (!receiver) return; // Skip if no receiver specified
 
-    const throwballCount = registrations.filter(
-      (reg) => reg.registration_category === 'THROWBALL_WOMEN'
-    ).length
-
-    const youth8To12Count = registrations.filter(
-      (reg) => reg.registration_category === 'THROWBALL_8_12_MIXED'
-    ).length
-
-    const youth13To17Count = registrations.filter(
-      (reg) => reg.registration_category === 'THROWBALL_13_17_MIXED'
-    ).length
-
-    // Jersey size distribution
-    const jerseySizes = registrations.reduce((acc: Record<string, number>, curr) => {
-      const size = curr.tshirt_size
-      acc[size] = (acc[size] || 0) + 1
-      return acc
-    }, {})
-
-    // Fetch recent registrations (last 10)
-    const recentRegistrations = registrations
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, 10)
-      .map(reg => ({
-        id: reg.id,
-        first_name: reg.first_name,
-        last_name: reg.last_name,
-        registration_category: reg.registration_category,
-        tshirt_number: reg.tshirt_number,
-        created_at: reg.created_at,
-        is_verified: reg.is_verified
-      }))
-
-    // Prepare timeline data
-    const timelineData = registrations.map(reg => ({
-      created_at: reg.created_at,
-      registration_category: reg.registration_category
-    }))
-
-    // Calculate total fees (₹600 per registration)
-    const totalFees = registrations.length * REGISTRATION_FEE
-
-    // Count registrations by receiver
-    const vasuRegistrations = registrations.filter(r => r.paid_to === 'Vasu Chepuru')
-    const amitRegistrations = registrations.filter(r => r.paid_to === 'Amit Saxena')
-
-    const mockPaymentCollections = [
-      {
-        receiver: 'Vasu Chepuru',
-        totalAmount: vasuRegistrations.length * REGISTRATION_FEE,
-        verifiedAmount: vasuRegistrations.filter(r => r.is_verified).length * REGISTRATION_FEE,
-        registrationCount: vasuRegistrations.length,
-        verifiedCount: vasuRegistrations.filter(r => r.is_verified).length
-      },
-      {
-        receiver: 'Amit Saxena',
-        totalAmount: amitRegistrations.length * REGISTRATION_FEE,
-        verifiedAmount: amitRegistrations.filter(r => r.is_verified).length * REGISTRATION_FEE,
-        registrationCount: amitRegistrations.length,
-        verifiedCount: amitRegistrations.filter(r => r.is_verified).length
+      const collection = paymentCollections.find(p => p.receiver === receiver);
+      if (collection) {
+        // For verified registrations, use the actual amount received
+        if (registration.is_verified && registration.amount_received) {
+          collection.totalAmount += registration.amount_received;
+          collection.verifiedAmount += registration.amount_received;
+        } 
+        // For unverified registrations, use the default amount
+        else if (!registration.is_verified) {
+          collection.totalAmount += DEFAULT_REGISTRATION_AMOUNT;
+        }
       }
-    ]
+    });
 
-    // Add unassigned registrations count
-    const unassignedRegistrations = registrations.filter(r => !r.paid_to)
-    if (unassignedRegistrations.length > 0) {
-      mockPaymentCollections.push({
-        receiver: 'Unassigned',
-        totalAmount: unassignedRegistrations.length * REGISTRATION_FEE,
-        verifiedAmount: unassignedRegistrations.filter(r => r.is_verified).length * REGISTRATION_FEE,
-        registrationCount: unassignedRegistrations.length,
-        verifiedCount: unassignedRegistrations.filter(r => r.is_verified).length
-      })
-    }
+    // Count registrations by category type
+    const volleyballCount = categoryDistribution.find(c => c.name === 'VOLLEYBALL_OPEN_MEN')?.count || 0
+    const throwballCount = categoryDistribution
+      .filter(c => c.name.startsWith('THROWBALL_'))
+      .reduce((sum, curr) => sum + curr.count, 0)
+    const youth8To12Count = categoryDistribution.find(c => c.name === 'THROWBALL_8_12_MIXED')?.count || 0
+    const youth13To17Count = categoryDistribution.find(c => c.name === 'THROWBALL_13_17_MIXED')?.count || 0
 
     return NextResponse.json({
-      totalRegistrations,
+      totalRegistrations: totalRegistrations || 0,
+      verifiedRegistrations,
       volleyballCount,
       throwballCount,
       youth8To12Count,
       youth13To17Count,
-      categoryDistribution: Object.entries(categoryDistribution).map(([name, count]) => ({
-        name,
-        count,
-      })),
-      jerseySizes: Object.entries(jerseySizes).map(([size, count]) => ({
-        size,
-        count,
-      })),
-      recentRegistrations,
-      timelineData,
-      paymentCollections: mockPaymentCollections,
+      categoryDistribution,
+      jerseySizes,
+      timelineData: timelineData || [],
+      paymentCollections: paymentCollections || [],
+      recentRegistrations: [], // This can be added later if needed
     })
   } catch (error) {
     console.error('Error fetching registration summary:', error)

@@ -34,7 +34,8 @@ import {
   FullscreenExit as FullscreenExitIcon,
 } from '@mui/icons-material'
 import { useEffect, useState, useCallback } from 'react'
-import { RegistrationSummary } from '../types/dashboard'
+import { TournamentRegistration, TShirtSize } from '@/features/tournaments/types/registration'
+import { RegistrationSummary, CategoryDistribution, JerseySize } from '../types/dashboard'
 import {
   BarChart,
   Bar,
@@ -77,8 +78,24 @@ const PAYMENT_RECEIVER_DISPLAY: Record<string, string> = {
   'Amit Saxena': 'Amit',
 }
 
+interface CategoryCount {
+  category: string;
+  count: number;
+}
+
 export function RegistrationDashboard() {
-  const [summary, setSummary] = useState<RegistrationSummary | null>(null)
+  const [summary, setSummary] = useState<RegistrationSummary>({
+    totalRegistrations: 0,
+    volleyballCount: 0,
+    throwballCount: 0,
+    youth8To12Count: 0,
+    youth13To17Count: 0,
+    categoryDistribution: [],
+    jerseySizes: [],
+    recentRegistrations: [],
+    timelineData: [],
+    paymentCollections: []
+  })
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date())
@@ -139,16 +156,16 @@ export function RegistrationDashboard() {
   }
 
   // Prepare data for charts
-  const categoryChartData = summary.categoryDistribution.map((category, index) => ({
+  const categoryChartData = summary.categoryDistribution.map((category: CategoryDistribution) => ({
     name: CATEGORY_DISPLAY_NAMES[category.name] || category.name,
     value: category.count,
-    color: COLORS[index % COLORS.length],
+    color: COLORS[summary.categoryDistribution.indexOf(category) % COLORS.length]
   }))
 
-  const jerseyChartData = summary.jerseySizes.map((size, index) => ({
-    name: TSHIRT_SIZE_DISPLAY[size.size] || size.size,
+  const jerseyChartData = summary.jerseySizes.map((size) => ({
+    name: TSHIRT_SIZE_DISPLAY[size.size as TShirtSize] || size.size,
     value: size.count,
-    color: COLORS[index % COLORS.length],
+    color: COLORS[summary.jerseySizes.indexOf(size) % COLORS.length]
   }))
 
   // Prepare timeline data
@@ -542,7 +559,7 @@ export function RegistrationDashboard() {
                   verticalAlign="top"
                   height={36}
                 />
-                {uniqueCategories.map((category, index) => (
+                {uniqueCategories.map((category: string, index: number) => (
                   <Bar
                     key={category}
                     dataKey={category}

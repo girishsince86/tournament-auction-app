@@ -2,7 +2,6 @@
 
 import '@/styles/globals.css'
 import { Poppins, DM_Sans, JetBrains_Mono } from 'next/font/google'
-import { AuthProvider } from '@/features/auth/context/auth-context'
 import { Toaster } from 'react-hot-toast'
 import { cn } from '@/lib/utils'
 import { ThemeProvider, CssBaseline } from '@mui/material'
@@ -31,32 +30,6 @@ export default function RootLayout({
 }: {
   children: React.ReactNode
 }) {
-  // During static page generation, render without auth
-  if (process.env.NEXT_PHASE === 'phase-production-build') {
-    return (
-      <html lang="en" className={cn(
-        poppins.variable,
-        dmSans.variable,
-        jetbrainsMono.variable,
-      )}>
-        <body className={cn(
-          'min-h-screen',
-          'bg-background-primary',
-          'text-text-primary',
-          'antialiased',
-          'font-body'
-        )}>
-          <ThemeProvider theme={theme}>
-            <CssBaseline />
-            <main className="min-h-screen">
-              {children}
-            </main>
-          </ThemeProvider>
-        </body>
-      </html>
-    )
-  }
-
   return (
     <html lang="en" className={cn(
       poppins.variable,
@@ -72,18 +45,16 @@ export default function RootLayout({
       )}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <AuthProvider>
-            <main className="min-h-screen">
-              {children}
-            </main>
-            <Toaster 
-              position="top-right"
-              toastOptions={{
-                className: 'bg-background-secondary text-text-primary',
-                duration: 4000,
-              }}
-            />
-          </AuthProvider>
+          <main className="min-h-screen">
+            {children}
+          </main>
+          <Toaster 
+            position="top-right"
+            toastOptions={{
+              className: 'bg-background-secondary text-text-primary',
+              duration: 4000,
+            }}
+          />
         </ThemeProvider>
       </body>
     </html>

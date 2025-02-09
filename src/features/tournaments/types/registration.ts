@@ -112,4 +112,59 @@ export const stepConfig = {
     label: 'Review & Submit',
     description: 'Review your information and submit',
   },
+}
+
+export interface TournamentRegistration {
+  id: string
+  first_name: string
+  last_name: string
+  email: string
+  phone_number: string
+  registration_category: string
+  tshirt_size: string
+  tshirt_number: string
+  is_verified: boolean
+  created_at: string
+  amount_received?: number
+  paid_to?: string
+  payment_upi_id?: string
+  payment_transaction_id?: string
+  payment_screenshot_url?: string
+  verification_notes?: string
+  verified_by?: string
+  verified_at?: string
+}
+
+export interface RegistrationSummary {
+  total_registrations: number
+  verified_registrations: number
+  pending_registrations: number
+  total_amount_collected: number
+  registrations_by_category: {
+    category: string
+    count: number
+  }[]
+  registrations_by_date: {
+    date: string
+    count: number
+  }[]
+  registrations_by_status: {
+    status: string
+    count: number
+  }[]
+}
+
+export interface RegistrationFilters {
+  search?: string
+  category?: string
+  status?: 'verified' | 'pending'
+  startDate?: string
+  endDate?: string
+}
+
+export interface RegistrationResponse {
+  registrations: TournamentRegistration[]
+  total: number
+  page: number
+  pageSize: number
 } 

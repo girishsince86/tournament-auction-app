@@ -1,43 +1,91 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
-import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
+import { createServerClient, type CookieOptions } from '@supabase/ssr'
+import { Database } from '@/lib/supabase/types/supabase'
 
 export async function middleware(request: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req: request, res })
+  try {
+    const response = NextResponse.next()
 
-  // Refresh session if expired - required for Server Components
-  const { data: { session } } = await supabase.auth.getSession()
+    const supabase = createServerClient<Database>(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          get(name: string) {
+            return request.cookies.get(name)?.value
+          },
+          set(name: string, value: string, options: CookieOptions) {
+            response.cookies.set({ name, value, ...options })
+          },
+          remove(name: string, options: CookieOptions) {
+            response.cookies.set({ name, value: '', ...options })
+          },
+        },
+      }
+    )
 
-  // Protected routes that require authentication
-  const protectedPaths = ['/admin', '/registration-summary', '/dashboard', '/manage-registrations']
-  const isProtectedPath = protectedPaths.some(path => 
-    request.nextUrl.pathname.startsWith(path)
-  )
+    // Get authenticated user data
+    const { data: { user }, error } = await supabase.auth.getUser()
 
-  // Handle protected routes
-  if (isProtectedPath) {
-    if (!session) {
-      // Redirect to login if not authenticated
-      return NextResponse.redirect(new URL('/login', request.url))
+    // Define route patterns
+    const protectedPaths = ['/admin', '/registration-summary', '/dashboard']
+    const authPaths = ['/login', '/register']
+
+    const currentPath = request.nextUrl.pathname
+    
+    // Check if current path matches any of our defined patterns
+    const isProtectedPath = protectedPaths.some(path => currentPath.startsWith(path))
+    const isAuthPath = authPaths.some(path => currentPath.startsWith(path))
+
+    // Handle authentication paths (login/register)
+    if (isAuthPath) {
+      if (user) {
+        // If user is already logged in, redirect to registration summary
+        return NextResponse.redirect(new URL('/registration-summary', request.url))
+      }
+      return response
     }
 
-    // Special case: redirect /dashboard to /registration-summary
-    if (request.nextUrl.pathname === '/dashboard') {
-      return NextResponse.redirect(new URL('/registration-summary', request.url))
+    // Handle protected paths
+    if (isProtectedPath) {
+      if (!user) {
+        // Redirect to login if not authenticated
+        return NextResponse.redirect(new URL('/login', request.url))
+      }
+
+      // Special case: redirect /dashboard to /registration-summary
+      if (currentPath === '/dashboard') {
+        return NextResponse.redirect(new URL('/registration-summary', request.url))
+      }
+
+      // Check admin access for /admin routes
+      if (currentPath.startsWith('/admin')) {
+        const userEmail = user.email
+        if (!userEmail?.endsWith('@pbel.in')) {
+          return NextResponse.redirect(new URL('/registration-summary', request.url))
+        }
+      }
     }
+
+    return response
+  } catch (error) {
+    console.error('Middleware error:', error)
+    // On error, redirect to login for safety
+    return NextResponse.redirect(new URL('/login', request.url))
   }
-
-  return res
 }
 
 // Configure which paths the middleware should run on
 export const config = {
   matcher: [
+    // Protected routes that require authentication
     '/admin/:path*',
     '/registration-summary',
     '/dashboard/:path*',
-    '/manage-registrations/:path*',
+    
+    // Auth routes (login/register)
     '/login',
+    '/register',
   ]
 } 

@@ -2,7 +2,8 @@
 
 import { Drawer, List, Box, Toolbar, useMediaQuery, useTheme } from '@mui/material'
 import DashboardIcon from '@mui/icons-material/Dashboard'
-import HowToRegIcon from '@mui/icons-material/HowToReg'
+import ManageSearchIcon from '@mui/icons-material/ManageSearch'
+import SportsIcon from '@mui/icons-material/Sports'
 import { SidebarItem } from './SidebarItem'
 import { useAuth } from '@/features/auth/context/auth-context'
 
@@ -13,14 +14,25 @@ interface SidebarProps {
   onClose: () => void
 }
 
-// Only show Dashboard and Registrations in both environments
+// Get navigation items based on user role
 const getNavigationItems = (isAdmin: boolean) => {
-  const items = []
+  // Base items for all authenticated users
+  const items = [
+    { 
+      text: 'Registration Summary', 
+      icon: <DashboardIcon />, 
+      href: '/registration-summary' 
+    },
+  ]
 
+  // Additional items for admin users
   if (isAdmin) {
     items.push(
-      { text: 'Registration Summary', icon: <DashboardIcon />, href: '/registration-summary' },
-      { text: 'Registrations', icon: <HowToRegIcon />, href: '/admin/registrations' }
+      { 
+        text: 'Manage Registrations', 
+        icon: <ManageSearchIcon />, 
+        href: '/admin/manage-registrations' 
+      }
     )
   }
 

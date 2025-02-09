@@ -1,0 +1,913 @@
+'use client'
+
+import { useState, useCallback, useEffect } from 'react'
+import {
+  Box,
+  Button,
+  IconButton,
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Typography,
+  Alert,
+  Paper,
+  useTheme,
+  Stack,
+  Chip,
+  Grid,
+  Divider,
+  Collapse,
+} from '@mui/material'
+import {
+  DataGridPro,
+  GridColDef,
+  GridToolbar,
+  GridRenderCellParams,
+  GridFilterModel,
+  GridSortModel,
+  GridPaginationModel,
+  LicenseInfo,
+  GridValueGetter,
+} from '@mui/x-data-grid-pro'
+import {
+  Visibility as ViewIcon,
+  CheckCircle as VerifyIcon,
+  FilterList as FilterIcon,
+  TrendingUp as TrendingUpIcon,
+  People as PeopleIcon,
+  SportsVolleyball as VolleyballIcon,
+  SportsHandball as ThrowballIcon,
+  Refresh as RefreshIcon,
+  Warning as WarningIcon,
+  ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
+  Groups as GroupsIcon,
+} from '@mui/icons-material'
+import { useAuth } from '@/features/auth/context/auth-context'
+import { RegistrationDetailModal } from './registration-detail-modal'
+import { VerifyPaymentModal } from './verify-payment-modal'
+import { TournamentRegistration } from '@/features/tournaments/types/registration'
+import toast from 'react-hot-toast'
+
+// Set MUI X License
+if (process.env.NEXT_PUBLIC_MUI_X_KEY) {
+  LicenseInfo.setLicenseKey(process.env.NEXT_PUBLIC_MUI_X_KEY)
+}
+
+const REGISTRATION_AMOUNT = 600
+
+const CATEGORY_MAP = {
+  'VOLLEYBALL_OPEN_MEN': 'Volleyball - Open',
+  'THROWBALL_WOMEN': 'Throwball - Women',
+  'THROWBALL_13_17_MIXED': 'Throwball - 13-17 Mixed',
+  'THROWBALL_8_12_MIXED': 'Throwball - 8-12 Mixed',
+} as const;
+
+interface CategoryCount {
+  name: string;
+  count: number;
+}
+
+interface RegistrationSummary {
+  totalRegistrations: number;
+  verifiedRegistrations: number;
+  categoryDistribution: CategoryCount[];
+  pendingVerification: number;
+}
+
+const PAYMENT_RECEIVERS = {
+  'Vasu Chepuru': 'Vasu',
+  'Amit Saxena': 'Amit',
+} as const;
+
+export function ManageRegistrations() {
+  const { user } = useAuth()
+  const [registrations, setRegistrations] = useState<TournamentRegistration[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [selectedRegistration, setSelectedRegistration] = useState<TournamentRegistration | null>(null)
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false)
+  const [isVerifyModalOpen, setIsVerifyModalOpen] = useState(false)
+  const [totalRows, setTotalRows] = useState(0)
+  const [paginationModel, setPaginationModel] = useState<GridPaginationModel>({
+    page: 0,
+    pageSize: 25,
+  })
+  const [filterModel, setFilterModel] = useState<GridFilterModel>({
+    items: [],
+  })
+  const [sortModel, setSortModel] = useState<GridSortModel>([
+    {
+      field: 'created_at',
+      sort: 'desc',
+    },
+  ])
+  const [summary, setSummary] = useState<RegistrationSummary>({
+    totalRegistrations: 0,
+    verifiedRegistrations: 0,
+    categoryDistribution: [],
+    pendingVerification: 0,
+  })
+  const theme = useTheme();
+  const [isHeaderExpanded, setIsHeaderExpanded] = useState(true)
+
+  // Check if user can verify payments
+  const canVerifyPayments = user?.email?.match(/@pbel\.in$/) && 
+    ['amit@pbel.in', 'vasu@pbel.in'].includes(user.email)
+
+  // Get verifier name based on email
+  const getVerifierName = (email: string) => {
+    if (email === 'vasu@pbel.in') return 'Vasu Chepuru'
+    if (email === 'amit@pbel.in') return 'Amit Saxena'
+    return ''
+  }
+
+  const fetchRegistrations = useCallback(async () => {
+    try {
+      setLoading(true)
+      setError(null)
+
+      // Build query parameters
+      const params = new URLSearchParams({
+        page: (paginationModel.page + 1).toString(),
+        pageSize: paginationModel.pageSize.toString(),
+      })
+
+      // Add filters
+      filterModel.items.forEach(filter => {
+        if (filter.value !== undefined && filter.value !== null && filter.value !== '') {
+          params.append(`filter_${filter.field}`, filter.value.toString())
+        }
+      })
+
+      // Add sorting
+      if (sortModel.length) {
+        params.append('sortField', sortModel[0].field)
+        params.append('sortDirection', sortModel[0].sort || 'desc')
+      }
+
+      const response = await fetch(`/api/admin/registrations?${params}`)
+      if (!response.ok) {
+        throw new Error('Failed to fetch registrations')
+      }
+      const data = await response.json()
+      setRegistrations(data.registrations)
+      setTotalRows(data.total)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load registrations')
+    } finally {
+      setLoading(false)
+    }
+  }, [paginationModel, filterModel, sortModel])
+
+  const fetchSummary = useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/registrations/summary')
+      if (!response.ok) {
+        throw new Error('Failed to fetch summary')
+      }
+      const data = await response.json()
+      setSummary({
+        totalRegistrations: data.totalRegistrations,
+        verifiedRegistrations: data.verifiedRegistrations,
+        categoryDistribution: data.categoryDistribution || [],
+        pendingVerification: data.totalRegistrations - data.verifiedRegistrations,
+      })
+    } catch (err) {
+      console.error('Error fetching summary:', err)
+    }
+  }, [])
+
+  useEffect(() => {
+    fetchRegistrations()
+    fetchSummary()
+  }, [fetchRegistrations, fetchSummary])
+
+  const handleViewDetails = (registration: TournamentRegistration) => {
+    setSelectedRegistration(registration)
+    setIsDetailModalOpen(true)
+  }
+
+  const handleVerifyPayment = (registration: TournamentRegistration) => {
+    setSelectedRegistration(registration)
+    setIsVerifyModalOpen(true)
+  }
+
+  const handleVerifySubmit = async (data: {
+    amount: number
+    verifiedBy: string
+    verificationNotes: string
+  }) => {
+    if (!selectedRegistration) return
+
+    try {
+      setError(null)
+      const response = await fetch(
+        `/api/admin/registrations/${selectedRegistration.id}/verify`,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            amount: data.amount,
+            verified_by: data.verifiedBy,
+            verification_notes: data.verificationNotes,
+          }),
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Failed to verify payment')
+      }
+
+      // Refresh data
+      await Promise.all([
+        fetchRegistrations(),
+        fetchSummary()
+      ])
+      
+      setIsVerifyModalOpen(false)
+      toast.success(`Successfully verified payment for ${selectedRegistration.first_name} ${selectedRegistration.last_name}`)
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to verify payment'
+      setError(errorMessage)
+      toast.error(errorMessage)
+    }
+  }
+
+  const columns: GridColDef<TournamentRegistration>[] = [
+    {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 120,
+      sortable: false,
+      filterable: false,
+      renderCell: (params: GridRenderCellParams<TournamentRegistration>) => (
+        <Box sx={{ 
+          display: 'flex', 
+          gap: 0.5,
+          '& .MuiIconButton-root': {
+            transition: 'all 0.2s',
+            '&:hover': {
+              backgroundColor: 'primary.lighter',
+              color: 'primary.main',
+            },
+          }
+        }}>
+          <Tooltip title="View Details">
+            <IconButton
+              onClick={() => handleViewDetails(params.row)}
+              size="small"
+              sx={{ 
+                color: 'text.secondary',
+              }}
+            >
+              <ViewIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+          {canVerifyPayments && !params.row.is_verified && (
+            <Tooltip title="Verify Payment">
+              <IconButton
+                onClick={() => handleVerifyPayment(params.row)}
+                size="small"
+                sx={{ 
+                  color: 'success.main',
+                  '&:hover': {
+                    backgroundColor: 'success.lighter',
+                    color: 'success.dark',
+                  }
+                }}
+              >
+                <VerifyIcon fontSize="small" />
+              </IconButton>
+            </Tooltip>
+          )}
+        </Box>
+      ),
+    },
+    {
+      field: 'registration_number',
+      headerName: 'Registration #',
+      width: 150,
+      filterable: false,
+      renderCell: (params: GridRenderCellParams<TournamentRegistration>) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            fontFamily: 'monospace',
+            fontWeight: 600,
+            color: 'primary.main'
+          }}
+        >
+          REG-{params.row.id.slice(0, 8).toUpperCase()}
+        </Typography>
+      ),
+    },
+    { 
+      field: 'first_name', 
+      headerName: 'First Name', 
+      width: 130,
+      filterable: true,
+    },
+    { 
+      field: 'last_name', 
+      headerName: 'Last Name', 
+      width: 130,
+      filterable: true,
+    },
+    { 
+      field: 'email', 
+      headerName: 'Email', 
+      width: 200,
+      filterable: true,
+      renderCell: (params) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: 'text.secondary',
+            fontFamily: theme.typography.fontFamily,
+          }}
+        >
+          {params.value}
+        </Typography>
+      ),
+    },
+    { 
+      field: 'phone_number',
+      headerName: 'Phone', 
+      width: 130,
+      filterable: true,
+      renderCell: (params) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            fontFamily: 'monospace',
+            color: 'text.secondary',
+          }}
+        >
+          {params.value}
+        </Typography>
+      ),
+    },
+    { 
+      field: 'registration_category',
+      headerName: 'Category',
+      width: 200,
+      filterable: true,
+      renderCell: (params: GridRenderCellParams<TournamentRegistration>) => {
+        const categoryMap = {
+          'VOLLEYBALL_OPEN_MEN': 'Volleyball - Open',
+          'THROWBALL_WOMEN': 'Throwball - Women',
+          'THROWBALL_13_17_MIXED': 'Throwball - 13-17 Mixed',
+          'THROWBALL_8_12_MIXED': 'Throwball - 8-12 Mixed',
+        };
+        const category = categoryMap[params.row.registration_category as keyof typeof categoryMap] || params.row.registration_category;
+        const isVolleyball = params.row.registration_category.includes('VOLLEYBALL');
+        const color = isVolleyball ? 'primary' : 'secondary';
+        
+        return (
+          <Box
+            sx={{
+              backgroundColor: `${color}.lighter`,
+              color: `${color}.dark`,
+              py: 0.5,
+              px: 1,
+              borderRadius: 1,
+              fontSize: '0.875rem',
+              fontWeight: 500,
+            }}
+          >
+            {category}
+          </Box>
+        );
+      },
+    },
+    { 
+      field: 'tshirt_size', 
+      headerName: 'Jersey Size', 
+      width: 100,
+      filterable: true,
+      align: 'center',
+      headerAlign: 'center',
+      renderCell: (params) => (
+        <Box
+          sx={{
+            backgroundColor: 'grey.100',
+            color: 'grey.800',
+            py: 0.5,
+            px: 1,
+            borderRadius: 1,
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            minWidth: '45px',
+            textAlign: 'center',
+          }}
+        >
+          {params.value}
+        </Box>
+      ),
+    },
+    { 
+      field: 'tshirt_number', 
+      headerName: 'Jersey #', 
+      width: 90,
+      filterable: true,
+      align: 'center',
+      headerAlign: 'center',
+      renderCell: (params) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            fontWeight: 600,
+            color: 'text.primary',
+          }}
+        >
+          {params.value}
+        </Typography>
+      ),
+    },
+    {
+      field: 'is_verified',
+      headerName: 'Status',
+      width: 120,
+      filterable: true,
+      type: 'boolean',
+      renderCell: (params: GridRenderCellParams<TournamentRegistration>) => (
+        <Box
+          sx={{
+            backgroundColor: params.value ? 'success.lighter' : 'warning.lighter',
+            color: params.value ? 'success.dark' : 'warning.dark',
+            py: 0.5,
+            px: 1.5,
+            borderRadius: 1,
+            fontSize: '0.875rem',
+            fontWeight: 500,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 0.5,
+          }}
+        >
+          {params.value ? (
+            <>
+              <VerifyIcon fontSize="small" />
+              Verified
+            </>
+          ) : (
+            'Pending'
+          )}
+        </Box>
+      ),
+    },
+    {
+      field: 'amount_received',
+      headerName: 'Amount',
+      width: 120,
+      filterable: true,
+      align: 'right',
+      headerAlign: 'right',
+      renderCell: (params) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            fontFamily: 'monospace',
+            fontWeight: 600,
+            color: params.row.is_verified ? 'success.main' : 'text.secondary',
+          }}
+        >
+          {params.value ? 
+            new Intl.NumberFormat('en-IN', {
+              style: 'currency',
+              currency: 'INR',
+              maximumFractionDigits: 0,
+            }).format(params.value) : 
+            '-'
+          }
+        </Typography>
+      ),
+    },
+    {
+      field: 'paid_to',
+      headerName: 'Paid To',
+      width: 130,
+      filterable: true,
+      renderCell: (params) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: 'text.secondary',
+          }}
+        >
+          {params.value || '-'}
+        </Typography>
+      ),
+    },
+    {
+      field: 'verified_by',
+      headerName: 'Verified By',
+      width: 130,
+      filterable: true,
+      renderCell: (params) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: params.value ? 'success.main' : 'text.secondary',
+            fontWeight: params.value ? 500 : 400,
+          }}
+        >
+          {params.value || '-'}
+        </Typography>
+      ),
+    },
+    {
+      field: 'verified_at',
+      headerName: 'Verified On',
+      width: 180,
+      filterable: true,
+      type: 'dateTime',
+      valueGetter: (params: { row: TournamentRegistration }) => {
+        if (!params?.row) return null;
+        const value = params.row.verified_at;
+        if (!value) return null;
+        return new Date(value);
+      },
+      renderCell: (params) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: 'text.secondary',
+            fontSize: '0.875rem',
+          }}
+        >
+          {params.value ? new Date(params.value).toLocaleString() : '-'}
+        </Typography>
+      ),
+    },
+    {
+      field: 'created_at',
+      headerName: 'Registered On',
+      width: 180,
+      filterable: true,
+      type: 'dateTime',
+      valueGetter: (params: { row: TournamentRegistration }) => {
+        if (!params?.row) return null;
+        const value = params.row.created_at;
+        if (!value) return null;
+        return new Date(value);
+      },
+      renderCell: (params: GridRenderCellParams<TournamentRegistration>) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            color: 'text.secondary',
+            fontSize: '0.875rem',
+          }}
+        >
+          {params.row.created_at ? new Date(params.row.created_at).toLocaleString() : '-'}
+        </Typography>
+      ),
+    },
+  ]
+
+  return (
+    <Box sx={{ height: '100%', width: '100%', p: 3 }}>
+      <Paper 
+        elevation={0}
+        sx={{ 
+          p: 3, 
+          mb: 3,
+          borderRadius: 2,
+          border: `1px solid ${theme.palette.divider}`,
+          background: `linear-gradient(45deg, ${theme.palette.background.paper} 30%, ${theme.palette.grey[50]} 90%)`,
+        }}
+      >
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          alignItems: 'flex-start',
+        }}>
+          <Box sx={{ flex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Typography 
+                variant="h5" 
+                sx={{ 
+                  fontWeight: 600,
+                  color: 'text.primary',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                }}
+              >
+                Manage Registrations
+                <Tooltip title="Refresh Data">
+                  <IconButton 
+                    size="small" 
+                    onClick={() => {
+                      fetchRegistrations()
+                      fetchSummary()
+                    }}
+                  >
+                    <RefreshIcon fontSize="small" />
+                  </IconButton>
+                </Tooltip>
+              </Typography>
+              <Box sx={{ flex: 1 }} />
+              <Tooltip title={isHeaderExpanded ? "Collapse Header" : "Expand Header"}>
+                <IconButton 
+                  onClick={() => setIsHeaderExpanded(!isHeaderExpanded)}
+                  size="small"
+                  sx={{ 
+                    transition: 'transform 0.3s',
+                    transform: isHeaderExpanded ? 'rotate(0deg)' : 'rotate(180deg)',
+                  }}
+                >
+                  {isHeaderExpanded ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                </IconButton>
+              </Tooltip>
+            </Box>
+            <Collapse in={isHeaderExpanded} timeout={300}>
+              <Box>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                  Track and manage tournament registrations
+                </Typography>
+                <Paper 
+                  elevation={0}
+                  sx={{ 
+                    p: 2,
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderLeft: `4px solid ${theme.palette.primary.main}`,
+                    borderRadius: 1,
+                    bgcolor: 'background.paper',
+                    transition: 'all 0.2s',
+                    '&:hover': {
+                      borderColor: theme.palette.primary.main,
+                      bgcolor: 'primary.lighter',
+                    }
+                  }}
+                >
+                  <Grid container spacing={3}>
+                    {/* Registration Status */}
+                    <Grid item xs={12} md={4}>
+                      <Stack spacing={2}>
+                        <Stack direction="row" alignItems="center" spacing={1.5}>
+                          <Box sx={{ 
+                            p: 1, 
+                            borderRadius: 1, 
+                            bgcolor: 'primary.lighter',
+                            color: 'primary.main',
+                            display: 'flex',
+                          }}>
+                            <PeopleIcon />
+                          </Box>
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">Total Registrations</Typography>
+                            <Typography variant="h6">{summary.totalRegistrations}</Typography>
+                          </Box>
+                        </Stack>
+                        <Stack direction="row" spacing={1}>
+                          <Chip
+                            icon={<VerifyIcon />}
+                            label={`${summary.verifiedRegistrations} Verified`}
+                            color="success"
+                            size="small"
+                            sx={{ flex: 1 }}
+                          />
+                          {summary.pendingVerification > 0 && (
+                            <Chip
+                              icon={<WarningIcon />}
+                              label={`${summary.pendingVerification} Pending`}
+                              color="warning"
+                              size="small"
+                              sx={{ flex: 1 }}
+                            />
+                          )}
+                        </Stack>
+                      </Stack>
+                    </Grid>
+
+                    {/* Vertical Divider */}
+                    <Grid item xs={12} md="auto">
+                      <Divider orientation="vertical" flexItem />
+                    </Grid>
+
+                    {/* Category Distribution */}
+                    <Grid item xs={12} md={7}>
+                      <Typography variant="body2" color="text.secondary" gutterBottom>
+                        Category Distribution
+                      </Typography>
+                      <Grid container spacing={2}>
+                        {summary.categoryDistribution.map((item) => {
+                          const isVolleyball = item.name.includes('VOLLEYBALL');
+                          return (
+                            <Grid item xs={12} sm={6} key={item.name}>
+                              <Stack direction="row" alignItems="center" spacing={1}>
+                                <Box sx={{ 
+                                  p: 0.5, 
+                                  borderRadius: 1, 
+                                  bgcolor: isVolleyball ? 'info.lighter' : 'secondary.lighter',
+                                  color: isVolleyball ? 'info.main' : 'secondary.main',
+                                  display: 'flex',
+                                }}>
+                                  {isVolleyball ? <VolleyballIcon fontSize="small" /> : <ThrowballIcon fontSize="small" />}
+                                </Box>
+                                <Box sx={{ flex: 1 }}>
+                                  <Typography variant="body2" color="text.secondary" noWrap>
+                                    {CATEGORY_MAP[item.name as keyof typeof CATEGORY_MAP]}
+                                  </Typography>
+                                  <Typography variant="h6">
+                                    {item.count}
+                                  </Typography>
+                                </Box>
+                              </Stack>
+                            </Grid>
+                          );
+                        })}
+                      </Grid>
+                    </Grid>
+                  </Grid>
+                </Paper>
+              </Box>
+            </Collapse>
+          </Box>
+        </Box>
+
+        {error && (
+          <Alert 
+            severity="error" 
+            sx={{ 
+              mt: 2,
+              borderRadius: 1,
+            }}
+          >
+            {error}
+          </Alert>
+        )}
+      </Paper>
+
+      <Paper 
+        elevation={0}
+        sx={{ 
+          height: isHeaderExpanded ? 'calc(100vh - 250px)' : 'calc(100vh - 150px)',
+          border: `1px solid ${theme.palette.divider}`,
+          borderRadius: 2,
+          overflow: 'hidden',
+          transition: 'height 0.3s',
+        }}
+      >
+        {/* Quick Filters */}
+        <Box sx={{ p: 2, borderBottom: `1px solid ${theme.palette.divider}` }}>
+          <Stack direction="row" spacing={2} alignItems="center">
+            <Typography variant="body2" color="text.secondary">
+              Quick Filters:
+            </Typography>
+            <Stack direction="row" spacing={1}>
+              {Object.entries(PAYMENT_RECEIVERS).map(([fullName, shortName]) => {
+                const isActive = filterModel.items.some(
+                  item => item.field === 'paid_to' && item.value === fullName
+                );
+                return (
+                  <Chip
+                    key={fullName}
+                    label={`Paid to ${shortName}`}
+                    color={isActive ? 'primary' : 'default'}
+                    variant={isActive ? 'filled' : 'outlined'}
+                    size="small"
+                    onClick={() => {
+                      if (isActive) {
+                        // Remove the filter
+                        setFilterModel({
+                          ...filterModel,
+                          items: filterModel.items.filter(
+                            item => !(item.field === 'paid_to' && item.value === fullName)
+                          ),
+                        });
+                      } else {
+                        // Add the filter
+                        setFilterModel({
+                          ...filterModel,
+                          items: [
+                            ...filterModel.items,
+                            {
+                              field: 'paid_to',
+                              operator: 'equals',
+                              value: fullName,
+                            },
+                          ],
+                        });
+                      }
+                    }}
+                  />
+                );
+              })}
+              {filterModel.items.some(item => item.field === 'paid_to') && (
+                <Chip
+                  label="Clear Payment Filters"
+                  color="default"
+                  variant="outlined"
+                  size="small"
+                  onDelete={() => {
+                    setFilterModel({
+                      ...filterModel,
+                      items: filterModel.items.filter(item => item.field !== 'paid_to'),
+                    });
+                  }}
+                />
+              )}
+            </Stack>
+          </Stack>
+        </Box>
+
+        <DataGridPro
+          rows={registrations}
+          columns={columns}
+          loading={loading}
+          pagination
+          paginationMode="server"
+          filterMode="server"
+          sortingMode="server"
+          rowCount={totalRows}
+          paginationModel={paginationModel}
+          onPaginationModelChange={setPaginationModel}
+          filterModel={filterModel}
+          onFilterModelChange={setFilterModel}
+          sortModel={sortModel}
+          onSortModelChange={setSortModel}
+          disableRowSelectionOnClick
+          slots={{ toolbar: GridToolbar }}
+          slotProps={{
+            toolbar: {
+              showQuickFilter: false,
+              sx: {
+                p: 2,
+                borderBottom: `1px solid ${theme.palette.divider}`,
+                '& .MuiButton-root': {
+                  color: 'text.secondary',
+                  '&:hover': {
+                    color: 'primary.main',
+                  },
+                },
+                '& .MuiInput-root': {
+                  borderRadius: 1,
+                },
+              },
+            },
+          }}
+          pageSizeOptions={[10, 25, 50, 100]}
+          sx={{
+            border: 'none',
+            '& .MuiDataGrid-row': {
+              '&:hover': {
+                backgroundColor: 'primary.lighter',
+              },
+              '&.Mui-selected': {
+                backgroundColor: 'primary.lighter',
+                '&:hover': {
+                  backgroundColor: 'primary.lighter',
+                },
+              },
+            },
+            '& .MuiDataGrid-columnHeaders': {
+              backgroundColor: 'background.paper',
+              color: 'text.primary',
+              fontWeight: 600,
+              borderBottom: `1px solid ${theme.palette.divider}`,
+            },
+            '& .MuiDataGrid-cell': {
+              borderColor: theme.palette.divider,
+            },
+            '& .MuiDataGrid-footerContainer': {
+              borderTop: `1px solid ${theme.palette.divider}`,
+            },
+            '& .MuiDataGrid-virtualScroller': {
+              backgroundColor: theme.palette.background.paper,
+            },
+          }}
+          getRowHeight={() => 'auto'}
+          columnHeaderHeight={48}
+        />
+      </Paper>
+
+      {selectedRegistration && (
+        <>
+          <RegistrationDetailModal
+            open={isDetailModalOpen}
+            onClose={() => setIsDetailModalOpen(false)}
+            registration={selectedRegistration}
+          />
+
+          <VerifyPaymentModal
+            open={isVerifyModalOpen}
+            onClose={() => setIsVerifyModalOpen(false)}
+            registration={selectedRegistration}
+            onVerify={handleVerifySubmit}
+            currentUser={getVerifierName(user?.email || '')}
+          />
+        </>
+      )}
+    </Box>
+  )
+} 
