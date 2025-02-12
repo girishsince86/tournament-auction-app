@@ -248,24 +248,6 @@ export function RegistrationDetailModal({
                   fullWidth 
                 />
               )}
-              {registration.payment_screenshot_url && (
-                <DetailField 
-                  label="Payment Screenshot" 
-                  value={
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      href={registration.payment_screenshot_url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      startIcon={<OpenInNewIcon />}
-                    >
-                      View Screenshot
-                    </Button>
-                  }
-                  fullWidth
-                />
-              )}
             </Grid>
           </DetailSection>
         </Stack>

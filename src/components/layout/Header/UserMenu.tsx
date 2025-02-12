@@ -3,9 +3,11 @@
 import { useState } from 'react'
 import { Avatar, Menu, MenuItem, IconButton } from '@mui/material'
 import { useAuth } from '@/features/auth/context/auth-context'
+import toast from 'react-hot-toast'
 
 export function UserMenu() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
+  const [isSigningOut, setIsSigningOut] = useState(false)
   const { user, signOut } = useAuth()
   const open = Boolean(anchorEl)
 
@@ -18,8 +20,16 @@ export function UserMenu() {
   }
 
   const handleSignOut = async () => {
-    await signOut()
-    handleClose()
+    try {
+      setIsSigningOut(true)
+      await signOut()
+      handleClose()
+    } catch (error) {
+      console.error('Sign out error:', error)
+      toast.error('Failed to sign out. Please try again.')
+    } finally {
+      setIsSigningOut(false)
+    }
   }
 
   return (
@@ -30,6 +40,7 @@ export function UserMenu() {
         aria-controls={open ? 'account-menu' : undefined}
         aria-haspopup="true"
         aria-expanded={open ? 'true' : undefined}
+        disabled={isSigningOut}
       >
         <Avatar sx={{ width: 32, height: 32 }}>
           {user?.email?.[0].toUpperCase()}
@@ -43,9 +54,14 @@ export function UserMenu() {
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
-        <MenuItem onClick={handleClose}>Profile</MenuItem>
-        <MenuItem onClick={handleClose}>Settings</MenuItem>
-        <MenuItem onClick={handleSignOut}>Sign Out</MenuItem>
+        <MenuItem onClick={handleClose} disabled={isSigningOut}>Profile</MenuItem>
+        <MenuItem onClick={handleClose} disabled={isSigningOut}>Settings</MenuItem>
+        <MenuItem 
+          onClick={handleSignOut}
+          disabled={isSigningOut}
+        >
+          {isSigningOut ? 'Signing out...' : 'Sign Out'}
+        </MenuItem>
       </Menu>
     </>
   )

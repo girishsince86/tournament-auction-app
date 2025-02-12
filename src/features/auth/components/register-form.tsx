@@ -94,7 +94,7 @@ export function RegisterForm() {
       </Button>
       <Typography variant="body2" color="text.secondary" align="center">
         Already have an account?{' '}
-        <Button href="/(auth)/login" variant="text" size="small">
+        <Button href="/login" variant="text" size="small">
           Sign In
         </Button>
       </Typography>

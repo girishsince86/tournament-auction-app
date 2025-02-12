@@ -131,37 +131,43 @@ export function ManageRegistrations() {
       setError(null)
 
       // Build query parameters
-      const params = new URLSearchParams({
-        page: (paginationModel.page + 1).toString(),
-        pageSize: paginationModel.pageSize.toString(),
-      })
+      const params = new URLSearchParams()
+      params.set('page', String(paginationModel.page + 1))
+      params.set('pageSize', String(paginationModel.pageSize))
+
+      // Add sorting
+      if (sortModel.length > 0) {
+        params.set('sortField', sortModel[0].field)
+        params.set('sortDirection', sortModel[0].sort || 'desc')
+      }
 
       // Add filters
       filterModel.items.forEach(filter => {
         if (filter.value !== undefined && filter.value !== null && filter.value !== '') {
-          params.append(`filter_${filter.field}`, filter.value.toString())
+          params.append(`filter_${filter.field}`, String(filter.value))
         }
       })
 
-      // Add sorting
-      if (sortModel.length) {
-        params.append('sortField', sortModel[0].field)
-        params.append('sortDirection', sortModel[0].sort || 'desc')
-      }
-
-      const response = await fetch(`/api/admin/registrations?${params}`)
+      const response = await fetch(`/api/admin/registrations?${params.toString()}`)
       if (!response.ok) {
         throw new Error('Failed to fetch registrations')
       }
+
       const data = await response.json()
+      if (!data.registrations || !Array.isArray(data.registrations)) {
+        throw new Error('Invalid response format')
+      }
+
       setRegistrations(data.registrations)
-      setTotalRows(data.total)
+      setTotalRows(data.total || 0)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load registrations')
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch registrations'
+      setError(errorMessage)
+      toast.error(errorMessage)
     } finally {
       setLoading(false)
     }
-  }, [paginationModel, filterModel, sortModel])
+  }, [paginationModel.page, paginationModel.pageSize, sortModel, filterModel.items])
 
   const fetchSummary = useCallback(async () => {
     try {
@@ -181,10 +187,15 @@ export function ManageRegistrations() {
     }
   }, [])
 
+  // Separate useEffect for initial load
+  useEffect(() => {
+    fetchSummary()
+  }, [fetchSummary])
+
+  // Separate useEffect for data fetching
   useEffect(() => {
     fetchRegistrations()
-    fetchSummary()
-  }, [fetchRegistrations, fetchSummary])
+  }, [fetchRegistrations])
 
   const handleViewDetails = (registration: TournamentRegistration) => {
     setSelectedRegistration(registration)
@@ -573,6 +584,22 @@ export function ManageRegistrations() {
     },
   ]
 
+  const handlePaginationModelChange = useCallback((newModel: GridPaginationModel) => {
+    setPaginationModel(newModel)
+  }, [])
+
+  const handleFilterModelChange = useCallback((newModel: GridFilterModel) => {
+    // Reset to first page when filter changes
+    setPaginationModel(prev => ({ ...prev, page: 0 }))
+    setFilterModel(newModel)
+  }, [])
+
+  const handleSortModelChange = useCallback((newModel: GridSortModel) => {
+    // Reset to first page when sort changes
+    setPaginationModel(prev => ({ ...prev, page: 0 }))
+    setSortModel(newModel)
+  }, [])
+
   return (
     <Box sx={{ height: '100%', width: '100%', p: 3 }}>
       <Paper 
@@ -756,6 +783,8 @@ export function ManageRegistrations() {
           borderRadius: 2,
           overflow: 'hidden',
           transition: 'height 0.3s',
+          display: 'flex',
+          flexDirection: 'column',
         }}
       >
         {/* Quick Filters */}
@@ -821,74 +850,99 @@ export function ManageRegistrations() {
           </Stack>
         </Box>
 
-        <DataGridPro
-          rows={registrations}
-          columns={columns}
-          loading={loading}
-          pagination
-          paginationMode="server"
-          filterMode="server"
-          sortingMode="server"
-          rowCount={totalRows}
-          paginationModel={paginationModel}
-          onPaginationModelChange={setPaginationModel}
-          filterModel={filterModel}
-          onFilterModelChange={setFilterModel}
-          sortModel={sortModel}
-          onSortModelChange={setSortModel}
-          disableRowSelectionOnClick
-          slots={{ toolbar: GridToolbar }}
-          slotProps={{
-            toolbar: {
-              showQuickFilter: false,
-              sx: {
-                p: 2,
-                borderBottom: `1px solid ${theme.palette.divider}`,
-                '& .MuiButton-root': {
-                  color: 'text.secondary',
-                  '&:hover': {
-                    color: 'primary.main',
+        <Box sx={{ flex: 1, minHeight: 0 }}>
+          <DataGridPro<TournamentRegistration>
+            rows={registrations}
+            columns={columns}
+            loading={loading}
+            pagination
+            paginationMode="server"
+            filterMode="server"
+            sortingMode="server"
+            rowCount={totalRows}
+            paginationModel={paginationModel}
+            onPaginationModelChange={handlePaginationModelChange}
+            filterModel={filterModel}
+            onFilterModelChange={handleFilterModelChange}
+            sortModel={sortModel}
+            onSortModelChange={handleSortModelChange}
+            disableRowSelectionOnClick
+            pageSizeOptions={[10, 25, 50, 100]}
+            slots={{
+              toolbar: GridToolbar,
+            }}
+            slotProps={{
+              toolbar: {
+                showQuickFilter: true,
+                printOptions: { disableToolbarButton: true },
+                csvOptions: { disableToolbarButton: true },
+                sx: {
+                  p: 2,
+                  borderBottom: `1px solid ${theme.palette.divider}`,
+                  '& .MuiButton-root': {
+                    color: 'text.secondary',
+                    '&:hover': {
+                      color: 'primary.main',
+                    },
+                  },
+                  '& .MuiInput-root': {
+                    borderRadius: 1,
                   },
                 },
-                '& .MuiInput-root': {
-                  borderRadius: 1,
-                },
               },
-            },
-          }}
-          pageSizeOptions={[10, 25, 50, 100]}
-          sx={{
-            border: 'none',
-            '& .MuiDataGrid-row': {
-              '&:hover': {
-                backgroundColor: 'primary.lighter',
+            }}
+            sx={{
+              height: '100%',
+              width: '100%',
+              border: 'none',
+              '& .MuiDataGrid-main': {
+                display: 'flex',
+                flexDirection: 'column',
+                flex: 1,
               },
-              '&.Mui-selected': {
-                backgroundColor: 'primary.lighter',
+              '& .MuiDataGrid-row': {
                 '&:hover': {
                   backgroundColor: 'primary.lighter',
                 },
+                '&.Mui-selected': {
+                  backgroundColor: 'primary.lighter',
+                  '&:hover': {
+                    backgroundColor: 'primary.lighter',
+                  },
+                },
               },
-            },
-            '& .MuiDataGrid-columnHeaders': {
-              backgroundColor: 'background.paper',
-              color: 'text.primary',
-              fontWeight: 600,
-              borderBottom: `1px solid ${theme.palette.divider}`,
-            },
-            '& .MuiDataGrid-cell': {
-              borderColor: theme.palette.divider,
-            },
-            '& .MuiDataGrid-footerContainer': {
-              borderTop: `1px solid ${theme.palette.divider}`,
-            },
-            '& .MuiDataGrid-virtualScroller': {
-              backgroundColor: theme.palette.background.paper,
-            },
-          }}
-          getRowHeight={() => 'auto'}
-          columnHeaderHeight={48}
-        />
+              '& .MuiDataGrid-columnHeaders': {
+                backgroundColor: 'background.paper',
+                color: 'text.primary',
+                fontWeight: 600,
+                borderBottom: `1px solid ${theme.palette.divider}`,
+              },
+              '& .MuiDataGrid-cell': {
+                borderColor: theme.palette.divider,
+              },
+              '& .MuiDataGrid-footerContainer': {
+                borderTop: `1px solid ${theme.palette.divider}`,
+                visibility: 'visible',
+                position: 'sticky',
+                bottom: 0,
+                bgcolor: 'background.paper',
+                zIndex: 2,
+              },
+              '& .MuiDataGrid-virtualScroller': {
+                backgroundColor: theme.palette.background.paper,
+                flex: 1,
+                minHeight: 200,
+              },
+              '& .MuiTablePagination-root': {
+                visibility: 'visible',
+              },
+            }}
+            getRowHeight={() => 'auto'}
+            columnHeaderHeight={48}
+            autoHeight={false}
+            density="standard"
+          />
+        </Box>
       </Paper>
 
       {selectedRegistration && (

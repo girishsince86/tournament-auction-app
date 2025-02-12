@@ -46,7 +46,6 @@ export interface RegistrationFormData {
   date_of_birth?: string
   parent_name?: string
   parent_phone_number?: string
-  payment_screenshot_url: string
   is_verified?: boolean
   created_at?: string
   id?: string
@@ -75,7 +74,6 @@ export const initialFormData: RegistrationFormData = {
   date_of_birth: '',
   parent_name: '',
   parent_phone_number: '',
-  payment_screenshot_url: '',
   is_verified: false,
   created_at: '',
   id: '',
@@ -120,19 +118,32 @@ export interface TournamentRegistration {
   last_name: string
   email: string
   phone_number: string
+  flat_number: string
+  height: number
   registration_category: string
+  registration_type: string
+  playing_positions: string[]
+  skill_level: string
   tshirt_size: string
+  tshirt_name: string
   tshirt_number: string
+  payment_upi_id: string
+  payment_transaction_id: string
+  paid_to: string
   is_verified: boolean
-  created_at: string
   amount_received?: number
-  paid_to?: string
-  payment_upi_id?: string
-  payment_transaction_id?: string
-  payment_screenshot_url?: string
-  verification_notes?: string
   verified_by?: string
   verified_at?: string
+  verification_notes?: string
+  created_at: string
+  updated_at: string
+  profile_image_url?: string
+  profile_token?: string
+  profile_token_expires_at?: string
+  last_played_date: LastPlayedStatus
+  date_of_birth?: string
+  parent_name?: string
+  parent_phone_number?: string
 }
 
 export interface RegistrationSummary {

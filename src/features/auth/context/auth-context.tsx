@@ -62,14 +62,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const validatedUser = await validateUser('initial mount')
         if (!validatedUser) {
           setUser(null)
-          router.push('/login')
+          if (!window.location.pathname.startsWith('/login')) {
+            router.push('/login')
+          }
         } else {
           setUser(validatedUser)
         }
       } catch (error) {
         console.error('[Auth Error] Initial authentication error:', error)
         setUser(null)
-        router.push('/login')
+        if (!window.location.pathname.startsWith('/login')) {
+          router.push('/login')
+        }
       } finally {
         setIsLoading(false)
       }
@@ -79,30 +83,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     getAuthenticatedUser()
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event) => {
-      console.log(`[Auth Event] Auth state changed: ${event}`)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log(`[Auth Event] Auth state changed: ${event}`, { session })
       
-      // Always verify the user with getUser() on auth state changes
-      const validatedUser = await validateUser('auth state change')
-      
-      if (!validatedUser) {
+      if (event === 'SIGNED_OUT' || !session) {
+        console.log('[Auth Event] User signed out or session ended')
         setUser(null)
-        router.push('/login')
-      } else {
-        setUser(validatedUser)
-        
-        // Only refresh and redirect on specific auth events
-        if (event === 'SIGNED_IN') {
-          console.log('[Auth Event] User signed in, refreshing and redirecting')
-          router.refresh()
-          router.push('/registration-summary')
-        } else if (event === 'SIGNED_OUT') {
-          console.log('[Auth Event] User signed out, refreshing and redirecting')
-          router.refresh()
-          router.push('/login')
+        setIsLoading(false)
+        if (!window.location.pathname.startsWith('/login')) {
+          window.location.href = '/login'
         }
+        return
       }
       
+      // For other events, verify the user
+      const validatedUser = await validateUser('auth state change')
+      if (!validatedUser) {
+        setUser(null)
+        if (!window.location.pathname.startsWith('/login')) {
+          router.push('/login')
+        }
+      } else {
+        setUser(validatedUser)
+        if (event === 'SIGNED_IN' && window.location.pathname.startsWith('/login')) {
+          router.push('/registration-summary')
+        }
+      }
       setIsLoading(false)
     })
 
@@ -158,22 +164,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
-    setIsLoading(true)
     try {
       console.log('[Auth Action] Attempting sign out')
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
       
-      // Validate that user is actually signed out
-      const validatedUser = await validateUser('post sign out')
-      if (validatedUser) {
-        console.warn('[Auth Warning] User still validated after sign out')
+      // Clear local state first
+      setUser(null)
+      setIsLoading(false)
+      
+      // Force redirect before Supabase sign out
+      console.log('[Auth Action] Redirecting to login')
+      window.location.href = '/login'
+      
+      // Attempt Supabase sign out after redirect is initiated
+      const { error } = await supabase.auth.signOut()
+      if (error) {
+        console.error('[Auth Error] Supabase sign out error:', error)
       }
     } catch (error) {
       console.error('[Auth Error] Sign out error:', error)
-      throw error
-    } finally {
-      setIsLoading(false)
+      // Ensure redirect happens even on error
+      window.location.href = '/login'
     }
   }
 

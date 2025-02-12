@@ -69,7 +69,7 @@ export function LoginForm() {
       </Button>
       <Typography variant="body2" color="text.secondary" align="center">
         Don't have an account?{' '}
-        <Button href="/(auth)/register" variant="text" size="small">
+        <Button href="/register" variant="text" size="small">
           Sign Up
         </Button>
       </Typography>

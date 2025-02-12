@@ -6,6 +6,8 @@ import { Toaster } from 'react-hot-toast'
 import { cn } from '@/lib/utils'
 import { ThemeProvider, CssBaseline } from '@mui/material'
 import { theme } from '@/lib/theme'
+import { ThemeRegistry } from '@/components/theme-registry'
+import { AuthProvider } from '@/features/auth/context/auth-context'
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -31,12 +33,12 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="en" className={cn(
+    <html lang="en" suppressHydrationWarning className={cn(
       poppins.variable,
       dmSans.variable,
       jetbrainsMono.variable,
     )}>
-      <body className={cn(
+      <body suppressHydrationWarning className={cn(
         'min-h-screen',
         'bg-background-primary',
         'text-text-primary',
@@ -45,9 +47,13 @@ export default function RootLayout({
       )}>
         <ThemeProvider theme={theme}>
           <CssBaseline />
-          <main className="min-h-screen">
-            {children}
-          </main>
+          <ThemeRegistry>
+            <AuthProvider>
+              <main className="min-h-screen">
+                {children}
+              </main>
+            </AuthProvider>
+          </ThemeRegistry>
           <Toaster 
             position="top-right"
             toastOptions={{

@@ -37,7 +37,7 @@ import {
   DialogActions,
 } from '@mui/material'
 import { useState, useEffect } from 'react'
-import { useSearchParams } from 'next/navigation'
+import { useSearchParams, useRouter } from 'next/navigation'
 import {
   RegistrationFormData,
   initialFormData,
@@ -58,6 +58,8 @@ import DoneAllIcon from '@mui/icons-material/DoneAll'
 import StraightenIcon from '@mui/icons-material/Straighten'
 import Image from 'next/image'
 import { RegistrationCategory as AdminRegistrationCategory } from '@/features/admin/types/registration-admin'
+import { ErrorBoundary } from '@/components/error-boundary'
+import { useRegistrationSubmit } from '@/features/tournaments/hooks/use-registration-submit'
 
 // Styled components
 const StyledCard = styled(Card)(({ theme }) => ({
@@ -292,6 +294,8 @@ const PrintStyles = styled('style')({
 export function RegistrationFormSingle() {
   const theme = useTheme()
   const searchParams = useSearchParams()
+  const router = useRouter()
+  const { submitForm } = useRegistrationSubmit()
   const [formData, setFormData] = useState<RegistrationFormData>(initialFormData)
   const [errors, setErrors] = useState<Partial<Record<keyof RegistrationFormData, string>>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -448,11 +452,13 @@ export function RegistrationFormSingle() {
 
   // Handle section expansion
   const handleExpandSection = (section: SectionName) => {
-    setExpandedSections(prev => ({
+    const startTime = performance.now()
+    setExpandedSections((prev) => ({
       ...prev,
       [section]: !prev[section],
-    }));
-  };
+    }))
+    console.log(`Section ${section} expansion took ${performance.now() - startTime}ms`)
+  }
 
   // Auto-expand next incomplete section
   useEffect(() => {
@@ -629,6 +635,9 @@ export function RegistrationFormSingle() {
 
   // Validation functions
   const validateField = (name: keyof RegistrationFormData, value: any): string => {
+    const startTime = performance.now()
+    let error = ''
+    
     // Skip validation for optional fields if they're empty
     if (!value && !['registration_category', 'first_name', 'last_name', 'email', 'phone_number', 'flat_number', 'height', 'last_played_date', 'skill_level', 'tshirt_size', 'tshirt_name', 'tshirt_number', 'payment_upi_id', 'payment_transaction_id', 'paid_to'].includes(name)) {
       return '';
@@ -779,6 +788,9 @@ export function RegistrationFormSingle() {
       default:
         return '';
     }
+    
+    console.log(`Validation for ${name} took ${performance.now() - startTime}ms`)
+    return error
   };
 
   // Function to format the registration details for display
@@ -834,23 +846,24 @@ export function RegistrationFormSingle() {
 
   // Handle form submission
   const handleSubmit = async (event: React.FormEvent) => {
-    event.preventDefault();
+    const submitStartTime = performance.now()
+    console.log('Starting form submission process...')
+    
+    event.preventDefault()
+    
+    // Validation timing
+    const validationStartTime = performance.now()
+    const validationErrors = Object.keys(formData).reduce((errors: Record<string, string>, field) => {
+      const error = validateField(field as keyof RegistrationFormData, formData[field as keyof RegistrationFormData])
+      if (error) errors[field] = error
+      return errors
+    }, {})
+    console.log(`Form validation took ${performance.now() - validationStartTime}ms`)
 
-    // Validate all fields
-    const newErrors: Partial<Record<keyof RegistrationFormData, string>> = {};
-    Object.keys(formData).forEach((field) => {
-      const error = validateField(
-        field as keyof RegistrationFormData,
-        formData[field as keyof RegistrationFormData]
-      );
-      if (error) {
-        newErrors[field as keyof RegistrationFormData] = error;
-      }
-    });
-
-    if (Object.keys(newErrors).length > 0) {
-      setErrors(newErrors);
-      return;
+    if (Object.keys(validationErrors).length > 0) {
+      console.log('Validation errors found:', validationErrors)
+      setErrors(validationErrors)
+      return
     }
 
     if (!rulesAcknowledged || !residencyConfirmed) {
@@ -862,47 +875,26 @@ export function RegistrationFormSingle() {
       return;
     }
 
-    setIsSubmitting(true);
-
     try {
-      // Convert height from centimeters to meters before submission
-      const heightInMeters = formData.height ? Number(formData.height) / 100 : 0;
+      setIsSubmitting(true)
       
-      const response = await fetch('/api/tournaments/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...formData,
-          height: heightInMeters,
-        }),
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Failed to submit registration');
-      }
-
-      setRegistrationId(data.registrationId);
-      setShowSuccessDialog(true);
-      setSnackbar({
-        open: true,
-        message: 'Registration submitted successfully!',
-        severity: 'success',
-      });
+      // Submit form
+      const submissionStartTime = performance.now()
+      await submitForm(formData)
+      console.log(`Form submission to API took ${performance.now() - submissionStartTime}ms`)
+      
     } catch (error) {
-      console.error('Registration error:', error);
+      console.error('Form submission error:', error)
       setSnackbar({
         open: true,
         message: error instanceof Error ? error.message : 'Failed to submit registration',
         severity: 'error',
-      });
+      })
     } finally {
-      setIsSubmitting(false);
+      setIsSubmitting(false)
+      console.log(`Total form process took ${performance.now() - submitStartTime}ms`)
     }
-  };
+  }
 
   const handleSnackbarClose = () => {
     setSnackbar(prev => ({ ...prev, open: false }))
@@ -970,274 +962,922 @@ export function RegistrationFormSingle() {
   )
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <PrintStyles />
-      <form 
-        onSubmit={handleSubmit} 
-        noValidate 
-        style={{ position: 'relative' }}
-      >
-        {/* Loading overlay */}
-        {isSubmitting && (
-          <Box
-            sx={{
-              position: 'absolute',
-              inset: 0,
-              bgcolor: theme.palette.mode === 'dark' 
-                ? 'rgba(255, 255, 255, 0.1)' 
-                : 'rgba(0, 0, 0, 0.1)',
-              backdropFilter: 'blur(4px)',
-              zIndex: 50,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <CircularProgress />
-          </Box>
-        )}
-
-        {/* Snackbar for notifications */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={10000}
-          onClose={handleSnackbarClose}
-          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-          className="mt-4"
+    <ErrorBoundary
+      onReset={() => {
+        setIsSubmitting(false)
+        setErrors({})
+        setSnackbar({
+          open: true,
+          message: 'Form has been reset. Please try again.',
+          severity: 'success',
+        })
+      }}
+    >
+      <Container maxWidth="lg" sx={{ py: 4 }}>
+        <PrintStyles />
+        <form 
+          onSubmit={handleSubmit} 
+          noValidate 
+          style={{ position: 'relative' }}
         >
-          <Alert
-            onClose={handleSnackbarClose}
-            severity={snackbar.severity}
-            variant="filled"
-            className="w-full text-base shadow-lg"
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
-
-        {/* Payment Instructions Alert */}
-        <Alert 
-          severity="warning" 
-          sx={{ 
-            mb: 3,
-            '& .MuiAlert-message': {
-              width: '100%'
-            },
-            '& .MuiTypography-root': {
-              color: 'text.primary'
-            }
-          }}
-        >
-          <Box>
-            <Typography variant="h6" sx={{ mb: 1, color: 'warning.dark' }}>
-              Payment Required
-            </Typography>
-            <Typography variant="body1" paragraph sx={{ fontWeight: 500 }}>
-              Registration fee: INR 600
-            </Typography>
-            <Box sx={{ pl: 2 }}>
-              <Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
-                Payment Options:
-              </Typography>
-              <Box sx={{ pl: 2, mb: 2 }}>
-                <Typography variant="body1" sx={{ mb: 1 }}>• Vasu Chepuru (9849521594)</Typography>
-                <Typography variant="body1">• Amit Saxena (9866674460)</Typography>
-              </Box>
-              <Typography 
-                variant="body1" 
-                sx={{ 
-                  fontWeight: 600,
-                  color: 'warning.dark',
-                  bgcolor: 'warning.light',
-                  p: 1,
-                  borderRadius: 1
-                }}
-              >
-                Important: You must complete the payment and have the transaction details ready before proceeding with the registration.
-              </Typography>
-            </Box>
-          </Box>
-        </Alert>
-
-        {/* Form Header with Sports Image */}
-        <Box sx={{ 
-          textAlign: 'center', 
-          mb: 6,
-          position: 'relative',
-          height: { xs: 420, sm: 380, md: 320 },
-          borderRadius: 2,
-          overflow: 'hidden',
-          boxShadow: theme.shadows[4],
-        }}>
-          <Image
-            src="/images/community-sports.jpg"
-            alt="PBEL City Sports Tournament"
-            fill
-            style={{ objectFit: 'cover' }}
-            priority
-          />
-          <Box sx={{
-            position: 'absolute',
-            inset: 0,
-            background: `linear-gradient(165deg, 
-              ${alpha(theme.palette.primary.dark, 0.95)} 0%, 
-              ${alpha(theme.palette.primary.main, 0.85)} 50%,
-              ${alpha(theme.palette.primary.light, 0.75)} 100%)`,
-            display: 'flex',
-            padding: { xs: 2, sm: 3, md: 4 },
-          }}>
-            {/* Text Content */}
-            <Box sx={{
-              flex: 1,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'flex-start',
-              color: 'white',
-              pr: { xs: 2, sm: 3, md: 4 },
-            }}>
-              <Typography 
-                variant="h3" 
-                component="h1" 
-                sx={{
-                  fontWeight: 800,
-                  textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
-                  mb: 2,
-                  fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
-                  letterSpacing: '0.5px',
-                  textTransform: 'uppercase',
-                  textAlign: 'left',
-                  maxWidth: '100%',
-                  background: 'linear-gradient(45deg, #ffffff 30%, #f0f0f0 90%)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                }}
-              >
-                PBEL City VolleyBall and ThrowBall League 2025
-              </Typography>
-              <Box sx={{ 
-                width: 60, 
-                height: '4px', 
-                bgcolor: alpha('#fff', 0.9),
-                mb: 3,
-                borderRadius: '2px',
-                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-              }} />
-              <Typography 
-                variant="h6"
-                sx={{ 
-                  mb: 3,
-                  textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
-                  fontWeight: 500,
-                  color: alpha('#fff', 0.95),
-                  fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' },
-                  letterSpacing: '1px',
-                  textAlign: 'left',
-                }}
-              >
-                Bringing Our Community Together Through Sports
-              </Typography>
-              <Typography 
-                variant="body1" 
-                sx={{ 
-                  textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
-                  lineHeight: 1.6,
-                  fontSize: { xs: '0.875rem', sm: '1rem', md: '1.125rem' },
-                  opacity: 0.9,
-                  textAlign: 'left',
-                  maxWidth: '600px',
-                }}
-              >
-                Welcome to PBEL City's premier sports event! Register below to participate in our annual League. 
-                Whether you're a volleyball enthusiast or throwball player, join us for an exciting competition 
-                that celebrates sportsmanship and community spirit.
-              </Typography>
-            </Box>
-
-            {/* Club Logo */}
-            <Box 
-              sx={{ 
-                position: 'relative',
-                width: { xs: '120px', sm: '160px', md: '200px' },
-                height: { xs: '120px', sm: '160px', md: '200px' },
-                alignSelf: 'center',
-                bgcolor: 'white',
-                borderRadius: '50%',
-                p: 3,
-                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                display: { xs: 'none', sm: 'block' },
+          {/* Loading overlay */}
+          {isSubmitting && (
+            <Box
+              sx={{
+                position: 'absolute',
+                inset: 0,
+                bgcolor: theme.palette.mode === 'dark' 
+                  ? 'rgba(255, 255, 255, 0.1)' 
+                  : 'rgba(0, 0, 0, 0.1)',
+                backdropFilter: 'blur(4px)',
+                zIndex: 50,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
               }}
             >
-              <Image
-                src="/images/pbel-volleyball-logo.png"
-                alt="PBEL City Volleyball Club"
-                fill
-                style={{ objectFit: 'contain' }}
-                priority
-              />
+              <CircularProgress />
+            </Box>
+          )}
+
+          {/* Snackbar for notifications */}
+          <Snackbar
+            open={snackbar.open}
+            autoHideDuration={10000}
+            onClose={handleSnackbarClose}
+            anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
+            className="mt-4"
+          >
+            <Alert
+              onClose={handleSnackbarClose}
+              severity={snackbar.severity}
+              variant="filled"
+              className="w-full text-base shadow-lg"
+            >
+              {snackbar.message}
+            </Alert>
+          </Snackbar>
+
+          {/* Payment Instructions Alert */}
+          <Alert 
+            severity="warning" 
+            sx={{ 
+              mb: 3,
+              '& .MuiAlert-message': {
+                width: '100%'
+              },
+              '& .MuiTypography-root': {
+                color: 'text.primary'
+              }
+            }}
+          >
+            <Box>
+              <Typography variant="h6" sx={{ mb: 1, color: 'warning.dark' }}>
+                Payment Required
+              </Typography>
+              <Typography variant="body1" paragraph sx={{ fontWeight: 500 }}>
+                Registration fee: INR 600
+              </Typography>
+              <Box sx={{ pl: 2 }}>
+                <Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
+                  Payment Options:
+                </Typography>
+                <Box sx={{ pl: 2, mb: 2 }}>
+                  <Typography variant="body1" sx={{ mb: 1 }}>• Vasu Chepuru (9849521594)</Typography>
+                  <Typography variant="body1">• Amit Saxena (9866674460)</Typography>
+                </Box>
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    fontWeight: 600,
+                    color: 'warning.dark',
+                    bgcolor: 'warning.light',
+                    p: 1,
+                    borderRadius: 1
+                  }}
+                >
+                  Important: You must complete the payment and have the transaction details ready before proceeding with the registration.
+                </Typography>
+              </Box>
+            </Box>
+          </Alert>
+
+          {/* Form Header with Sports Image */}
+          <Box sx={{ 
+            textAlign: 'center', 
+            mb: 6,
+            position: 'relative',
+            height: { xs: 420, sm: 380, md: 320 },
+            borderRadius: 2,
+            overflow: 'hidden',
+            boxShadow: theme.shadows[4],
+          }}>
+            <Image
+              src="/images/community-sports.jpg"
+              alt="PBEL City Sports Tournament"
+              fill
+              style={{ objectFit: 'cover' }}
+              priority
+            />
+            <Box sx={{
+              position: 'absolute',
+              inset: 0,
+              background: `linear-gradient(165deg, 
+                ${alpha(theme.palette.primary.dark, 0.95)} 0%, 
+                ${alpha(theme.palette.primary.main, 0.85)} 50%,
+                ${alpha(theme.palette.primary.light, 0.75)} 100%)`,
+              display: 'flex',
+              padding: { xs: 2, sm: 3, md: 4 },
+            }}>
+              {/* Text Content */}
+              <Box sx={{
+                flex: 1,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                alignItems: 'flex-start',
+                color: 'white',
+                pr: { xs: 2, sm: 3, md: 4 },
+              }}>
+                <Typography 
+                  variant="h3" 
+                  component="h1" 
+                  sx={{
+                    fontWeight: 800,
+                    textShadow: '2px 2px 4px rgba(0,0,0,0.3)',
+                    mb: 2,
+                    fontSize: { xs: '1.5rem', sm: '2rem', md: '2.5rem' },
+                    letterSpacing: '0.5px',
+                    textTransform: 'uppercase',
+                    textAlign: 'left',
+                    maxWidth: '100%',
+                    background: 'linear-gradient(45deg, #ffffff 30%, #f0f0f0 90%)',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                  }}
+                >
+                  PBEL City VolleyBall and ThrowBall League 2025
+                </Typography>
+                <Box sx={{ 
+                  width: 60, 
+                  height: '4px', 
+                  bgcolor: alpha('#fff', 0.9),
+                  mb: 3,
+                  borderRadius: '2px',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                }} />
+                <Typography 
+                  variant="h6"
+                  sx={{ 
+                    mb: 3,
+                    textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
+                    fontWeight: 500,
+                    color: alpha('#fff', 0.95),
+                    fontSize: { xs: '1rem', sm: '1.25rem', md: '1.5rem' },
+                    letterSpacing: '1px',
+                    textAlign: 'left',
+                  }}
+                >
+                  Bringing Our Community Together Through Sports
+                </Typography>
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
+                    lineHeight: 1.6,
+                    fontSize: { xs: '0.875rem', sm: '1rem', md: '1.125rem' },
+                    opacity: 0.9,
+                    textAlign: 'left',
+                    maxWidth: '600px',
+                  }}
+                >
+                  Welcome to PBEL City's premier sports event! Register below to participate in our annual League. 
+                  Whether you're a volleyball enthusiast or throwball player, join us for an exciting competition 
+                  that celebrates sportsmanship and community spirit.
+                </Typography>
+              </Box>
+
+              {/* Club Logo */}
+              <Box 
+                sx={{ 
+                  position: 'relative',
+                  width: { xs: '120px', sm: '160px', md: '200px' },
+                  height: { xs: '120px', sm: '160px', md: '200px' },
+                  alignSelf: 'center',
+                  bgcolor: 'white',
+                  borderRadius: '50%',
+                  p: 3,
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                  display: { xs: 'none', sm: 'block' },
+                }}
+              >
+                <Image
+                  src="/images/pbel-volleyball-logo.png"
+                  alt="PBEL City Volleyball Club"
+                  fill
+                  style={{ objectFit: 'contain' }}
+                  priority
+                />
+              </Box>
             </Box>
           </Box>
-        </Box>
 
-        {/* Tournament Rules Section */}
-        <Card sx={{ mb: 2 }}>
-          <CardHeader
-            avatar={<GavelIcon color="primary" />}
-            title="League Rules & Guidelines"
-            action={
-              <Button
-                startIcon={<ArticleIcon />}
-                onClick={() => setRulesDialogOpen(true)}
-                color="primary"
+          {/* Tournament Rules Section */}
+          <Card sx={{ mb: 2 }}>
+            <CardHeader
+              avatar={<GavelIcon color="primary" />}
+              title="League Rules & Guidelines"
+              action={
+                <Button
+                  startIcon={<ArticleIcon />}
+                  onClick={() => setRulesDialogOpen(true)}
+                  color="primary"
+                >
+                  View Complete Rules
+                </Button>
+              }
+            />
+            <CardContent>
+              <Typography variant="body2" color="text.secondary" paragraph>
+                Please read and acknowledge the League rules before proceeding with registration.
+                The complete rulebook contains important information about match formats, scoring systems,
+                and code of conduct.
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={rulesAcknowledged}
+                      onChange={(e) => setRulesAcknowledged(e.target.checked)}
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Typography variant="body2">
+                      I have read and agree to follow the League rules and guidelines
+                    </Typography>
+                  }
+                />
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={residencyConfirmed}
+                      onChange={(e) => setResidencyConfirmed(e.target.checked)}
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                      I confirm that I am a resident of PBEL City at the time of registration and will be a resident 
+                      of PBEL City for the entire duration of this league
+                    </Typography>
+                  }
+                />
+              </Box>
+            </CardContent>
+          </Card>
+
+          {/* Rules Dialog */}
+          <Dialog
+            open={rulesDialogOpen}
+            onClose={() => setRulesDialogOpen(false)}
+            maxWidth="md"
+            fullWidth
+            scroll="paper"
+          >
+            <DialogTitle sx={{ 
+              pb: 1,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 1,
+            }}>
+              <GavelIcon color="primary" />
+              League Rules & Guidelines
+            </DialogTitle>
+            <DialogContent dividers>
+              {tournamentRules.map((section, index) => (
+                <Box key={section.title} sx={{ mb: index !== tournamentRules.length - 1 ? 4 : 0 }}>
+                  <Typography variant="h6" gutterBottom color="primary">
+                    {section.title}
+                  </Typography>
+                  <ul style={{ paddingLeft: '1.5rem', marginTop: 0 }}>
+                    {section.rules.map((rule, ruleIndex) => (
+                      <li key={ruleIndex}>
+                        <Typography variant="body2" paragraph>
+                          {rule}
+                        </Typography>
+                      </li>
+                    ))}
+                  </ul>
+                </Box>
+              ))}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setRulesDialogOpen(false)}>Close</Button>
+              <Button 
+                variant="contained" 
+                onClick={() => {
+                  setRulesAcknowledged(true);
+                  setRulesDialogOpen(false);
+                }}
               >
-                View Complete Rules
+                Accept Rules
               </Button>
-            }
-          />
-          <CardContent>
-            <Typography variant="body2" color="text.secondary" paragraph>
-              Please read and acknowledge the League rules before proceeding with registration.
-              The complete rulebook contains important information about match formats, scoring systems,
-              and code of conduct.
-            </Typography>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={rulesAcknowledged}
-                    onChange={(e) => setRulesAcknowledged(e.target.checked)}
-                    color="primary"
-                  />
-                }
-                label={
-                  <Typography variant="body2">
-                    I have read and agree to follow the League rules and guidelines
-                  </Typography>
-                }
-              />
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={residencyConfirmed}
-                    onChange={(e) => setResidencyConfirmed(e.target.checked)}
-                    color="primary"
-                  />
-                }
-                label={
-                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                    I confirm that I am a resident of PBEL City at the time of registration and will be a resident 
-                    of PBEL City for the entire duration of this league
-                  </Typography>
-                }
-              />
-            </Box>
-          </CardContent>
-        </Card>
+            </DialogActions>
+          </Dialog>
 
-        {/* Rules Dialog */}
+          {/* Category Selection */}
+          <Card sx={{ mb: 2 }} data-section="category">
+            <CardHeader
+              title={
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Typography variant="h6">Category Selection</Typography>
+                  <StatusChip
+                    label={isSectionComplete('category') ? 'Completed' : 'Incomplete'}
+                    className={isSectionComplete('category') ? 'completed' : 'incomplete'}
+                    icon={isSectionComplete('category') ? <CheckCircleIcon /> : <ErrorIcon />}
+                    size="small"
+                  />
+                </Box>
+              }
+              action={
+                <ExpandMore
+                  expand={expandedSections.category}
+                  onClick={() => handleExpandSection('category')}
+                  aria-expanded={expandedSections.category}
+                  aria-label="show category selection"
+                >
+                  <ExpandMoreIcon />
+                </ExpandMore>
+              }
+            />
+            <Collapse in={expandedSections.category}>
+              <CardContent>
+                {formData.registration_category === 'VOLLEYBALL_OPEN_MEN' && (
+                  <Alert 
+                    severity="info" 
+                    sx={{ 
+                      mb: 3,
+                      borderLeft: '4px solid',
+                      borderColor: 'primary.main',
+                      '& .MuiAlert-message': {
+                        width: '100%'
+                      },
+                      bgcolor: 'primary.lighter'
+                    }}
+                  >
+                    <Box>
+                      <Typography variant="h6" sx={{ color: 'primary.main', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <EmojiEventsIcon /> New: Team Formation through Auction System!
+                      </Typography>
+                      <Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
+                        For the first time in PBEL City Volleyball League, teams will be formed through an exciting auction process!
+                      </Typography>
+                      <Typography variant="body2">
+                        • All registered players will be part of an auction pool<br />
+                        • Team Mascots will bid for players based on their profiles<br />
+                        • This ensures balanced teams and makes the league more competitive and fun
+                      </Typography>
+                    </Box>
+                  </Alert>
+                )}
+                
+                <Grid container spacing={3}>
+                  {REGISTRATION_CATEGORIES.map((category) => (
+                    <Grid item xs={12} sm={6} md={3} key={category.value}>
+                      <Paper
+                        elevation={formData.registration_category === category.value ? 3 : 1}
+                        sx={{
+                          p: 3,
+                          cursor: 'pointer',
+                          textAlign: 'center',
+                          transition: 'all 0.3s ease',
+                          border: t => `2px solid ${formData.registration_category === category.value ? t.palette.primary.main : t.palette.divider}`,
+                          '&:hover': {
+                            borderColor: 'primary.main',
+                            bgcolor: 'primary.lighter'
+                          }
+                        }}
+                        onClick={() => {
+                          setFormData(prev => ({
+                            ...prev,
+                            registration_category: category.value as RegistrationCategory
+                          }));
+                          handleSectionCompletion('category');
+                        }}
+                      >
+                        <Box sx={{ mb: 2 }}>
+                          {category.value.includes('VOLLEYBALL') ? (
+                            <SportsVolleyballIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+                          ) : (
+                            <SportsHandballIcon sx={{ fontSize: 40, color: 'primary.main' }} />
+                          )}
+                        </Box>
+                        <Typography 
+                          variant="subtitle1" 
+                          fontWeight="bold"
+                          sx={{ mb: 1 }}
+                        >
+                          {category.label}
+                        </Typography>
+                        <Typography 
+                          variant="body2" 
+                          color="text.secondary"
+                          sx={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            gap: 0.5,
+                          }}
+                        >
+                          {category.value.includes('MIXED') ? (
+                            <>
+                              <PeopleIcon sx={{ fontSize: 16 }} />
+                              Mixed Category
+                            </>
+                          ) : category.value.includes('WOMEN') ? (
+                            'Women Only'
+                          ) : category.value.includes('VOLLEYBALL') ? (
+                            'Open for All'
+                          ) : (
+                            'Men Only'
+                          )}
+                        </Typography>
+                      </Paper>
+                    </Grid>
+                  ))}
+                </Grid>
+                {errors.registration_category && (
+                  <FormHelperText error sx={{ mt: 2, textAlign: 'center' }}>
+                    {errors.registration_category}
+                  </FormHelperText>
+                )}
+              </CardContent>
+            </Collapse>
+          </Card>
+
+          {/* Personal Details */}
+          <Card sx={{ mb: 2 }} data-section="personal">
+            <CardHeader
+              title={
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Typography variant="h6">Personal Details</Typography>
+                  <StatusChip
+                    label={isSectionComplete('personal') ? 'Completed' : 'Incomplete'}
+                    className={isSectionComplete('personal') ? 'completed' : 'incomplete'}
+                    icon={isSectionComplete('personal') ? <CheckCircleIcon /> : <ErrorIcon />}
+                    size="small"
+                  />
+                </Box>
+              }
+              action={
+                <ExpandMore
+                  expand={expandedSections.personal}
+                  onClick={() => handleExpandSection('personal')}
+                  aria-expanded={expandedSections.personal}
+                  aria-label="show personal details"
+                >
+                  <ExpandMoreIcon />
+                </ExpandMore>
+              }
+            />
+            <Collapse in={expandedSections.personal}>
+              <CardContent>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} sm={6}>
+                    <StyledTextField
+                      required
+                      fullWidth
+                      label="First Name"
+                      value={formData.first_name}
+                      onChange={handleChange('first_name')}
+                      error={!!errors.first_name}
+                      helperText={errors.first_name}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <StyledTextField
+                      required
+                      fullWidth
+                      label="Last Name"
+                      value={formData.last_name}
+                      onChange={handleChange('last_name')}
+                      error={!!errors.last_name}
+                      helperText={errors.last_name}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <StyledTextField
+                      required
+                      fullWidth
+                      label="Email"
+                      type="email"
+                      value={formData.email}
+                      onChange={handleChange('email')}
+                      error={!!errors.email}
+                      helperText={errors.email || 'Enter a valid email address'}
+                      placeholder="your.email@example.com"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <StyledTextField
+                      required
+                      fullWidth
+                      label="Phone Number"
+                      value={formData.phone_number}
+                      onChange={handleChange('phone_number')}
+                      error={!!errors.phone_number}
+                      helperText={errors.phone_number || 'Enter 10-digit number'}
+                      placeholder="+91"
+                      inputProps={{
+                        maxLength: 13, // +91 plus 10 digits
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <StyledTextField
+                      required
+                      fullWidth
+                      label="Flat Number"
+                      value={formData.flat_number}
+                      onChange={handleChange('flat_number')}
+                      error={!!errors.flat_number}
+                      helperText={errors.flat_number || 'Format: A-123 or a-123'}
+                      placeholder="A-123"
+                    />
+                  </Grid>
+
+                  {/* Youth-specific fields */}
+                  {isYouthCategory(formData.registration_category) && (
+                    <>
+                      <Grid item xs={12}>
+                        <Typography variant="subtitle2" color="primary" sx={{ mb: 1, mt: 2 }}>
+                          Additional Information Required for Youth Category
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <StyledTextField
+                          required
+                          fullWidth
+                          label="Date of Birth"
+                          type="date"
+                          value={formData.date_of_birth}
+                          onChange={handleChange('date_of_birth')}
+                          error={!!errors.date_of_birth}
+                          helperText={errors.date_of_birth || (
+                            formData.registration_category === 'THROWBALL_8_12_MIXED' 
+                              ? 'Age must be between 8-12 years'
+                              : 'Age must be between 13-17 years'
+                          )}
+                          InputLabelProps={{ shrink: true }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <StyledTextField
+                          required
+                          fullWidth
+                          label="Parent/Guardian Name"
+                          value={formData.parent_name}
+                          onChange={handleChange('parent_name')}
+                          error={!!errors.parent_name}
+                          helperText={errors.parent_name}
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <StyledTextField
+                          required
+                          fullWidth
+                          label="Parent/Guardian Phone Number"
+                          value={formData.parent_phone_number}
+                          onChange={handleChange('parent_phone_number')}
+                          error={!!errors.parent_phone_number}
+                          helperText={errors.parent_phone_number || 'Enter 10-digit number'}
+                          placeholder="+91"
+                          inputProps={{
+                            maxLength: 13, // +91 plus 10 digits
+                          }}
+                        />
+                      </Grid>
+                    </>
+                  )}
+                </Grid>
+              </CardContent>
+            </Collapse>
+          </Card>
+
+          {/* Player Profile */}
+          <Card sx={{ mb: 2 }} data-section="profile">
+            <CardHeader
+              title={
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Typography variant="h6">Player Profile</Typography>
+                  <StatusChip
+                    label={isSectionComplete('profile') ? 'Completed' : 'Incomplete'}
+                    className={isSectionComplete('profile') ? 'completed' : 'incomplete'}
+                    icon={isSectionComplete('profile') ? <CheckCircleIcon /> : <ErrorIcon />}
+                    size="small"
+                  />
+                </Box>
+              }
+              action={
+                <ExpandMore
+                  expand={expandedSections.profile}
+                  onClick={() => handleExpandSection('profile')}
+                  aria-expanded={expandedSections.profile}
+                  aria-label="show player profile"
+                >
+                  <ExpandMoreIcon />
+                </ExpandMore>
+              }
+            />
+            <Collapse in={expandedSections.profile}>
+              <CardContent>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} sm={6}>
+                    <StyledTextField
+                      required
+                      fullWidth
+                      type="number"
+                      label="Height (cm)"
+                      value={formData.height || ''}
+                      onChange={handleChange('height')}
+                      error={!!errors.height}
+                      helperText={errors.height || 'Enter your height in centimeters'}
+                      InputProps={{ 
+                        inputProps: { min: 100, max: 250, step: 0.01 },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <StyledFormControl fullWidth error={!!errors.last_played_date} required>
+                      <InputLabel>Last Played Status</InputLabel>
+                      <Select
+                        name="last_played_date"
+                        value={formData.last_played_date}
+                        label="Last Played Status"
+                        onChange={handleSelectChange}
+                      >
+                        {LAST_PLAYED_OPTIONS.map(option => (
+                          <MenuItem key={option.value} value={option.value}>
+                            {option.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {errors.last_played_date && (
+                        <FormHelperText>{errors.last_played_date}</FormHelperText>
+                      )}
+                    </StyledFormControl>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <StyledFormControl fullWidth error={!!errors.skill_level} required>
+                      <InputLabel>Skill Level</InputLabel>
+                      <Select
+                        name="skill_level"
+                        value={formData.skill_level}
+                        label="Skill Level"
+                        onChange={handleSelectChange}
+                      >
+                        {SKILL_LEVELS.map(level => (
+                          <MenuItem key={level.value} value={level.value}>
+                            {level.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {errors.skill_level && (
+                        <FormHelperText>{errors.skill_level}</FormHelperText>
+                      )}
+                    </StyledFormControl>
+                  </Grid>
+                  {isVolleyballCategory(formData.registration_category) && (
+                    <Grid item xs={12} sm={6}>
+                      <StyledFormControl fullWidth error={!!errors.playing_positions} required>
+                        <InputLabel>Playing Position</InputLabel>
+                        <Select
+                          name="playing_positions"
+                          value={formData.playing_positions[0] || ''}
+                          label="Playing Position"
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            const error = validateField('playing_positions', value ? [value] : []);
+                            setErrors(prev => ({ ...prev, playing_positions: error }));
+                            setFormData(prev => ({ ...prev, playing_positions: value ? [value] : [] }));
+                          }}
+                        >
+                          {PLAYING_POSITIONS.map(position => (
+                            <MenuItem key={position.value} value={position.value}>
+                              {position.label}
+                            </MenuItem>
+                          ))}
+                        </Select>
+                        {errors.playing_positions && (
+                          <FormHelperText>{errors.playing_positions}</FormHelperText>
+                        )}
+                      </StyledFormControl>
+                    </Grid>
+                  )}
+                </Grid>
+              </CardContent>
+            </Collapse>
+          </Card>
+
+          {/* Jersey Details */}
+          <Card sx={{ mb: 2 }} data-section="jersey">
+            <CardHeader
+              title={
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Typography variant="h6">Jersey Details</Typography>
+                  <StatusChip
+                    label={isSectionComplete('jersey') ? 'Completed' : 'Incomplete'}
+                    className={isSectionComplete('jersey') ? 'completed' : 'incomplete'}
+                    icon={isSectionComplete('jersey') ? <CheckCircleIcon /> : <ErrorIcon />}
+                    size="small"
+                  />
+                </Box>
+              }
+              action={
+                <ExpandMore
+                  expand={expandedSections.jersey}
+                  onClick={() => handleExpandSection('jersey')}
+                  aria-expanded={expandedSections.jersey}
+                  aria-label="show jersey details"
+                >
+                  <ExpandMoreIcon />
+                </ExpandMore>
+              }
+            />
+            <Collapse in={expandedSections.jersey}>
+              <CardContent>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} sm={6}>
+                    <Box sx={{ position: 'relative' }}>
+                      <StyledFormControl fullWidth error={!!errors.tshirt_size} required>
+                        <InputLabel>T-shirt Size</InputLabel>
+                        <Select
+                          name="tshirt_size"
+                          value={formData.tshirt_size}
+                          label="T-shirt Size"
+                          onChange={handleSelectChange}
+                        >
+                          <MenuItem value="">
+                            <em>Select a size</em>
+                          </MenuItem>
+                          {TSHIRT_SIZES.map(size => (
+                            <MenuItem key={size.value} value={size.value}>
+                              <Box>
+                                <Typography variant="body1">{size.label}</Typography>
+                                <Typography variant="caption" color="text.secondary">
+                                  {size.details}
+                                </Typography>
+                              </Box>
+                            </MenuItem>
+                          ))}
+                        </Select>
+                        {errors.tshirt_size && (
+                          <FormHelperText>{errors.tshirt_size}</FormHelperText>
+                        )}
+                      </StyledFormControl>
+                      <Button
+                        size="small"
+                        startIcon={<StraightenIcon />}
+                        onClick={() => setSizeChartOpen(true)}
+                        sx={{ mt: 1 }}
+                      >
+                        View Size Chart
+                      </Button>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <StyledTextField
+                      required
+                      fullWidth
+                      label="Jersey Name"
+                      value={formData.tshirt_name}
+                      onChange={handleChange('tshirt_name')}
+                      error={!!errors.tshirt_name}
+                      helperText={errors.tshirt_name || 'Name to be printed on jersey'}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <StyledTextField
+                      required
+                      fullWidth
+                      label="Jersey Number"
+                      value={formData.tshirt_number}
+                      onChange={handleChange('tshirt_number')}
+                      error={!!errors.tshirt_number}
+                      helperText={errors.tshirt_number || 'Enter a number between 1-999'}
+                      inputProps={{ 
+                        maxLength: 3,
+                        pattern: '[0-9]*',
+                        inputMode: 'numeric'
+                      }}
+                      type="text"
+                    />
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Collapse>
+          </Card>
+
+          {/* Payment Details */}
+          <Card sx={{ mb: 2 }} data-section="payment">
+            <CardHeader
+              title={
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Typography variant="h6">Payment Details</Typography>
+                  <StatusChip
+                    label={isSectionComplete('payment') ? 'Completed' : 'Incomplete'}
+                    className={isSectionComplete('payment') ? 'completed' : 'incomplete'}
+                    icon={isSectionComplete('payment') ? <CheckCircleIcon /> : <ErrorIcon />}
+                    size="small"
+                  />
+                </Box>
+              }
+              action={
+                <ExpandMore
+                  expand={expandedSections.payment}
+                  onClick={() => handleExpandSection('payment')}
+                  aria-expanded={expandedSections.payment}
+                  aria-label="show payment details"
+                >
+                  <ExpandMoreIcon />
+                </ExpandMore>
+              }
+            />
+            <Collapse in={expandedSections.payment}>
+              <CardContent>
+                <Grid container spacing={3}>
+                  <Grid item xs={12} sm={6}>
+                    <StyledTextField
+                      required
+                      fullWidth
+                      label="UPI ID/ Phone Number of the Payee"
+                      value={formData.payment_upi_id}
+                      onChange={handleChange('payment_upi_id')}
+                      error={!!errors.payment_upi_id}
+                      helperText={errors.payment_upi_id}
+                      placeholder="username@upi or phone number"
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={6}>
+                    <StyledTextField
+                      required
+                      fullWidth
+                      label="Transaction ID"
+                      value={formData.payment_transaction_id}
+                      onChange={handleChange('payment_transaction_id')}
+                      error={!!errors.payment_transaction_id}
+                      helperText={errors.payment_transaction_id}
+                    />
+                  </Grid>
+                  <Grid item xs={12}>
+                    <StyledFormControl fullWidth error={!!errors.paid_to} required>
+                      <InputLabel>Paid To</InputLabel>
+                      <Select
+                        name="paid_to"
+                        value={formData.paid_to}
+                        label="Paid To"
+                        onChange={handleSelectChange}
+                      >
+                        {PAYMENT_RECEIVERS.map(receiver => (
+                          <MenuItem key={receiver.value} value={receiver.value}>
+                            {receiver.label}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                      {errors.paid_to && (
+                        <FormHelperText>{errors.paid_to}</FormHelperText>
+                      )}
+                    </StyledFormControl>
+                  </Grid>
+                </Grid>
+              </CardContent>
+            </Collapse>
+          </Card>
+
+          {/* Submit Button */}
+          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              disabled={
+                isSubmitting || 
+                !rulesAcknowledged ||
+                !residencyConfirmed ||
+                !(['category', 'personal', 'profile', 'jersey', 'payment'] as const)
+                  .every(section => isSectionComplete(section as SectionName))
+              }
+            >
+              {isSubmitting ? 'Submitting...' : 'Submit Registration'}
+            </Button>
+          </Box>
+        </form>
+
+        {/* Success Dialog */}
         <Dialog
-          open={rulesDialogOpen}
-          onClose={() => setRulesDialogOpen(false)}
+          open={showSuccessDialog}
+          onClose={() => setShowSuccessDialog(false)}
           maxWidth="md"
           fullWidth
           scroll="paper"
@@ -1247,722 +1887,86 @@ export function RegistrationFormSingle() {
             display: 'flex',
             alignItems: 'center',
             gap: 1,
+            bgcolor: 'success.main',
+            color: 'success.contrastText',
           }}>
-            <GavelIcon color="primary" />
-            League Rules & Guidelines
+            <DoneAllIcon />
+            Registration Successful!
           </DialogTitle>
-          <DialogContent dividers>
-            {tournamentRules.map((section, index) => (
-              <Box key={section.title} sx={{ mb: index !== tournamentRules.length - 1 ? 4 : 0 }}>
-                <Typography variant="h6" gutterBottom color="primary">
-                  {section.title}
+          <DialogContent className="print-content">
+            <Box sx={{ py: 2 }}>
+              <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <ReceiptLongIcon color="primary" />
+                Registration Details
+              </Typography>
+              <Typography color="success.main" paragraph>
+                Registration ID: {registrationId}
+              </Typography>
+              
+              {getFormattedDetails().map((section, index) => (
+                <Box key={section.title} sx={{ mb: index !== getFormattedDetails().length - 1 ? 3 : 0 }}>
+                  <Typography 
+                    variant="subtitle1" 
+                    color="primary" 
+                    sx={{ 
+                      borderBottom: 1, 
+                      borderColor: 'divider',
+                      pb: 0.5,
+                      mb: 1,
+                      fontWeight: 'medium'
+                    }}
+                  >
+                    {section.title}
+                  </Typography>
+                  <Grid container spacing={2}>
+                    {section.items.map((item) => (
+                      <Grid item xs={12} sm={6} key={item.label}>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          {item.label}
+                        </Typography>
+                        <Typography variant="body1">
+                          {item.value}
+                        </Typography>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Box>
+              ))}
+
+              <Box sx={{ mt: 3, p: 2, bgcolor: 'info.soft', borderRadius: 1 }} className="info-box">
+                <Typography variant="body2" color="info.main">
+                  Please save these details for future reference. You will need your Registration ID for 
+                  any League-related communications.
                 </Typography>
-                <ul style={{ paddingLeft: '1.5rem', marginTop: 0 }}>
-                  {section.rules.map((rule, ruleIndex) => (
-                    <li key={ruleIndex}>
-                      <Typography variant="body2" paragraph>
-                        {rule}
-                      </Typography>
-                    </li>
-                  ))}
-                </ul>
               </Box>
-            ))}
+            </Box>
           </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setRulesDialogOpen(false)}>Close</Button>
+          <DialogActions sx={{ px: 3, pb: 3 }} className="no-print">
             <Button 
-              variant="contained" 
               onClick={() => {
-                setRulesAcknowledged(true);
-                setRulesDialogOpen(false);
+                setShowSuccessDialog(false);
+                setFormData(initialFormData);
+                setErrors({});
+                setRulesAcknowledged(false);
               }}
             >
-              Accept Rules
+              Close
+            </Button>
+            <Button
+              variant="contained"
+              onClick={() => {
+                window.print();
+              }}
+              startIcon={<ReceiptLongIcon />}
+            >
+              Print Details
             </Button>
           </DialogActions>
         </Dialog>
 
-        {/* Category Selection */}
-        <Card sx={{ mb: 2 }} data-section="category">
-          <CardHeader
-            title={
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography variant="h6">Category Selection</Typography>
-                <StatusChip
-                  label={isSectionComplete('category') ? 'Completed' : 'Incomplete'}
-                  className={isSectionComplete('category') ? 'completed' : 'incomplete'}
-                  icon={isSectionComplete('category') ? <CheckCircleIcon /> : <ErrorIcon />}
-                  size="small"
-                />
-              </Box>
-            }
-            action={
-              <ExpandMore
-                expand={expandedSections.category}
-                onClick={() => handleExpandSection('category')}
-                aria-expanded={expandedSections.category}
-                aria-label="show category selection"
-              >
-                <ExpandMoreIcon />
-              </ExpandMore>
-            }
-          />
-          <Collapse in={expandedSections.category}>
-            <CardContent>
-              {formData.registration_category === 'VOLLEYBALL_OPEN_MEN' && (
-                <Alert 
-                  severity="info" 
-                  sx={{ 
-                    mb: 3,
-                    borderLeft: '4px solid',
-                    borderColor: 'primary.main',
-                    '& .MuiAlert-message': {
-                      width: '100%'
-                    },
-                    bgcolor: 'primary.lighter'
-                  }}
-                >
-                  <Box>
-                    <Typography variant="h6" sx={{ color: 'primary.main', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                      <EmojiEventsIcon /> New: Team Formation through Auction System!
-                    </Typography>
-                    <Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
-                      For the first time in PBEL City Volleyball League, teams will be formed through an exciting auction process!
-                    </Typography>
-                    <Typography variant="body2">
-                      • All registered players will be part of an auction pool<br />
-                      • Team Mascots will bid for players based on their profiles<br />
-                      • This ensures balanced teams and makes the league more competitive and fun
-                    </Typography>
-                  </Box>
-                </Alert>
-              )}
-              
-              <Grid container spacing={3}>
-                {REGISTRATION_CATEGORIES.map((category) => (
-                  <Grid item xs={12} sm={6} md={3} key={category.value}>
-                    <Paper
-                      elevation={formData.registration_category === category.value ? 3 : 1}
-                      sx={{
-                        p: 3,
-                        cursor: 'pointer',
-                        textAlign: 'center',
-                        transition: 'all 0.3s ease',
-                        border: t => `2px solid ${formData.registration_category === category.value ? t.palette.primary.main : t.palette.divider}`,
-                        '&:hover': {
-                          borderColor: 'primary.main',
-                          bgcolor: 'primary.lighter'
-                        }
-                      }}
-                      onClick={() => {
-                        setFormData(prev => ({
-                          ...prev,
-                          registration_category: category.value as RegistrationCategory
-                        }));
-                        handleSectionCompletion('category');
-                      }}
-                    >
-                      <Box sx={{ mb: 2 }}>
-                        {category.value.includes('VOLLEYBALL') ? (
-                          <SportsVolleyballIcon sx={{ fontSize: 40, color: 'primary.main' }} />
-                        ) : (
-                          <SportsHandballIcon sx={{ fontSize: 40, color: 'primary.main' }} />
-                        )}
-                      </Box>
-                      <Typography 
-                        variant="subtitle1" 
-                        fontWeight="bold"
-                        sx={{ mb: 1 }}
-                      >
-                        {category.label}
-                      </Typography>
-                      <Typography 
-                        variant="body2" 
-                        color="text.secondary"
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: 0.5,
-                        }}
-                      >
-                        {category.value.includes('MIXED') ? (
-                          <>
-                            <PeopleIcon sx={{ fontSize: 16 }} />
-                            Mixed Category
-                          </>
-                        ) : category.value.includes('WOMEN') ? (
-                          'Women Only'
-                        ) : category.value.includes('VOLLEYBALL') ? (
-                          'Open for All'
-                        ) : (
-                          'Men Only'
-                        )}
-                      </Typography>
-                    </Paper>
-                  </Grid>
-                ))}
-              </Grid>
-              {errors.registration_category && (
-                <FormHelperText error sx={{ mt: 2, textAlign: 'center' }}>
-                  {errors.registration_category}
-                </FormHelperText>
-              )}
-            </CardContent>
-          </Collapse>
-        </Card>
-
-        {/* Personal Details */}
-        <Card sx={{ mb: 2 }} data-section="personal">
-          <CardHeader
-            title={
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography variant="h6">Personal Details</Typography>
-                <StatusChip
-                  label={isSectionComplete('personal') ? 'Completed' : 'Incomplete'}
-                  className={isSectionComplete('personal') ? 'completed' : 'incomplete'}
-                  icon={isSectionComplete('personal') ? <CheckCircleIcon /> : <ErrorIcon />}
-                  size="small"
-                />
-              </Box>
-            }
-            action={
-              <ExpandMore
-                expand={expandedSections.personal}
-                onClick={() => handleExpandSection('personal')}
-                aria-expanded={expandedSections.personal}
-                aria-label="show personal details"
-              >
-                <ExpandMoreIcon />
-              </ExpandMore>
-            }
-          />
-          <Collapse in={expandedSections.personal}>
-            <CardContent>
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                  <StyledTextField
-                    required
-                    fullWidth
-                    label="First Name"
-                    value={formData.first_name}
-                    onChange={handleChange('first_name')}
-                    error={!!errors.first_name}
-                    helperText={errors.first_name}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <StyledTextField
-                    required
-                    fullWidth
-                    label="Last Name"
-                    value={formData.last_name}
-                    onChange={handleChange('last_name')}
-                    error={!!errors.last_name}
-                    helperText={errors.last_name}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <StyledTextField
-                    required
-                    fullWidth
-                    label="Email"
-                    type="email"
-                    value={formData.email}
-                    onChange={handleChange('email')}
-                    error={!!errors.email}
-                    helperText={errors.email || 'Enter a valid email address'}
-                    placeholder="your.email@example.com"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <StyledTextField
-                    required
-                    fullWidth
-                    label="Phone Number"
-                    value={formData.phone_number}
-                    onChange={handleChange('phone_number')}
-                    error={!!errors.phone_number}
-                    helperText={errors.phone_number || 'Enter 10-digit number'}
-                    placeholder="+91"
-                    inputProps={{
-                      maxLength: 13, // +91 plus 10 digits
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <StyledTextField
-                    required
-                    fullWidth
-                    label="Flat Number"
-                    value={formData.flat_number}
-                    onChange={handleChange('flat_number')}
-                    error={!!errors.flat_number}
-                    helperText={errors.flat_number || 'Format: A-123 or a-123'}
-                    placeholder="A-123"
-                  />
-                </Grid>
-
-                {/* Youth-specific fields */}
-                {isYouthCategory(formData.registration_category) && (
-                  <>
-                    <Grid item xs={12}>
-                      <Typography variant="subtitle2" color="primary" sx={{ mb: 1, mt: 2 }}>
-                        Additional Information Required for Youth Category
-                      </Typography>
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <StyledTextField
-                        required
-                        fullWidth
-                        label="Date of Birth"
-                        type="date"
-                        value={formData.date_of_birth}
-                        onChange={handleChange('date_of_birth')}
-                        error={!!errors.date_of_birth}
-                        helperText={errors.date_of_birth || (
-                          formData.registration_category === 'THROWBALL_8_12_MIXED' 
-                            ? 'Age must be between 8-12 years'
-                            : 'Age must be between 13-17 years'
-                        )}
-                        InputLabelProps={{ shrink: true }}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <StyledTextField
-                        required
-                        fullWidth
-                        label="Parent/Guardian Name"
-                        value={formData.parent_name}
-                        onChange={handleChange('parent_name')}
-                        error={!!errors.parent_name}
-                        helperText={errors.parent_name}
-                      />
-                    </Grid>
-                    <Grid item xs={12} sm={6}>
-                      <StyledTextField
-                        required
-                        fullWidth
-                        label="Parent/Guardian Phone Number"
-                        value={formData.parent_phone_number}
-                        onChange={handleChange('parent_phone_number')}
-                        error={!!errors.parent_phone_number}
-                        helperText={errors.parent_phone_number || 'Enter 10-digit number'}
-                        placeholder="+91"
-                        inputProps={{
-                          maxLength: 13, // +91 plus 10 digits
-                        }}
-                      />
-                    </Grid>
-                  </>
-                )}
-              </Grid>
-            </CardContent>
-          </Collapse>
-        </Card>
-
-        {/* Player Profile */}
-        <Card sx={{ mb: 2 }} data-section="profile">
-          <CardHeader
-            title={
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography variant="h6">Player Profile</Typography>
-                <StatusChip
-                  label={isSectionComplete('profile') ? 'Completed' : 'Incomplete'}
-                  className={isSectionComplete('profile') ? 'completed' : 'incomplete'}
-                  icon={isSectionComplete('profile') ? <CheckCircleIcon /> : <ErrorIcon />}
-                  size="small"
-                />
-              </Box>
-            }
-            action={
-              <ExpandMore
-                expand={expandedSections.profile}
-                onClick={() => handleExpandSection('profile')}
-                aria-expanded={expandedSections.profile}
-                aria-label="show player profile"
-              >
-                <ExpandMoreIcon />
-              </ExpandMore>
-            }
-          />
-          <Collapse in={expandedSections.profile}>
-            <CardContent>
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                  <StyledTextField
-                    required
-                    fullWidth
-                    type="number"
-                    label="Height (cm)"
-                    value={formData.height || ''}
-                    onChange={handleChange('height')}
-                    error={!!errors.height}
-                    helperText={errors.height || 'Enter your height in centimeters'}
-                    InputProps={{ 
-                      inputProps: { min: 100, max: 250, step: 0.01 },
-                    }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <StyledFormControl fullWidth error={!!errors.last_played_date} required>
-                    <InputLabel>Last Played Status</InputLabel>
-                    <Select
-                      name="last_played_date"
-                      value={formData.last_played_date}
-                      label="Last Played Status"
-                      onChange={handleSelectChange}
-                    >
-                      {LAST_PLAYED_OPTIONS.map(option => (
-                        <MenuItem key={option.value} value={option.value}>
-                          {option.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {errors.last_played_date && (
-                      <FormHelperText>{errors.last_played_date}</FormHelperText>
-                    )}
-                  </StyledFormControl>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <StyledFormControl fullWidth error={!!errors.skill_level} required>
-                    <InputLabel>Skill Level</InputLabel>
-                    <Select
-                      name="skill_level"
-                      value={formData.skill_level}
-                      label="Skill Level"
-                      onChange={handleSelectChange}
-                    >
-                      {SKILL_LEVELS.map(level => (
-                        <MenuItem key={level.value} value={level.value}>
-                          {level.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {errors.skill_level && (
-                      <FormHelperText>{errors.skill_level}</FormHelperText>
-                    )}
-                  </StyledFormControl>
-                </Grid>
-                {isVolleyballCategory(formData.registration_category) && (
-                  <Grid item xs={12} sm={6}>
-                    <StyledFormControl fullWidth error={!!errors.playing_positions} required>
-                      <InputLabel>Playing Position</InputLabel>
-                      <Select
-                        name="playing_positions"
-                        value={formData.playing_positions[0] || ''}
-                        label="Playing Position"
-                        onChange={(event) => {
-                          const value = event.target.value;
-                          const error = validateField('playing_positions', value ? [value] : []);
-                          setErrors(prev => ({ ...prev, playing_positions: error }));
-                          setFormData(prev => ({ ...prev, playing_positions: value ? [value] : [] }));
-                        }}
-                      >
-                        {PLAYING_POSITIONS.map(position => (
-                          <MenuItem key={position.value} value={position.value}>
-                            {position.label}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                      {errors.playing_positions && (
-                        <FormHelperText>{errors.playing_positions}</FormHelperText>
-                      )}
-                    </StyledFormControl>
-                  </Grid>
-                )}
-              </Grid>
-            </CardContent>
-          </Collapse>
-        </Card>
-
-        {/* Jersey Details */}
-        <Card sx={{ mb: 2 }} data-section="jersey">
-          <CardHeader
-            title={
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography variant="h6">Jersey Details</Typography>
-                <StatusChip
-                  label={isSectionComplete('jersey') ? 'Completed' : 'Incomplete'}
-                  className={isSectionComplete('jersey') ? 'completed' : 'incomplete'}
-                  icon={isSectionComplete('jersey') ? <CheckCircleIcon /> : <ErrorIcon />}
-                  size="small"
-                />
-              </Box>
-            }
-            action={
-              <ExpandMore
-                expand={expandedSections.jersey}
-                onClick={() => handleExpandSection('jersey')}
-                aria-expanded={expandedSections.jersey}
-                aria-label="show jersey details"
-              >
-                <ExpandMoreIcon />
-              </ExpandMore>
-            }
-          />
-          <Collapse in={expandedSections.jersey}>
-            <CardContent>
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                  <Box sx={{ position: 'relative' }}>
-                    <StyledFormControl fullWidth error={!!errors.tshirt_size} required>
-                      <InputLabel>T-shirt Size</InputLabel>
-                      <Select
-                        name="tshirt_size"
-                        value={formData.tshirt_size}
-                        label="T-shirt Size"
-                        onChange={handleSelectChange}
-                      >
-                        <MenuItem value="">
-                          <em>Select a size</em>
-                        </MenuItem>
-                        {TSHIRT_SIZES.map(size => (
-                          <MenuItem key={size.value} value={size.value}>
-                            <Box>
-                              <Typography variant="body1">{size.label}</Typography>
-                              <Typography variant="caption" color="text.secondary">
-                                {size.details}
-                              </Typography>
-                            </Box>
-                          </MenuItem>
-                        ))}
-                      </Select>
-                      {errors.tshirt_size && (
-                        <FormHelperText>{errors.tshirt_size}</FormHelperText>
-                      )}
-                    </StyledFormControl>
-                    <Button
-                      size="small"
-                      startIcon={<StraightenIcon />}
-                      onClick={() => setSizeChartOpen(true)}
-                      sx={{ mt: 1 }}
-                    >
-                      View Size Chart
-                    </Button>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <StyledTextField
-                    required
-                    fullWidth
-                    label="Jersey Name"
-                    value={formData.tshirt_name}
-                    onChange={handleChange('tshirt_name')}
-                    error={!!errors.tshirt_name}
-                    helperText={errors.tshirt_name || 'Name to be printed on jersey'}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <StyledTextField
-                    required
-                    fullWidth
-                    label="Jersey Number"
-                    value={formData.tshirt_number}
-                    onChange={handleChange('tshirt_number')}
-                    error={!!errors.tshirt_number}
-                    helperText={errors.tshirt_number || 'Enter a number between 1-999'}
-                    inputProps={{ 
-                      maxLength: 3,
-                      pattern: '[0-9]*',
-                      inputMode: 'numeric'
-                    }}
-                    type="text"
-                  />
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Collapse>
-        </Card>
-
-        {/* Payment Details */}
-        <Card sx={{ mb: 2 }} data-section="payment">
-          <CardHeader
-            title={
-              <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                <Typography variant="h6">Payment Details</Typography>
-                <StatusChip
-                  label={isSectionComplete('payment') ? 'Completed' : 'Incomplete'}
-                  className={isSectionComplete('payment') ? 'completed' : 'incomplete'}
-                  icon={isSectionComplete('payment') ? <CheckCircleIcon /> : <ErrorIcon />}
-                  size="small"
-                />
-              </Box>
-            }
-            action={
-              <ExpandMore
-                expand={expandedSections.payment}
-                onClick={() => handleExpandSection('payment')}
-                aria-expanded={expandedSections.payment}
-                aria-label="show payment details"
-              >
-                <ExpandMoreIcon />
-              </ExpandMore>
-            }
-          />
-          <Collapse in={expandedSections.payment}>
-            <CardContent>
-              <Grid container spacing={3}>
-                <Grid item xs={12} sm={6}>
-                  <StyledTextField
-                    required
-                    fullWidth
-                    label="UPI ID/ Phone Number of the Payee"
-                    value={formData.payment_upi_id}
-                    onChange={handleChange('payment_upi_id')}
-                    error={!!errors.payment_upi_id}
-                    helperText={errors.payment_upi_id}
-                    placeholder="username@upi or phone number"
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <StyledTextField
-                    required
-                    fullWidth
-                    label="Transaction ID"
-                    value={formData.payment_transaction_id}
-                    onChange={handleChange('payment_transaction_id')}
-                    error={!!errors.payment_transaction_id}
-                    helperText={errors.payment_transaction_id}
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <StyledFormControl fullWidth error={!!errors.paid_to} required>
-                    <InputLabel>Paid To</InputLabel>
-                    <Select
-                      name="paid_to"
-                      value={formData.paid_to}
-                      label="Paid To"
-                      onChange={handleSelectChange}
-                    >
-                      {PAYMENT_RECEIVERS.map(receiver => (
-                        <MenuItem key={receiver.value} value={receiver.value}>
-                          {receiver.label}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                    {errors.paid_to && (
-                      <FormHelperText>{errors.paid_to}</FormHelperText>
-                    )}
-                  </StyledFormControl>
-                </Grid>
-              </Grid>
-            </CardContent>
-          </Collapse>
-        </Card>
-
-        {/* Submit Button */}
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
-          <Button
-            type="submit"
-            variant="contained"
-            size="large"
-            disabled={
-              isSubmitting || 
-              !rulesAcknowledged ||
-              !residencyConfirmed ||
-              !(['category', 'personal', 'profile', 'jersey', 'payment'] as const)
-                .every(section => isSectionComplete(section as SectionName))
-            }
-          >
-            {isSubmitting ? 'Submitting...' : 'Submit Registration'}
-          </Button>
-        </Box>
-      </form>
-
-      {/* Success Dialog */}
-      <Dialog
-        open={showSuccessDialog}
-        onClose={() => setShowSuccessDialog(false)}
-        maxWidth="md"
-        fullWidth
-        scroll="paper"
-      >
-        <DialogTitle sx={{ 
-          pb: 1,
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          bgcolor: 'success.main',
-          color: 'success.contrastText',
-        }}>
-          <DoneAllIcon />
-          Registration Successful!
-        </DialogTitle>
-        <DialogContent className="print-content">
-          <Box sx={{ py: 2 }}>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <ReceiptLongIcon color="primary" />
-              Registration Details
-            </Typography>
-            <Typography color="success.main" paragraph>
-              Registration ID: {registrationId}
-            </Typography>
-            
-            {getFormattedDetails().map((section, index) => (
-              <Box key={section.title} sx={{ mb: index !== getFormattedDetails().length - 1 ? 3 : 0 }}>
-                <Typography 
-                  variant="subtitle1" 
-                  color="primary" 
-                  sx={{ 
-                    borderBottom: 1, 
-                    borderColor: 'divider',
-                    pb: 0.5,
-                    mb: 1,
-                    fontWeight: 'medium'
-                  }}
-                >
-                  {section.title}
-                </Typography>
-                <Grid container spacing={2}>
-                  {section.items.map((item) => (
-                    <Grid item xs={12} sm={6} key={item.label}>
-                      <Typography variant="body2" color="text.secondary" gutterBottom>
-                        {item.label}
-                      </Typography>
-                      <Typography variant="body1">
-                        {item.value}
-                      </Typography>
-                    </Grid>
-                  ))}
-                </Grid>
-              </Box>
-            ))}
-
-            <Box sx={{ mt: 3, p: 2, bgcolor: 'info.soft', borderRadius: 1 }} className="info-box">
-              <Typography variant="body2" color="info.main">
-                Please save these details for future reference. You will need your Registration ID for 
-                any League-related communications.
-              </Typography>
-            </Box>
-          </Box>
-        </DialogContent>
-        <DialogActions sx={{ px: 3, pb: 3 }} className="no-print">
-          <Button 
-            onClick={() => {
-              setShowSuccessDialog(false);
-              setFormData(initialFormData);
-              setErrors({});
-              setRulesAcknowledged(false);
-            }}
-          >
-            Close
-          </Button>
-          <Button
-            variant="contained"
-            onClick={() => {
-              window.print();
-            }}
-            startIcon={<ReceiptLongIcon />}
-          >
-            Print Details
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Size Chart Dialog */}
-      <SizeChartDialog />
-    </Container>
+        {/* Size Chart Dialog */}
+        <SizeChartDialog />
+      </Container>
+    </ErrorBoundary>
   )
 } 

@@ -3,7 +3,7 @@
 import { Drawer, List, Box, Toolbar, useMediaQuery, useTheme } from '@mui/material'
 import DashboardIcon from '@mui/icons-material/Dashboard'
 import ManageSearchIcon from '@mui/icons-material/ManageSearch'
-import SportsIcon from '@mui/icons-material/Sports'
+import SportsVolleyballIcon from '@mui/icons-material/SportsVolleyball'
 import { SidebarItem } from './SidebarItem'
 import { useAuth } from '@/features/auth/context/auth-context'
 
@@ -32,6 +32,11 @@ const getNavigationItems = (isAdmin: boolean) => {
         text: 'Manage Registrations', 
         icon: <ManageSearchIcon />, 
         href: '/admin/manage-registrations' 
+      },
+      {
+        text: 'Volleyball Players',
+        icon: <SportsVolleyballIcon />,
+        href: '/admin/volleyball-players'
       }
     )
   }

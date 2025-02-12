@@ -1,9 +1,35 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { PostgrestSingleResponse, PostgrestError, SupabaseClient } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
+export const maxDuration = 60 // Set to 60 seconds to match Vercel's limit
 
-export async function POST(request: Request) {
+interface RegistrationResponse {
+  id: string;
+  [key: string]: any;
+}
+
+// Separate function for database operations with timeout
+async function performDatabaseOperation<T>(
+  operation: () => Promise<PostgrestSingleResponse<T>>, 
+  timeoutMs: number = 8000
+): Promise<PostgrestSingleResponse<T>> {
+  const result = await Promise.race([
+    operation(),
+    new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Database operation timed out')), timeoutMs)
+    )
+  ]) as PostgrestSingleResponse<T>
+
+  if (result.error) {
+    throw result.error
+  }
+
+  return result
+}
+
+export async function POST(request: NextRequest) {
   try {
     const supabase = createServerSupabaseClient()
     if (!supabase) {
@@ -13,129 +39,88 @@ export async function POST(request: Request) {
       )
     }
 
-    const registration = await request.json()
+    const data = await request.json()
 
-    console.log('Received registration data:', registration)
-
-    try {
-      // Format the registration data to match the schema exactly
-      const registrationData = {
-        first_name: String(registration.first_name).trim(),
-        last_name: String(registration.last_name).trim(),
-        email: String(registration.email).trim().toLowerCase(),
-        phone_number: String(registration.phone_number).trim(),
-        flat_number: String(registration.flat_number).trim().toUpperCase(),
-        height: Number(registration.height), // Store as meters
-        last_played_date: String(registration.last_played_date),
-        registration_category: registration.registration_category,
-        registration_type: String(registration.registration_type).trim(),
-        playing_positions: Array.isArray(registration.playing_positions) 
-          ? registration.playing_positions 
-          : [registration.playing_positions],
-        skill_level: registration.skill_level,
-        tshirt_number: String(registration.tshirt_number).trim(),
-        tshirt_name: String(registration.tshirt_name).trim(),
-        tshirt_size: registration.tshirt_size,
-        payment_upi_id: String(registration.payment_upi_id).trim(),
-        payment_transaction_id: String(registration.payment_transaction_id).trim(),
-        paid_to: String(registration.paid_to).trim(),
-        is_verified: false,
-        tournament_id: process.env.NEXT_PUBLIC_DEFAULT_TOURNAMENT_ID!, // Add the tournament ID
-        // Add youth-specific fields with conditional handling
-        date_of_birth: registration.date_of_birth || null,
-        parent_name: registration.parent_name ? String(registration.parent_name).trim() : null,
-        parent_phone_number: registration.parent_phone_number ? String(registration.parent_phone_number).trim() : null
-      }
-
-      // Validate numeric fields
-      if (isNaN(registrationData.height) || registrationData.height < 1.0 || registrationData.height > 2.5) {
-        throw new Error('Height must be between 1.0m and 2.5m')
-      }
-
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!emailRegex.test(registrationData.email)) {
-        throw new Error('Invalid email format')
-      }
-
-      // Validate last_played_date enum
-      const validLastPlayedStatuses = ['PLAYING_ACTIVELY', 'NOT_PLAYED_SINCE_LAST_YEAR', 'NOT_PLAYED_IN_FEW_YEARS']
-      if (!validLastPlayedStatuses.includes(registrationData.last_played_date)) {
-        throw new Error('Invalid last played status')
-      }
-
-      // Validate youth category fields
-      if (registration.registration_category === 'THROWBALL_13_17_MIXED' || 
-          registration.registration_category === 'THROWBALL_8_12_MIXED') {
-        if (!registrationData.date_of_birth) {
-          throw new Error('Date of birth is required for youth categories')
-        }
-        if (!registrationData.parent_name) {
-          throw new Error('Parent/Guardian name is required for youth categories')
-        }
-        if (!registrationData.parent_phone_number) {
-          throw new Error('Parent/Guardian phone number is required for youth categories')
-        }
-      }
-
-      console.log('Formatted registration data:', registrationData)
-
-      // Insert the registration
-      const { data, error } = await supabase
-        .from('tournament_registrations')
-        .insert(registrationData)
-        .select('id')
-        .single()
-
-      if (error) {
-        console.error('Database error:', {
-          code: error.code,
-          message: error.message,
-          details: error.details,
-          hint: error.hint,
-          data: registrationData
-        })
-        throw error
-      }
-
-      if (!data?.id) {
-        throw new Error('Failed to get registration ID')
-      }
-
-      console.log('Registration successful:', data)
-
+    // Validate required fields first
+    if (!data.email || !data.category || !data.name) {
       return NextResponse.json(
-        { 
-          success: true, 
-          registrationId: data.id,
-          message: 'Registration submitted successfully'
-        },
-        {
-          headers: {
-            'Cache-Control': 'no-store, no-cache, must-revalidate',
-            'Pragma': 'no-cache'
-          }
-        }
-      )
-    } catch (dbError: any) {
-      console.error('Database error:', dbError)
-      return NextResponse.json(
-        { 
-          error: 'Failed to submit registration', 
-          details: dbError.message,
-          code: dbError.code,
-          hint: dbError.hint || 'Please check your input data'
-        },
-        { status: 500 }
+        { error: 'Missing required fields' },
+        { status: 400 }
       )
     }
-  } catch (error) {
-    console.error('Unexpected error:', error)
-    return NextResponse.json(
-      { 
-        error: 'An unexpected error occurred', 
-        details: error instanceof Error ? error.message : 'Unknown error'
+
+    // Check for existing registration with 3s timeout
+    try {
+      const existingRegistration = await performDatabaseOperation<RegistrationResponse>(
+        async () => {
+          const response = await supabase
+            .from('tournament_registrations')
+            .select('id')
+            .eq('email', data.email)
+            .single()
+          return response
+        },
+        3000
+      )
+
+      if (existingRegistration.data?.id) {
+        return NextResponse.json(
+          { error: 'A registration with this information already exists' },
+          { status: 400 }
+        )
+      }
+    } catch (error) {
+      if (error instanceof PostgrestError) {
+        // If no record found, continue with registration
+        if (error.code === 'PGRST116') {
+          // Continue with registration
+        } else {
+          throw error
+        }
+      } else {
+        throw error
+      }
+    }
+
+    // Insert new registration with 8s timeout
+    const { data: registration, error: insertError } = await performDatabaseOperation<RegistrationResponse>(
+      async () => {
+        const response = await supabase
+          .from('tournament_registrations')
+          .insert([data])
+          .select('id')
+          .single()
+        return response
       },
+      8000
+    )
+
+    if (insertError) {
+      throw insertError
+    }
+
+    if (!registration?.id) {
+      throw new Error('Failed to create registration')
+    }
+
+    return NextResponse.json({
+      success: true,
+      registrationId: registration.id,
+      message: 'Registration submitted successfully'
+    })
+
+  } catch (error) {
+    console.error('Registration error:', error)
+    
+    if (error instanceof Error && error.message === 'Database operation timed out') {
+      return NextResponse.json(
+        { error: 'Registration timed out. Please try again.' },
+        { status: 504 }
+      )
+    }
+
+    return NextResponse.json(
+      { error: 'Failed to process registration' },
       { status: 500 }
     )
   }

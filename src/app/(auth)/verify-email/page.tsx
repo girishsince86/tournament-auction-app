@@ -20,7 +20,7 @@ export default function VerifyEmailPage() {
           <Typography variant="body1" color="text.secondary" paragraph>
             We've sent you an email with a verification link. Please check your inbox and click the link to verify your account.
           </Typography>
-          <Button href="/(auth)/login" variant="contained" sx={{ mt: 2 }}>
+          <Button href="/login" variant="contained" sx={{ mt: 2 }}>
             Return to Login
           </Button>
         </Paper>
