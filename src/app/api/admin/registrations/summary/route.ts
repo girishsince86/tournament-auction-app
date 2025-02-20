@@ -14,6 +14,11 @@ const REGISTRATION_CATEGORIES = [
 
 const DEFAULT_REGISTRATION_AMOUNT = 600;
 
+interface AgeDistribution {
+  age: number;
+  count: number;
+}
+
 export async function GET() {
   try {
     const supabase = createRouteHandlerClient<Database>({ cookies })
@@ -49,6 +54,72 @@ export async function GET() {
     })
 
     const categoryDistribution = await Promise.all(categoryPromises)
+
+    // Get age distribution by year
+    const { data: registrationsWithDOB } = await supabase
+      .from('tournament_registrations')
+      .select('date_of_birth')
+      .not('date_of_birth', 'is', null)
+
+    const cutoffDate = new Date('2025-04-30')
+    const ageDistributionMap = new Map<number, number>()
+
+    registrationsWithDOB?.forEach(registration => {
+      const dob = new Date(registration.date_of_birth)
+      const age = cutoffDate.getFullYear() - dob.getFullYear()
+      const monthDiff = cutoffDate.getMonth() - dob.getMonth()
+      const finalAge = monthDiff < 0 || (monthDiff === 0 && cutoffDate.getDate() < dob.getDate()) 
+        ? age - 1 
+        : age
+
+      ageDistributionMap.set(finalAge, (ageDistributionMap.get(finalAge) || 0) + 1)
+    })
+
+    // Convert map to array and sort by age
+    const ageDistribution: AgeDistribution[] = Array.from(ageDistributionMap.entries())
+      .map(([age, count]) => ({ age, count }))
+      .sort((a, b) => a.age - b.age)
+
+    // Get age distribution for youth categories
+    const { data: youthData } = await supabase
+      .from('tournament_registrations')
+      .select('registration_category, date_of_birth')
+      .in('registration_category', ['THROWBALL_8_12_MIXED', 'THROWBALL_13_17_MIXED'])
+      .not('date_of_birth', 'is', null)
+
+    const ageDistributionByCategory = {
+      '8-12': 0,
+      '13-17': 0,
+      byCategory: {
+        'THROWBALL_8_12_MIXED': { within: 0, outside: 0 },
+        'THROWBALL_13_17_MIXED': { within: 0, outside: 0 }
+      }
+    }
+
+    youthData?.forEach(registration => {
+      const dob = new Date(registration.date_of_birth)
+      const age = cutoffDate.getFullYear() - dob.getFullYear()
+      const monthDiff = cutoffDate.getMonth() - dob.getMonth()
+      const finalAge = monthDiff < 0 || (monthDiff === 0 && cutoffDate.getDate() < dob.getDate()) 
+        ? age - 1 
+        : age
+
+      if (finalAge >= 8 && finalAge <= 12) {
+        ageDistributionByCategory['8-12']++
+        if (registration.registration_category === 'THROWBALL_8_12_MIXED') {
+          ageDistributionByCategory.byCategory['THROWBALL_8_12_MIXED'].within++
+        } else {
+          ageDistributionByCategory.byCategory['THROWBALL_8_12_MIXED'].outside++
+        }
+      } else if (finalAge >= 13 && finalAge <= 17) {
+        ageDistributionByCategory['13-17']++
+        if (registration.registration_category === 'THROWBALL_13_17_MIXED') {
+          ageDistributionByCategory.byCategory['THROWBALL_13_17_MIXED'].within++
+        } else {
+          ageDistributionByCategory.byCategory['THROWBALL_13_17_MIXED'].outside++
+        }
+      }
+    })
 
     // Get jersey size distribution
     const { data: jerseyData } = await supabase
@@ -118,10 +189,13 @@ export async function GET() {
       youth8To12Count,
       youth13To17Count,
       categoryDistribution,
+      ageDistribution,
+      ageDistributionByCategory,
       jerseySizes,
       timelineData: timelineData || [],
       paymentCollections: paymentCollections || [],
       recentRegistrations: [], // This can be added later if needed
+      pendingVerification: (totalRegistrations || 0) - verifiedRegistrations,
     })
   } catch (error) {
     console.error('Error fetching registration summary:', error)

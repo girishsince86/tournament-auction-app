@@ -45,11 +45,13 @@ import {
   ExpandMore as ExpandMoreIcon,
   ExpandLess as ExpandLessIcon,
   Groups as GroupsIcon,
+  BarChart as BarChartIcon,
 } from '@mui/icons-material'
 import { useAuth } from '@/features/auth/context/auth-context'
 import { RegistrationDetailModal } from './registration-detail-modal'
 import { VerifyPaymentModal } from './verify-payment-modal'
 import { TournamentRegistration } from '@/features/tournaments/types/registration'
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts'
 import toast from 'react-hot-toast'
 
 // Set MUI X License
@@ -76,6 +78,7 @@ interface RegistrationSummary {
   verifiedRegistrations: number;
   categoryDistribution: CategoryCount[];
   pendingVerification: number;
+  ageDistribution?: Array<{ age: number; count: number }>;
 }
 
 const PAYMENT_RECEIVERS = {
@@ -181,6 +184,7 @@ export function ManageRegistrations() {
         verifiedRegistrations: data.verifiedRegistrations,
         categoryDistribution: data.categoryDistribution || [],
         pendingVerification: data.totalRegistrations - data.verifiedRegistrations,
+        ageDistribution: data.ageDistribution || [],
       })
     } catch (err) {
       console.error('Error fetching summary:', err)
@@ -364,6 +368,69 @@ export function ManageRegistrations() {
           {params.value}
         </Typography>
       ),
+    },
+    {
+      field: 'date_of_birth',
+      headerName: 'Date of Birth',
+      width: 180,
+      filterable: true,
+      type: 'date',
+      valueGetter: (params: { row: TournamentRegistration }) => {
+        if (!params?.row?.date_of_birth) return null;
+        return new Date(params.row.date_of_birth);
+      },
+      renderCell: (params: GridRenderCellParams<TournamentRegistration>) => {
+        if (!params.row.date_of_birth) return '-';
+        const dob = new Date(params.row.date_of_birth);
+        const cutoffDate = new Date('2025-04-30');
+        
+        // Calculate years
+        const yearDiff = cutoffDate.getFullYear() - dob.getFullYear();
+        const monthDiff = cutoffDate.getMonth() - dob.getMonth();
+        const dayDiff = cutoffDate.getDate() - dob.getDate();
+        
+        // Calculate exact age
+        const finalAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) 
+          ? yearDiff - 1 
+          : yearDiff;
+
+        // Calculate remaining months and days
+        let remainingMonths = monthDiff;
+        if (remainingMonths < 0) remainingMonths += 12;
+        if (dayDiff < 0) remainingMonths--;
+        
+        let remainingDays = dayDiff;
+        if (remainingDays < 0) {
+          const lastDayOfMonth = new Date(cutoffDate.getFullYear(), cutoffDate.getMonth(), 0).getDate();
+          remainingDays += lastDayOfMonth;
+        }
+
+        const ageDisplay = `${finalAge}y ${remainingMonths}m ${remainingDays}d`;
+
+        return (
+          <Stack spacing={0.5}>
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                color: 'text.primary',
+                fontSize: '0.875rem',
+                fontWeight: 500,
+              }}
+            >
+              {dob.toLocaleDateString()}
+            </Typography>
+            <Typography 
+              variant="caption" 
+              sx={{ 
+                color: 'text.secondary',
+                fontSize: '0.75rem',
+              }}
+            >
+              Age on Apr 30, 2025: {ageDisplay}
+            </Typography>
+          </Stack>
+        );
+      },
     },
     { 
       field: 'registration_category',
@@ -755,6 +822,84 @@ export function ManageRegistrations() {
                         })}
                       </Grid>
                     </Grid>
+
+                    {/* Vertical Divider */}
+                    <Grid item xs={12} md="auto">
+                      <Divider orientation="vertical" flexItem />
+                    </Grid>
+
+                    {/* Age Distribution Chart */}
+                    {summary.ageDistribution && summary.ageDistribution.length > 0 && (
+                      <Grid item xs={12}>
+                        <Box sx={{ mt: 3 }}>
+                          <Typography 
+                            variant="body2" 
+                            color="text.secondary" 
+                            sx={{ 
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 1,
+                              mb: 2 
+                            }}
+                          >
+                            <BarChartIcon fontSize="small" />
+                            Age Distribution
+                          </Typography>
+                          <Paper
+                            elevation={0}
+                            sx={{
+                              p: 2,
+                              border: `1px solid ${theme.palette.divider}`,
+                              borderRadius: 1,
+                              bgcolor: 'background.paper',
+                              height: 300,
+                            }}
+                          >
+                            <ResponsiveContainer width="100%" height="100%">
+                              <BarChart
+                                data={summary.ageDistribution}
+                                margin={{
+                                  top: 5,
+                                  right: 30,
+                                  left: 20,
+                                  bottom: 25,
+                                }}
+                              >
+                                <CartesianGrid strokeDasharray="3 3" />
+                                <XAxis 
+                                  dataKey="age" 
+                                  label={{ 
+                                    value: 'Age (as of Apr 30, 2025)', 
+                                    position: 'bottom',
+                                    offset: 15
+                                  }}
+                                />
+                                <YAxis
+                                  label={{ 
+                                    value: 'Number of Players', 
+                                    angle: -90, 
+                                    position: 'insideLeft',
+                                    offset: 0
+                                  }}
+                                />
+                                <RechartsTooltip
+                                  formatter={(value: number, name: string) => [
+                                    `${value} player${value !== 1 ? 's' : ''}`,
+                                    'Count'
+                                  ]}
+                                  labelFormatter={(age: number) => `Age: ${age} years`}
+                                />
+                                <Bar 
+                                  dataKey="count" 
+                                  fill={theme.palette.primary.main}
+                                  radius={[4, 4, 0, 0]}
+                                />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </Paper>
+                        </Box>
+                      </Grid>
+                    )}
                   </Grid>
                 </Paper>
               </Box>
@@ -875,7 +1020,28 @@ export function ManageRegistrations() {
               toolbar: {
                 showQuickFilter: true,
                 printOptions: { disableToolbarButton: true },
-                csvOptions: { disableToolbarButton: true },
+                csvOptions: { 
+                  disableToolbarButton: false,
+                  utf8WithBom: true,
+                  fileName: `tournament-registrations-${new Date().toISOString().split('T')[0]}`,
+                  fields: [
+                    'registration_number',
+                    'first_name',
+                    'last_name',
+                    'email',
+                    'phone_number',
+                    'date_of_birth',
+                    'registration_category',
+                    'tshirt_size',
+                    'tshirt_number',
+                    'is_verified',
+                    'amount_received',
+                    'paid_to',
+                    'verified_by',
+                    'verified_at',
+                    'created_at'
+                  ]
+                },
                 sx: {
                   p: 2,
                   borderBottom: `1px solid ${theme.palette.divider}`,

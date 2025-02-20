@@ -25,6 +25,15 @@ export async function GET(request: NextRequest) {
         const field = key.replace('filter_', '')
         if (field === 'is_verified') {
           query = query.eq(field, value === 'true')
+        } else if (field === 'registration_category') {
+          // For registration_category (enum), use exact match with any of the matching values
+          const categories = ['VOLLEYBALL_OPEN_MEN', 'THROWBALL_WOMEN', 'THROWBALL_13_17_MIXED', 'THROWBALL_8_12_MIXED']
+          const matchingCategories = categories.filter(cat => 
+            cat.toLowerCase().includes(value.toLowerCase())
+          )
+          if (matchingCategories.length > 0) {
+            query = query.in(field, matchingCategories)
+          }
         } else if (value) {
           query = query.ilike(field, `%${value}%`)
         }

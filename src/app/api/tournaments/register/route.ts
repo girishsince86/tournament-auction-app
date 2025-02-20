@@ -1,35 +1,59 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
-import { PostgrestSingleResponse, PostgrestError, SupabaseClient } from '@supabase/supabase-js'
+import { PostgrestSingleResponse, PostgrestError } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60 // Set to 60 seconds to match Vercel's limit
+export const maxDuration = 300 // Set to 5 minutes for Vercel
 
 interface RegistrationResponse {
   id: string;
   [key: string]: any;
 }
 
-// Separate function for database operations with timeout
+// Separate function for database operations with retry logic
 async function performDatabaseOperation<T>(
-  operation: () => Promise<PostgrestSingleResponse<T>>, 
+  operation: () => Promise<PostgrestSingleResponse<T | null>>,
+  maxRetries: number = 3,
   timeoutMs: number = 8000
-): Promise<PostgrestSingleResponse<T>> {
-  const result = await Promise.race([
-    operation(),
-    new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Database operation timed out')), timeoutMs)
-    )
-  ]) as PostgrestSingleResponse<T>
+): Promise<PostgrestSingleResponse<T | null>> {
+  let lastError: any;
+  
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      console.log(`Attempt ${attempt} of ${maxRetries}...`)
+      
+      const result = await Promise.race([
+        operation(),
+        new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Database operation timed out')), timeoutMs)
+        )
+      ]) as PostgrestSingleResponse<T | null>
 
-  if (result.error) {
-    throw result.error
+      if (result.error) {
+        throw result.error
+      }
+
+      return result
+    } catch (error) {
+      lastError = error
+      console.error(`Attempt ${attempt} failed:`, error)
+      
+      if (attempt < maxRetries) {
+        // Exponential backoff
+        const backoffTime = Math.min(1000 * Math.pow(2, attempt - 1), 4000)
+        await new Promise(resolve => setTimeout(resolve, backoffTime))
+        continue
+      }
+    }
   }
 
-  return result
+  throw lastError
 }
 
 export async function POST(request: NextRequest) {
+  console.log('Starting registration process...')
+  const startTime = Date.now()
+  
   try {
     const supabase = createServerSupabaseClient()
     if (!supabase) {
@@ -40,41 +64,48 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await request.json()
+    console.log('Received registration data:', {
+      email: data.email,
+      category: data.registration_category,
+      type: data.registration_type
+    })
 
     // Validate required fields first
-    if (!data.email || !data.category || !data.name) {
+    const requiredFields = ['email', 'registration_category', 'first_name', 'last_name']
+    const missingFields = requiredFields.filter(field => !data[field])
+    
+    if (missingFields.length > 0) {
       return NextResponse.json(
-        { error: 'Missing required fields' },
+        { error: `Missing required fields: ${missingFields.join(', ')}` },
         { status: 400 }
       )
     }
 
-    // Check for existing registration with 3s timeout
+    // Check for existing registration with retry logic
+    console.log('Checking for existing registration...')
     try {
       const existingRegistration = await performDatabaseOperation<RegistrationResponse>(
         async () => {
-          const response = await supabase
+          return await supabase
             .from('tournament_registrations')
-            .select('id')
+            .select('id, registration_category')
             .eq('email', data.email)
-            .single()
-          return response
+            .eq('registration_category', data.registration_category)
+            .maybeSingle()
         },
-        3000
+        3, // 3 retries
+        5000 // 5 second timeout
       )
 
       if (existingRegistration.data?.id) {
         return NextResponse.json(
-          { error: 'A registration with this information already exists' },
+          { error: 'A registration with this email already exists for this category' },
           { status: 400 }
         )
       }
     } catch (error) {
       if (error instanceof PostgrestError) {
-        // If no record found, continue with registration
-        if (error.code === 'PGRST116') {
-          // Continue with registration
-        } else {
+        if (error.code !== 'PGRST116') { // Not found error is expected
           throw error
         }
       } else {
@@ -82,17 +113,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Insert new registration with 8s timeout
+    // Insert new registration with retry logic
+    console.log('Creating new registration...')
     const { data: registration, error: insertError } = await performDatabaseOperation<RegistrationResponse>(
       async () => {
-        const response = await supabase
+        return await supabase
           .from('tournament_registrations')
           .insert([data])
           .select('id')
           .single()
-        return response
       },
-      8000
+      3, // 3 retries
+      15000 // 15 second timeout
     )
 
     if (insertError) {
@@ -103,24 +135,42 @@ export async function POST(request: NextRequest) {
       throw new Error('Failed to create registration')
     }
 
+    const processingTime = Date.now() - startTime
+    console.log(`Registration completed successfully in ${processingTime}ms`)
+
     return NextResponse.json({
       success: true,
       registrationId: registration.id,
-      message: 'Registration submitted successfully'
+      message: 'Registration submitted successfully',
+      processingTime
     })
 
   } catch (error) {
-    console.error('Registration error:', error)
+    const processingTime = Date.now() - startTime
+    console.error('Registration error:', error, `(after ${processingTime}ms)`)
     
-    if (error instanceof Error && error.message === 'Database operation timed out') {
+    if (error instanceof Error) {
+      if (error.message === 'Database operation timed out') {
+        return NextResponse.json(
+          { 
+            error: 'Registration timed out. Please try again.',
+            details: 'The server is experiencing high load. Please wait a moment and try again.'
+          },
+          { status: 504 }
+        )
+      }
+      
       return NextResponse.json(
-        { error: 'Registration timed out. Please try again.' },
-        { status: 504 }
+        { 
+          error: 'Failed to process registration',
+          details: error.message
+        },
+        { status: 500 }
       )
     }
 
     return NextResponse.json(
-      { error: 'Failed to process registration' },
+      { error: 'An unexpected error occurred' },
       { status: 500 }
     )
   }

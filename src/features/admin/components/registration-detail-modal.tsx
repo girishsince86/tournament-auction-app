@@ -178,7 +178,48 @@ export function RegistrationDetailModal({
               <DetailField label="First Name" value={registration.first_name} />
               <DetailField label="Last Name" value={registration.last_name} />
               <DetailField label="Email" value={registration.email} />
-              <DetailField label="Phone" value={registration.phone_number} />
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Phone Number
+                </Typography>
+                <Typography variant="body1">{registration.phone_number}</Typography>
+              </Grid>
+
+              <Grid item xs={12} sm={6}>
+                <Typography variant="body2" color="text.secondary" gutterBottom>
+                  Date of Birth
+                </Typography>
+                <Typography variant="body1">
+                  {registration.date_of_birth ? (
+                    <>
+                      {new Date(registration.date_of_birth).toLocaleDateString()}
+                      {(() => {
+                        const dob = new Date(registration.date_of_birth);
+                        const cutoffDate = new Date('2025-04-30');
+                        const age = cutoffDate.getFullYear() - dob.getFullYear();
+                        const monthDiff = cutoffDate.getMonth() - dob.getMonth();
+                        const finalAge = monthDiff < 0 || (monthDiff === 0 && cutoffDate.getDate() < dob.getDate()) 
+                          ? age - 1 
+                          : age;
+                        return (
+                          <Typography 
+                            component="span" 
+                            sx={{ 
+                              ml: 1,
+                              color: 'text.secondary',
+                              fontSize: '0.875rem',
+                            }}
+                          >
+                            (Age as of Apr 30, 2025: {finalAge} years)
+                          </Typography>
+                        );
+                      })()}
+                    </>
+                  ) : (
+                    '-'
+                  )}
+                </Typography>
+              </Grid>
             </Grid>
           </DetailSection>
 
