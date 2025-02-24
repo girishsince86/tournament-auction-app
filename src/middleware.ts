@@ -79,24 +79,25 @@ const ADMIN_ROUTES = [
 
 export async function middleware(request: NextRequest) {
   const res = NextResponse.next()
+  const pathname = request.nextUrl.pathname
+
+  // Always allow access to tournament registration page
+  if (pathname === '/tournaments/register') {
+    return res
+  }
+
   const supabase = createMiddlewareClient({ req: request, res })
   const { data: { session }, error } = await supabase.auth.getSession()
 
-  const isPublicRoute = PUBLIC_ROUTES.some(route => request.nextUrl.pathname.startsWith(route))
-  const isAdminRoute = ADMIN_ROUTES.some(route => request.nextUrl.pathname.startsWith(route))
-  const isRegistrationPage = request.nextUrl.pathname === '/tournaments/register'
-
-  // Always allow access to registration page
-  if (isRegistrationPage) {
-    return res
-  }
+  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route))
+  const isAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route))
 
   // Handle authentication
   if (!session) {
     if (!isPublicRoute) {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.pathname = '/login'
-      redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
+      redirectUrl.searchParams.set('redirectTo', pathname)
       return NextResponse.redirect(redirectUrl)
     }
     return res
@@ -117,7 +118,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Handle public routes when user is authenticated
-  if (isPublicRoute && !isRegistrationPage && session) {
+  if (isPublicRoute && pathname !== '/tournaments/register' && session) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/registration-summary'
     return NextResponse.redirect(redirectUrl)
