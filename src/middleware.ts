@@ -66,7 +66,8 @@ const isAuthPath = (path: string): boolean => {
 const PUBLIC_ROUTES = [
   '/login', 
   '/signup', 
-  '/auth/callback'
+  '/auth/callback',
+  '/profile'
 ]
 
 const ADMIN_ROUTES = [
@@ -135,6 +136,7 @@ export const config = {
     '/dashboard/:path*',
     '/admin/:path*',
     '/teams/:path*',
+    '/profile/:path*',
     // Match auth routes
     '/login',
     '/signup',

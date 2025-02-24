@@ -87,17 +87,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const validatedUser = await validateUser('initial mount')
         setUser(validatedUser)
         
-        // Skip redirection for registration page
-        const isRegistrationPage = window.location.pathname === '/tournaments/register'
-        if (!validatedUser && !window.location.pathname.startsWith('/login') && !isRegistrationPage) {
+        // Skip redirection for registration and profile pages
+        const isPublicPage = window.location.pathname === '/tournaments/register' || 
+                           window.location.pathname.startsWith('/profile/')
+        if (!validatedUser && !window.location.pathname.startsWith('/login') && !isPublicPage) {
           router.push('/login')
         }
       } catch (error) {
         console.error('[Auth Error] Initial authentication error:', error)
         setUser(null)
-        // Skip redirection for registration page
-        const isRegistrationPage = window.location.pathname === '/tournaments/register'
-        if (!window.location.pathname.startsWith('/login') && !isRegistrationPage) {
+        // Skip redirection for registration and profile pages
+        const isPublicPage = window.location.pathname === '/tournaments/register' || 
+                           window.location.pathname.startsWith('/profile/')
+        if (!window.location.pathname.startsWith('/login') && !isPublicPage) {
           router.push('/login')
         }
       } finally {
@@ -116,9 +118,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('[Auth Event] User signed out or session ended')
         setUser(null)
         setIsLoading(false)
-        // Skip redirection for registration page
-        const isRegistrationPage = window.location.pathname === '/tournaments/register'
-        if (!window.location.pathname.startsWith('/login') && !isRegistrationPage) {
+        // Skip redirection for registration and profile pages
+        const isPublicPage = window.location.pathname === '/tournaments/register' || 
+                           window.location.pathname.startsWith('/profile/')
+        if (!window.location.pathname.startsWith('/login') && !isPublicPage) {
           router.push('/login')
         }
         return
@@ -133,9 +136,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           router.push('/registration-summary')
         }
       } else if (!validatedUser) {
-        // Skip redirection for registration page
-        const isRegistrationPage = window.location.pathname === '/tournaments/register'
-        if (!window.location.pathname.startsWith('/login') && !isRegistrationPage) {
+        // Skip redirection for registration and profile pages
+        const isPublicPage = window.location.pathname === '/tournaments/register' || 
+                           window.location.pathname.startsWith('/profile/')
+        if (!window.location.pathname.startsWith('/login') && !isPublicPage) {
           router.push('/login')
         }
       }
