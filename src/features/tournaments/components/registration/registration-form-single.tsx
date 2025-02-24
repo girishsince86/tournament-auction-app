@@ -677,7 +677,7 @@ export function RegistrationFormSingle() {
         return '';
       case 'height':
         const heightNum = Number(value);
-        if (isNaN(heightNum) || heightNum < 100 || heightNum > 250) {
+        if (isNaN(heightNum) || heightNum < 100 || heightNum > 250 || !Number.isInteger(heightNum)) {
           return 'Please enter a valid height in centimeters (100-250)';
         }
         return '';
@@ -1604,7 +1604,7 @@ export function RegistrationFormSingle() {
                       error={!!errors.height}
                       helperText={errors.height || 'Enter your height in centimeters'}
                       InputProps={{ 
-                        inputProps: { min: 100, max: 250, step: 0.01 },
+                        inputProps: { min: 100, max: 250, step: 1 },
                       }}
                     />
                   </Grid>
