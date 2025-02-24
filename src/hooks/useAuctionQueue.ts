@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect } from 'react';
-import { QueueItem } from '@/types/auction';
+import { QueueItemWithPlayer } from '@/types/auction';
 
 interface UseAuctionQueueProps {
     tournamentId: string;
@@ -7,7 +7,7 @@ interface UseAuctionQueueProps {
 }
 
 export function useAuctionQueue({ tournamentId, enablePolling = false }: UseAuctionQueueProps) {
-    const [queue, setQueue] = useState<QueueItem[]>([]);
+    const [queue, setQueue] = useState<QueueItemWithPlayer[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 

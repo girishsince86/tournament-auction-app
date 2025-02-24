@@ -28,7 +28,7 @@ import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import AddIcon from '@mui/icons-material/Add';
 import { useAuctionQueue } from '@/hooks/useAuctionQueue';
 import { useAvailablePlayers } from '@/hooks/useAvailablePlayers';
-import { PlayerProfile, QueueItem } from '@/types/auction';
+import { PlayerProfile, QueueItemWithPlayer } from '@/types/auction';
 
 interface QueueManagerProps {
     tournamentId: string;
@@ -189,7 +189,7 @@ export function QueueManager({ tournamentId }: QueueManagerProps) {
                             ref={provided.innerRef}
                             sx={{ bgcolor: 'background.paper' }}
                         >
-                            {queue.map((item: QueueItem, index: number) => (
+                            {queue.map((item: QueueItemWithPlayer, index: number) => (
                                 <Draggable 
                                     key={item.id} 
                                     draggableId={item.id} 

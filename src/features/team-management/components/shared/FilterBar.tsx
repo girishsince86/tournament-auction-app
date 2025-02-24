@@ -17,6 +17,7 @@ import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import SearchIcon from '@mui/icons-material/Search';
 import type { FilterState } from '../../types';
 import { POSITIONS, SKILL_LEVELS } from '@/lib/constants';
+import React from 'react';
 
 interface FilterBarProps {
     filterState: FilterState;
@@ -96,7 +97,7 @@ export function FilterBar({
                                     }}
                                 >
                                     <Box component="span" sx={{ color: pos.color }}>
-                                        {pos.icon}
+                                        {React.createElement(pos.icon)}
                                     </Box>
                                     {pos.label}
                                 </MenuItem>
@@ -124,7 +125,7 @@ export function FilterBar({
                                     }}
                                 >
                                     <Box component="span" sx={{ color: skill.color }}>
-                                        {skill.icon}
+                                        {React.createElement(skill.icon)}
                                     </Box>
                                     {skill.label}
                                 </MenuItem>

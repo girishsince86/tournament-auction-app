@@ -43,7 +43,7 @@ const ROUTES = {
     profile: '/profile' as const,
     tournaments: {
       register: '/tournaments/register' as const,
-    },
+    }
   },
   defaultRedirect: '/registration-summary' as const,
 } as const
@@ -63,7 +63,13 @@ const isAuthPath = (path: string): boolean => {
   return authPaths.includes(path as typeof authPaths[number])
 }
 
-const PUBLIC_ROUTES = ['/login', '/signup', '/auth/callback']
+const PUBLIC_ROUTES = [
+  '/login', 
+  '/signup', 
+  '/auth/callback',
+  '/tournaments/register'
+]
+
 const ADMIN_ROUTES = [
   '/admin/manage-registrations',
   '/admin/volleyball-players',
@@ -78,10 +84,11 @@ export async function middleware(request: NextRequest) {
 
   const isPublicRoute = PUBLIC_ROUTES.some(route => request.nextUrl.pathname.startsWith(route))
   const isAdminRoute = ADMIN_ROUTES.some(route => request.nextUrl.pathname.startsWith(route))
+  const isRegistrationPage = request.nextUrl.pathname === '/tournaments/register'
 
   // Handle authentication
   if (!session) {
-    if (!isPublicRoute) {
+    if (!isPublicRoute && !isRegistrationPage) {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.pathname = '/login'
       redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
@@ -105,7 +112,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Handle public routes when user is authenticated
-  if (isPublicRoute && session) {
+  if (isPublicRoute && !isRegistrationPage && session) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/registration-summary'
     return NextResponse.redirect(redirectUrl)

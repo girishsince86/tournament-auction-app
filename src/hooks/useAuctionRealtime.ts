@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { createBrowserClient } from '@supabase/ssr';
 import { Database } from '@/lib/supabase/types/supabase';
-import { AuctionRound, PlayerProfile, QueueItem } from '@/types/auction';
+import { AuctionRoundWithRelations, PlayerProfile, QueueItemWithPlayer } from '@/types/auction';
 import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
 
 interface AuctionUpdate {
     currentPlayer: PlayerProfile | null;
-    currentRound: AuctionRound | null;
-    queue: QueueItem[];
+    currentRound: AuctionRoundWithRelations | null;
+    queue: QueueItemWithPlayer[];
     lastBid: {
         amount: number;
         teamId: string;
@@ -115,7 +115,7 @@ export function useAuctionRealtime(tournamentId: string) {
                             // Update state with new round and player
                             setAuctionState(prev => ({
                                 ...prev,
-                                currentRound: newRound as AuctionRound,
+                                currentRound: newRound as AuctionRoundWithRelations,
                                 currentPlayer: player
                             }));
                         } else if (newRound.status === 'COMPLETED') {

@@ -40,7 +40,7 @@ export function usePlayerPreferences(
     });
 
     const handlePlayerSelection = (player: PlayerWithPreference) => {
-        if (player.status === 'SOLD' || player.current_team_id) return;
+        if (player.status === 'SOLD') return;
         
         setSelectedPlayers(prev => {
             const isSelected = prev.some(p => p.player_id === player.id);
@@ -86,11 +86,8 @@ export function usePlayerPreferences(
     const handlePreferenceEdit = (player: PlayerWithPreference) => {
         setEditingPreference({
             ...player,
-            preference: {
-                player_id: player.id,
-                max_bid: player.preference?.max_bid || player.base_price,
-                notes: player.preference?.notes || ''
-            }
+            max_bid: player.preference?.max_bid || player.base_price,
+            notes: player.preference?.notes || ''
         });
     };
 

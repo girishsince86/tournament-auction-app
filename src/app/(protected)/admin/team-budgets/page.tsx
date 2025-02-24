@@ -441,8 +441,18 @@ export default function TeamBudgetsPage() {
                                             </Typography>
                                             <TeamBudget
                                                 teamId={team.id}
-                                                initialBudget={team.initial_budget}
-                                                remainingBudget={team.remaining_budget}
+                                                budget={{
+                                                    initial_budget: team.initial_budget,
+                                                    remaining_budget: team.remaining_budget,
+                                                    allocated_budget: team.initial_budget - team.remaining_budget
+                                                }}
+                                                metrics={{
+                                                    avg_player_cost: team.players_count ? team.total_spent / team.players_count : 0,
+                                                    total_players: team.players_count,
+                                                    total_cost: team.total_spent,
+                                                    remaining_budget: team.remaining_budget,
+                                                    budget_utilization: ((team.initial_budget - team.remaining_budget) / team.initial_budget) * 100
+                                                }}
                                                 onBudgetUpdate={handleBudgetUpdate}
                                                 isAdminView={true}
                                             />

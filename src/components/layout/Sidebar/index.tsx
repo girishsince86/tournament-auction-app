@@ -27,6 +27,11 @@ const getNavigationItems = (isAdmin: boolean, teamId: string | null, currentTour
       text: 'Registration Summary', 
       icon: <DashboardIcon />, 
       href: '/registration-summary' 
+    },
+    {
+      text: 'Tournament Registration',
+      icon: <SportsVolleyballIcon />,
+      href: '/tournaments/register'
     }
   ]
 

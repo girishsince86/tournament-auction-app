@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react';
 import { Timer } from '@/components/auction/Timer';
-import { TimerConfig, PlayerProfile, QueueItem } from '@/types/auction';
+import { TimerConfig, PlayerProfile, QueueItemWithPlayer } from '@/types/auction';
 
 interface TimerHandle {
     reset: () => void;
@@ -30,17 +30,15 @@ export default function TestAuction() {
     const [currentPlayer] = useState<PlayerProfile>({
         id: '66666666-6666-6666-6666-666666666666',
         name: 'John Doe',
-        email: 'john@example.com',
-        phone: '1234567890',
-        skill_level: 'Advanced',
         base_price: 100,
-        profile_image_url: '/images/player1.jpg',
-        player_position: 'Forward',
+        player_position: 'P1_RIGHT_BACK',
+        skill_level: 'RECREATIONAL_C',
         height: 175,
-        experience: 5,
-        registration_details: {
-            age: 25,
-            tshirt_size: 'L'
+        status: 'AVAILABLE',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        registration_data: {
+            last_played_date: 'PLAYING_ACTIVELY'
         },
         tournament_history: [
             {
@@ -55,13 +53,11 @@ export default function TestAuction() {
                 description: 'Awarded best player in Summer League 2023',
                 year: 2023
             }
-        ],
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        ]
     });
 
     // Sample queue data with state management
-    const [queue, setQueue] = useState<QueueItem[]>([
+    const [queue, setQueue] = useState<QueueItemWithPlayer[]>([
         {
             id: '11111111-1111-1111-1111-111111111111',
             tournament_id: '99999999-9999-9999-9999-999999999999',
@@ -71,8 +67,7 @@ export default function TestAuction() {
             player: currentPlayer,
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
-        },
-        // Add more queue items as needed
+        }
     ]);
 
     // Event handlers
@@ -156,7 +151,7 @@ export default function TestAuction() {
                                 {currentPlayer && (
                                     <div className="p-4 bg-gray-100 rounded">
                                         <p>Name: {currentPlayer.name}</p>
-                                        <p>Age: {currentPlayer.registration_details.age}</p>
+                                        <p>Last Played: {currentPlayer.registration_data?.last_played_date}</p>
                                         <p>Skill Level: {currentPlayer.skill_level}</p>
                                         <p>Base Price: {currentPlayer.base_price}</p>
                                         <div className="mt-2">

@@ -53,7 +53,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useTeams } from '@/hooks/useTeams';
 import { useAuctionQueue } from '@/hooks/useAuctionQueue';
 import { useAvailablePlayers } from '@/hooks/useAvailablePlayers';
-import { PlayerProfile, QueueItem } from '@/types/auction';
+import { PlayerProfile, QueueItemWithPlayer } from '@/types/auction';
 import PersonIcon from '@mui/icons-material/Person';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AddIcon from '@mui/icons-material/Add';
@@ -99,7 +99,7 @@ const SKILL_LEVELS = [
 ];
 
 // Add this function after SKILL_LEVELS constant
-const getSkillLevelStyling = (skillLevel: string) => {
+const getSkillLevelStyling = (skillLevel: string | undefined) => {
     switch (skillLevel) {
         case 'COMPETITIVE_A':
             return {
@@ -135,6 +135,7 @@ const getSkillLevelStyling = (skillLevel: string) => {
                 }
             };
         case 'RECREATIONAL_C':
+        default:
             return {
                 bgcolor: 'success.main',
                 color: 'white',
@@ -145,8 +146,6 @@ const getSkillLevelStyling = (skillLevel: string) => {
                     bgcolor: 'success.dark'
                 }
             };
-        default:
-            return {};
     }
 };
 
@@ -189,7 +188,7 @@ interface QueueItemWithPosition {
 
 // Add SortableQueueItem component
 function SortableQueueItem({ item, currentPlayer, onSelectPlayer }: { 
-    item: QueueItem; 
+    item: QueueItemWithPlayer; 
     currentPlayer: PlayerProfile | null;
     onSelectPlayer: (player: PlayerProfile) => void;
 }) {
@@ -237,7 +236,7 @@ function SortableQueueItem({ item, currentPlayer, onSelectPlayer }: {
                             sx={getPositionStyling('small')}
                         />
                         <Chip 
-                            label={SKILL_LEVELS.find(level => level.value === item.player.skill_level)?.label}
+                            label={SKILL_LEVELS.find(level => level.value === item.player.skill_level)?.label || 'Unknown'}
                             size="small"
                             icon={<StarIcon fontSize="small" />}
                             sx={getSkillLevelStyling(item.player.skill_level)}
@@ -457,7 +456,7 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                     },
                     body: JSON.stringify({
                         tournamentId,
-                        queueItems: newQueue.map((item: QueueItem, index: number): QueueItemWithPosition => ({
+                        queueItems: newQueue.map((item: QueueItemWithPlayer, index: number): QueueItemWithPosition => ({
                             id: item.id,
                             queue_position: index + 1,
                         })),
@@ -672,12 +671,12 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                                             sx={getBasePointsStyling()}
                                                         />
                                                         <Chip 
-                                                            label={POSITIONS.find(pos => pos.value === currentPlayer.player_position)?.label}
+                                                            label={POSITIONS.find(pos => pos.value === currentPlayer.player_position)?.label || 'Unknown'}
                                                             icon={<SportsVolleyballIcon />}
                                                             sx={getPositionStyling()}
                                                         />
                                                         <Chip 
-                                                            label={SKILL_LEVELS.find(level => level.value === currentPlayer.skill_level)?.label}
+                                                            label={SKILL_LEVELS.find(level => level.value === currentPlayer.skill_level)?.label || 'Unknown'}
                                                             icon={<StarIcon />}
                                                             sx={{ 
                                                                 height: 32,
@@ -712,7 +711,7 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                                                 Height: <strong>{currentPlayer.height || 'N/A'}</strong> {currentPlayer.height ? 'cm' : ''}
                                                             </Typography>
                                                             <Typography variant="body2">
-                                                                Last Played: <strong>{LAST_PLAYED_OPTIONS.find(opt => opt.value === currentPlayer.last_played_date)?.label || 'N/A'}</strong>
+                                                                Last Played: <strong>{LAST_PLAYED_OPTIONS.find(opt => opt.value === currentPlayer.registration_data?.last_played_date)?.label || 'N/A'}</strong>
                                                             </Typography>
                                                         </Stack>
                                                     </Paper>

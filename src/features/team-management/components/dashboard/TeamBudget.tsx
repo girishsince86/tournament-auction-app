@@ -116,11 +116,11 @@ export function TeamBudget({
                             </Typography>
                             <LinearProgress 
                                 variant="determinate" 
-                                value={budget_utilization_percentage}
-                                color={budget_utilization_percentage > 90 ? "error" : "primary"}
+                                value={budget_utilization_percentage ?? 0}
+                                color={(budget_utilization_percentage ?? 0) > 90 ? "error" : "primary"}
                             />
                             <Typography variant="caption" color="textSecondary">
-                                {budget_utilization_percentage}% Used
+                                {budget_utilization_percentage ?? 0}% Used
                             </Typography>
                         </Box>
                     </Grid>
@@ -149,13 +149,13 @@ export function TeamBudget({
                             <Paper elevation={1} sx={{ p: 2 }}>
                                 <Typography variant="subtitle2">Average Player Cost</Typography>
                                 <Typography variant="h6">
-                                    ₹{average_player_cost.toLocaleString()}
+                                    ₹{(average_player_cost ?? 0).toLocaleString()}
                                 </Typography>
                                 <Chip 
-                                    icon={average_player_cost > metrics.avg_player_cost ? 
+                                    icon={(average_player_cost ?? 0) > metrics.avg_player_cost ? 
                                         <TrendingUpIcon /> : <TrendingDownIcon />}
-                                    label={`${Math.abs(((average_player_cost / metrics.avg_player_cost) - 1) * 100).toFixed(1)}% vs Tournament Avg`}
-                                    color={average_player_cost > metrics.avg_player_cost ? "error" : "success"}
+                                    label={`${Math.abs((((average_player_cost ?? 0) / metrics.avg_player_cost) - 1) * 100).toFixed(1)}% vs Tournament Avg`}
+                                    color={(average_player_cost ?? 0) > metrics.avg_player_cost ? "error" : "success"}
                                     size="small"
                                 />
                             </Paper>
@@ -184,11 +184,11 @@ export function TeamBudget({
                         </Grid>
                     )}
                     
-                    {reserved_budget > 0 && (
+                    {(reserved_budget ?? 0) > 0 && (
                         <Grid item xs={12}>
                             <Alert severity="info">
                                 <AlertTitle>Reserved Budget</AlertTitle>
-                                ₹{reserved_budget.toLocaleString()} is reserved for preferred player acquisitions.
+                                ₹{(reserved_budget ?? 0).toLocaleString()} is reserved for preferred player acquisitions.
                             </Alert>
                         </Grid>
                     )}

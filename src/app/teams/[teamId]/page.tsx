@@ -1,7 +1,7 @@
 import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
-import { TeamBudget } from '@/components/teams/TeamBudget';
-import { TeamPlayers } from '@/components/teams/TeamPlayers';
+import { TeamBudget } from '@/features/team-management/components/dashboard/TeamBudget';
+import { CurrentSquadTable } from '@/features/team-management/components/dashboard/CurrentSquadTable';
 import { Team } from '@/lib/supabase/schema/teams';
 import { Database } from '@/lib/supabase/types/supabase';
 import { Typography, Box, Paper } from '@mui/material';
@@ -24,6 +24,20 @@ export default async function TeamDetailsPage({ params }: { params: { teamId: st
         throw new Error('Team not found');
     }
 
+    // Fetch team players
+    const { data: players, error: playersError } = await supabase
+        .from('players')
+        .select(`
+            *,
+            category:player_categories(*),
+            final_bid_points:player_bids(points)
+        `)
+        .eq('team_id', params.teamId);
+
+    if (playersError) {
+        throw new Error(`Error fetching players: ${playersError.message}`);
+    }
+
     return (
         <div className="space-y-4">
             <Paper className="p-4">
@@ -39,11 +53,21 @@ export default async function TeamDetailsPage({ params }: { params: { teamId: st
 
             <TeamBudget
                 teamId={team.id}
-                initialBudget={team.initial_budget}
-                remainingBudget={team.remaining_budget}
+                budget={{
+                    initial_budget: team.initial_budget,
+                    remaining_budget: team.remaining_budget,
+                    allocated_budget: team.initial_budget - team.remaining_budget
+                }}
+                metrics={{
+                    avg_player_cost: players?.length ? (team.initial_budget - team.remaining_budget) / players.length : 0,
+                    total_players: players?.length || 0,
+                    total_cost: team.initial_budget - team.remaining_budget,
+                    remaining_budget: team.remaining_budget,
+                    budget_utilization: ((team.initial_budget - team.remaining_budget) / team.initial_budget) * 100
+                }}
             />
 
-            <TeamPlayers teamId={team.id} />
+            <CurrentSquadTable players={players || []} />
         </div>
     );
 } 

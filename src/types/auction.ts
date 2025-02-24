@@ -82,4 +82,16 @@ export interface AuctionRoundWithRelations extends AuctionRound {
         amount: number;
         team: Team;
     }>;
+}
+
+export interface TimerConfig {
+    initialCountdown: number;
+    subsequentBidTimer: number;
+    automatedCalls: {
+        firstCall: number;
+        secondCall: number;
+        finalCall: number;
+    };
+    visualIndicators: boolean;
+    soundEnabled: boolean;
 } 

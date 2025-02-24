@@ -13,14 +13,6 @@ export default function HomePage() {
             <ul className="space-y-3">
               <li>
                 <Link 
-                  href="/tournaments/register" 
-                  className="text-blue-600 hover:text-blue-800 hover:underline"
-                >
-                  Tournament Registration
-                </Link>
-              </li>
-              <li>
-                <Link 
                   href="/login" 
                   className="text-blue-600 hover:text-blue-800 hover:underline"
                 >
@@ -33,6 +25,29 @@ export default function HomePage() {
                   className="text-blue-600 hover:text-blue-800 hover:underline"
                 >
                   Register
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Protected Routes */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Protected Routes</h2>
+            <ul className="space-y-3">
+              <li>
+                <Link 
+                  href="/tournaments/register" 
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  Tournament Registration
+                </Link>
+              </li>
+              <li>
+                <Link 
+                  href="/registration-summary" 
+                  className="text-blue-600 hover:text-blue-800 hover:underline"
+                >
+                  Registration Summary
                 </Link>
               </li>
             </ul>

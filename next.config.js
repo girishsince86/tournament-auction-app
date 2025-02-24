@@ -5,15 +5,10 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'yfwormqkewwahqhtmrwh.supabase.co',
-        pathname: '/storage/v1/object/public/**',
-      },
-      {
-        protocol: 'https',
-        hostname: 'raw.githubusercontent.com',
-        pathname: '/PBEL-Tournaments/**',
+        hostname: '**',
       },
     ],
+    unoptimized: true,
   },
 }
 

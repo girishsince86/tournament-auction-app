@@ -13,9 +13,10 @@ import {
     Stack,
     Divider
 } from '@mui/material';
-import { PreferredPlayersBudget } from '@/components/teams/PreferredPlayersBudget';
-import { PreferredPlayersList } from '@/components/teams/PreferredPlayersList';
-import { AddPreferredPlayer } from '@/components/teams/AddPreferredPlayer';
+import { TeamBudget } from '@/features/team-management/components/dashboard/TeamBudget';
+import { PreferredPlayersTable } from '@/features/team-management/components/dashboard/PreferredPlayersTable';
+import { AddPreferredPlayer } from '@/features/team-management/components/dialogs/AddPreferredPlayer';
+import type { PlayerWithPreference } from '@/features/team-management/types';
 import AddIcon from '@mui/icons-material/Add';
 
 interface TabPanelProps {
@@ -54,6 +55,19 @@ export default function PreferredPlayersPage({ params }: { params: { teamId: str
     const [selectedTab, setSelectedTab] = useState(0);
     const [isAddingPlayer, setIsAddingPlayer] = useState(false);
     const [refreshTrigger, setRefreshTrigger] = useState(0);
+    const [isLoading, setIsLoading] = useState(false);
+    const [players, setPlayers] = useState<PlayerWithPreference[]>([]);
+    const [deleteConfirmation, setDeleteConfirmation] = useState<{
+        open: boolean;
+        playerId: string | null;
+        playerName: string;
+    }>({
+        open: false,
+        playerId: null,
+        playerName: ''
+    });
+    const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+    const [availablePlayers, setAvailablePlayers] = useState<PlayerWithPreference[]>([]);
 
     const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
         setSelectedTab(newValue);
@@ -62,6 +76,44 @@ export default function PreferredPlayersPage({ params }: { params: { teamId: str
     const handleAddPlayerSuccess = () => {
         setIsAddingPlayer(false);
         setRefreshTrigger(prev => prev + 1);
+    };
+
+    const handleEditPlayer = (player: PlayerWithPreference) => {
+        // Implementation of handleEditPlayer
+    };
+
+    const handleDeleteClick = (playerId: string, playerName: string) => {
+        setDeleteConfirmation({
+            open: true,
+            playerId,
+            playerName
+        });
+    };
+
+    const handleDeleteCancel = () => {
+        setDeleteConfirmation({
+            open: false,
+            playerId: null,
+            playerName: ''
+        });
+    };
+
+    const handleDeleteConfirm = async () => {
+        // Implementation of handleDeleteConfirm
+        return Promise.resolve();
+    };
+
+    const handleAddPlayer = () => {
+        setIsAddDialogOpen(true);
+    };
+
+    const handleAddDialogClose = () => {
+        setIsAddDialogOpen(false);
+    };
+
+    const handleAddPlayers = async (selectedPlayers: { player_id: string; max_bid: number }[]) => {
+        // Implementation of handleAddPlayers
+        return Promise.resolve();
     };
 
     return (
@@ -75,76 +127,31 @@ export default function PreferredPlayersPage({ params }: { params: { teamId: str
                 </Typography>
             </Box>
 
-            {/* Budget Analysis Section */}
-            <Box mb={4}>
-                <PreferredPlayersBudget 
+            <Stack spacing={3}>
+                <TeamBudget
                     teamId={params.teamId}
-                    onAnalysisComplete={(analysis) => {
-                        console.log('Budget analysis updated:', analysis);
-                    }}
+                    isLoading={isLoading}
                 />
-            </Box>
-
-            <Card>
-                <CardContent>
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-                        <Grid container alignItems="center" justifyContent="space-between">
-                            <Grid item>
-                                <Tabs 
-                                    value={selectedTab} 
-                                    onChange={handleTabChange}
-                                    aria-label="preferred players tabs"
-                                >
-                                    <Tab label="All Players" {...a11yProps(0)} />
-                                    <Tab label="By Position" {...a11yProps(1)} />
-                                    <Tab label="By Priority" {...a11yProps(2)} />
-                                </Tabs>
-                            </Grid>
-                            <Grid item>
-                                <Button
-                                    variant="contained"
-                                    startIcon={<AddIcon />}
-                                    onClick={() => setIsAddingPlayer(true)}
-                                >
-                                    Add Player
-                                </Button>
-                            </Grid>
-                        </Grid>
-                    </Box>
-
-                    <TabPanel value={selectedTab} index={0}>
-                        <PreferredPlayersList
-                            teamId={params.teamId}
-                            refreshTrigger={refreshTrigger}
-                            view="list"
-                        />
-                    </TabPanel>
-
-                    <TabPanel value={selectedTab} index={1}>
-                        <PreferredPlayersList
-                            teamId={params.teamId}
-                            refreshTrigger={refreshTrigger}
-                            view="position"
-                        />
-                    </TabPanel>
-
-                    <TabPanel value={selectedTab} index={2}>
-                        <PreferredPlayersList
-                            teamId={params.teamId}
-                            refreshTrigger={refreshTrigger}
-                            view="priority"
-                        />
-                    </TabPanel>
-                </CardContent>
-            </Card>
-
-            {/* Add Player Dialog */}
-            <AddPreferredPlayer
-                open={isAddingPlayer}
-                onClose={() => setIsAddingPlayer(false)}
-                teamId={params.teamId}
-                onSuccess={handleAddPlayerSuccess}
-            />
+                <Box>
+                    <PreferredPlayersTable
+                        players={players}
+                        onEdit={handleEditPlayer}
+                        onDeleteClick={handleDeleteClick}
+                        deleteConfirmation={deleteConfirmation}
+                        onDeleteCancel={handleDeleteCancel}
+                        onDeleteConfirm={handleDeleteConfirm}
+                        onAdd={handleAddPlayer}
+                        isLoading={isLoading}
+                    />
+                </Box>
+                <AddPreferredPlayer
+                    open={isAddDialogOpen}
+                    onClose={handleAddDialogClose}
+                    onAdd={handleAddPlayers}
+                    teamId={params.teamId}
+                    availablePlayers={availablePlayers}
+                />
+            </Stack>
         </div>
     );
 } 

@@ -34,6 +34,7 @@ import AddIcon from '@mui/icons-material/Add';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import SportsVolleyballIcon from '@mui/icons-material/SportsVolleyball';
 import { PlayerProfile } from '@/types/auction';
+import { PlayerPosition, SkillLevel } from '@/types/database';
 
 // Update positions to match registration form
 const POSITIONS = [
@@ -262,7 +263,7 @@ export default function TournamentPlayers({ params: { tournamentId } }: Tourname
                                     </TableCell>
                                     <TableCell>{player.base_price}</TableCell>
                                     <TableCell>{player.height || 'N/A'}</TableCell>
-                                    <TableCell>{player.last_played_date}</TableCell>
+                                    <TableCell>{player.registration_data?.last_played_date || 'N/A'}</TableCell>
                                     <TableCell align="right">
                                         <IconButton
                                             size="small"
@@ -313,7 +314,7 @@ export default function TournamentPlayers({ params: { tournamentId } }: Tourname
                                     label="Position"
                                     onChange={(e) => setSelectedPlayer({
                                         ...selectedPlayer,
-                                        player_position: e.target.value
+                                        player_position: e.target.value as PlayerPosition
                                     })}
                                 >
                                     {POSITIONS.map(pos => (
@@ -330,7 +331,7 @@ export default function TournamentPlayers({ params: { tournamentId } }: Tourname
                                     label="Skill Level"
                                     onChange={(e) => setSelectedPlayer({
                                         ...selectedPlayer,
-                                        skill_level: e.target.value
+                                        skill_level: e.target.value as SkillLevel
                                     })}
                                 >
                                     {SKILL_LEVELS.map(level => (

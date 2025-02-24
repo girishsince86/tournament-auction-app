@@ -1,18 +1,18 @@
 import { useState, useEffect } from 'react';
-import { Team } from '@/types/auction';
+import { TeamWithStats } from '@/types/auction';
 
 interface UseTeamsProps {
     tournamentId: string;
 }
 
 interface UseTeamsReturn {
-    teams: Team[];
+    teams: TeamWithStats[];
     isLoading: boolean;
     error: string | null;
 }
 
 export function useTeams({ tournamentId }: UseTeamsProps): UseTeamsReturn {
-    const [teams, setTeams] = useState<Team[]>([]);
+    const [teams, setTeams] = useState<TeamWithStats[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
