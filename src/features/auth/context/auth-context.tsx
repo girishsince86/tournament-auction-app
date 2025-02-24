@@ -87,13 +87,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const validatedUser = await validateUser('initial mount')
         setUser(validatedUser)
         
-        if (!validatedUser && !window.location.pathname.startsWith('/login')) {
+        // Skip redirection for registration page
+        const isRegistrationPage = window.location.pathname === '/tournaments/register'
+        if (!validatedUser && !window.location.pathname.startsWith('/login') && !isRegistrationPage) {
           router.push('/login')
         }
       } catch (error) {
         console.error('[Auth Error] Initial authentication error:', error)
         setUser(null)
-        if (!window.location.pathname.startsWith('/login')) {
+        // Skip redirection for registration page
+        const isRegistrationPage = window.location.pathname === '/tournaments/register'
+        if (!window.location.pathname.startsWith('/login') && !isRegistrationPage) {
           router.push('/login')
         }
       } finally {
@@ -112,7 +116,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.log('[Auth Event] User signed out or session ended')
         setUser(null)
         setIsLoading(false)
-        if (!window.location.pathname.startsWith('/login')) {
+        // Skip redirection for registration page
+        const isRegistrationPage = window.location.pathname === '/tournaments/register'
+        if (!window.location.pathname.startsWith('/login') && !isRegistrationPage) {
           router.push('/login')
         }
         return
@@ -126,8 +132,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (window.location.pathname.startsWith('/login')) {
           router.push('/registration-summary')
         }
-      } else if (!validatedUser && !window.location.pathname.startsWith('/login')) {
-        router.push('/login')
+      } else if (!validatedUser) {
+        // Skip redirection for registration page
+        const isRegistrationPage = window.location.pathname === '/tournaments/register'
+        if (!window.location.pathname.startsWith('/login') && !isRegistrationPage) {
+          router.push('/login')
+        }
       }
       
       setIsLoading(false)
