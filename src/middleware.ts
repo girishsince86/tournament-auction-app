@@ -78,26 +78,24 @@ const ADMIN_ROUTES = [
 ]
 
 export async function middleware(request: NextRequest) {
-  const res = NextResponse.next()
-  const pathname = request.nextUrl.pathname
-
-  // Always allow access to tournament registration page
-  if (pathname === '/tournaments/register') {
-    return res
+  // Skip middleware for tournament registration page
+  if (request.nextUrl.pathname === '/tournaments/register') {
+    return NextResponse.next()
   }
 
+  const res = NextResponse.next()
   const supabase = createMiddlewareClient({ req: request, res })
   const { data: { session }, error } = await supabase.auth.getSession()
 
-  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route))
-  const isAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route))
+  const isPublicRoute = PUBLIC_ROUTES.some(route => request.nextUrl.pathname.startsWith(route))
+  const isAdminRoute = ADMIN_ROUTES.some(route => request.nextUrl.pathname.startsWith(route))
 
   // Handle authentication
   if (!session) {
     if (!isPublicRoute) {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.pathname = '/login'
-      redirectUrl.searchParams.set('redirectTo', pathname)
+      redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
       return NextResponse.redirect(redirectUrl)
     }
     return res
@@ -118,7 +116,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Handle public routes when user is authenticated
-  if (isPublicRoute && pathname !== '/tournaments/register' && session) {
+  if (isPublicRoute && request.nextUrl.pathname !== '/tournaments/register' && session) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/registration-summary'
     return NextResponse.redirect(redirectUrl)
@@ -135,7 +133,8 @@ export const config = {
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public (public files)
+     * - tournaments/register (tournament registration page)
      */
-    '/((?!_next/static|_next/image|favicon.ico|public|images|api).*)',
+    '/((?!_next/static|_next/image|favicon.ico|public|images|api|tournaments/register).*)',
   ],
 } 
