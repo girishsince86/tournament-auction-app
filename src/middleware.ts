@@ -86,9 +86,14 @@ export async function middleware(request: NextRequest) {
   const isAdminRoute = ADMIN_ROUTES.some(route => request.nextUrl.pathname.startsWith(route))
   const isRegistrationPage = request.nextUrl.pathname === '/tournaments/register'
 
+  // Always allow access to registration page
+  if (isRegistrationPage) {
+    return res
+  }
+
   // Handle authentication
   if (!session) {
-    if (!isPublicRoute && !isRegistrationPage) {
+    if (!isPublicRoute) {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.pathname = '/login'
       redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
