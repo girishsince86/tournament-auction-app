@@ -3,7 +3,7 @@ import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { PostgrestSingleResponse, PostgrestError } from '@supabase/supabase-js'
 
 export const dynamic = 'force-dynamic'
-export const maxDuration = 300 // Set to 5 minutes for Vercel
+export const maxDuration = 60; // Set to maximum allowed for hobby plan (60 seconds)
 
 interface RegistrationResponse {
   id: string;
