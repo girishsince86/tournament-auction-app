@@ -1,11 +1,7 @@
-'use client'
-
 import '@/styles/globals.css'
 import { Poppins, DM_Sans, JetBrains_Mono } from 'next/font/google'
 import { Toaster } from 'react-hot-toast'
 import { cn } from '@/lib/utils'
-import { ThemeProvider, CssBaseline } from '@mui/material'
-import { theme } from '@/lib/theme'
 import { ThemeRegistry } from '@/components/theme-registry'
 import { AuthProvider } from '@/features/auth/context/auth-context'
 
@@ -45,23 +41,20 @@ export default function RootLayout({
         'antialiased',
         'font-body'
       )}>
-        <ThemeProvider theme={theme}>
-          <CssBaseline />
-          <ThemeRegistry>
-            <AuthProvider>
-              <main className="min-h-screen">
-                {children}
-              </main>
-            </AuthProvider>
-          </ThemeRegistry>
-          <Toaster 
-            position="top-right"
-            toastOptions={{
-              className: 'bg-background-secondary text-text-primary',
-              duration: 4000,
-            }}
-          />
-        </ThemeProvider>
+        <ThemeRegistry>
+          <AuthProvider>
+            <main className="min-h-screen">
+              {children}
+            </main>
+            <Toaster 
+              position="top-right"
+              toastOptions={{
+                className: 'bg-background-secondary text-text-primary',
+                duration: 4000,
+              }}
+            />
+          </AuthProvider>
+        </ThemeRegistry>
       </body>
     </html>
   )

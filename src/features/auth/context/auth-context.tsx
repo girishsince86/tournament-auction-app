@@ -2,18 +2,30 @@
 
 import { createContext, useContext, useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { User } from '@supabase/supabase-js'
 import { createBrowserClient } from '@supabase/ssr'
 import { Database } from '@/lib/supabase/types/supabase'
+import { toast } from 'react-hot-toast'
 
-// Initialize Supabase client outside component
-const supabase = createBrowserClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
+// Initialize Supabase client with environment variables
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+
+const supabase = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
+
+interface AuthUser {
+  id: string
+  email?: string
+  app_metadata: Record<string, any>
+  user_metadata: Record<string, any>
+  raw_app_meta_data?: {
+    role?: string
+    provider?: string
+    providers?: string[]
+  }
+}
 
 interface AuthContextType {
-  user: User | null
+  user: AuthUser | null
   isLoading: boolean
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string) => Promise<void>
@@ -29,44 +41,54 @@ const AuthContext = createContext<AuthContextType>({
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
   // Validate user authentication
   const validateUser = async (source: string) => {
-    console.log(`[Auth Validation] Validating user from: ${source}`)
-    const { data: { user }, error } = await supabase.auth.getUser()
-    
-    if (error) {
-      console.error(`[Auth Validation] Error validating user from ${source}:`, error)
-      return null
-    }
-    
-    if (user) {
-      console.log(`[Auth Validation] Valid user confirmed from ${source}:`, {
+    console.log('[Auth Validation] Validating user from:', source, {
+      user: user ? {
         id: user.id,
         email: user.email,
-        lastSignIn: user.last_sign_in_at,
-      })
-    } else {
-      console.log(`[Auth Validation] No valid user found from ${source}`)
-    }
+        app_metadata: user.app_metadata,
+        user_metadata: user.user_metadata
+      } : null
+    })
     
-    return user
+    try {
+      const { data: { user: currentUser }, error } = await supabase.auth.getUser()
+      
+      if (error || !currentUser) {
+        console.log('[Auth Validation] No valid user found:', { error })
+        setUser(null)
+        return null
+      }
+
+      console.log('[Auth Validation] Valid user confirmed from', source, {
+        id: currentUser.id,
+        email: currentUser.email,
+        app_metadata: currentUser.app_metadata,
+        user_metadata: currentUser.user_metadata
+      })
+      
+      setUser(currentUser)
+      return currentUser
+    } catch (error) {
+      console.error('[Auth Validation] Error validating user:', error)
+      setUser(null)
+      return null
+    }
   }
 
   useEffect(() => {
     const getAuthenticatedUser = async () => {
       try {
         const validatedUser = await validateUser('initial mount')
-        if (!validatedUser) {
-          setUser(null)
-          if (!window.location.pathname.startsWith('/login')) {
-            router.push('/login')
-          }
-        } else {
-          setUser(validatedUser)
+        setUser(validatedUser)
+        
+        if (!validatedUser && !window.location.pathname.startsWith('/login')) {
+          router.push('/login')
         }
       } catch (error) {
         console.error('[Auth Error] Initial authentication error:', error)
@@ -91,24 +113,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null)
         setIsLoading(false)
         if (!window.location.pathname.startsWith('/login')) {
-          window.location.href = '/login'
+          router.push('/login')
         }
         return
       }
       
       // For other events, verify the user
       const validatedUser = await validateUser('auth state change')
-      if (!validatedUser) {
-        setUser(null)
-        if (!window.location.pathname.startsWith('/login')) {
-          router.push('/login')
-        }
-      } else {
-        setUser(validatedUser)
-        if (event === 'SIGNED_IN' && window.location.pathname.startsWith('/login')) {
+      setUser(validatedUser)
+      
+      if (event === 'SIGNED_IN' && validatedUser) {
+        if (window.location.pathname.startsWith('/login')) {
           router.push('/registration-summary')
         }
+      } else if (!validatedUser && !window.location.pathname.startsWith('/login')) {
+        router.push('/login')
       }
+      
       setIsLoading(false)
     })
 
@@ -130,7 +151,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error
       
       // Validate user after sign in
-      await validateUser('post sign in')
+      const validatedUser = await validateUser('post sign in')
+      if (!validatedUser) {
+        throw new Error('Failed to validate user after sign in')
+      }
     } catch (error) {
       console.error('[Auth Error] Sign in error:', error)
       throw error
@@ -154,7 +178,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error
       
       // Validate user after sign up
-      await validateUser('post sign up')
+      const validatedUser = await validateUser('post sign up')
+      if (!validatedUser) {
+        throw new Error('Failed to validate user after sign up')
+      }
     } catch (error) {
       console.error('[Auth Error] Sign up error:', error)
       throw error
@@ -166,24 +193,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = async () => {
     try {
       console.log('[Auth Action] Attempting sign out')
-      
-      // Clear local state first
-      setUser(null)
-      setIsLoading(false)
-      
-      // Force redirect before Supabase sign out
-      console.log('[Auth Action] Redirecting to login')
-      window.location.href = '/login'
-      
-      // Attempt Supabase sign out after redirect is initiated
       const { error } = await supabase.auth.signOut()
+      
       if (error) {
-        console.error('[Auth Error] Supabase sign out error:', error)
+        console.error('[Auth Error] Sign out error:', error)
+        throw error
       }
+      
+      setUser(null)
+      router.push('/login')
     } catch (error) {
       console.error('[Auth Error] Sign out error:', error)
-      // Ensure redirect happens even on error
-      window.location.href = '/login'
+      // Ensure user is redirected to login even on error
+      setUser(null)
+      router.push('/login')
+    } finally {
+      setIsLoading(false)
     }
   }
 

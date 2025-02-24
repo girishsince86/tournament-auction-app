@@ -1,7 +1,19 @@
+import { createMiddlewareClient } from '@supabase/auth-helpers-nextjs'
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { Database } from '@/lib/supabase/types/supabase'
+
+interface User {
+  id: string
+  email?: string
+  app_metadata: Record<string, any>
+  raw_app_meta_data?: {
+    role?: string
+    provider?: string
+    providers?: string[]
+  }
+}
 
 // Centralized route configuration
 const ROUTES = {
@@ -16,6 +28,12 @@ const ROUTES = {
       base: '/admin' as const,
       manageRegistrations: '/admin/manage-registrations' as const,
       volleyballPlayers: '/admin/volleyball-players' as const,
+    },
+    api: {
+      base: '/api' as const,
+      auction: '/api/auction' as const,
+      teams: '/api/teams' as const,
+      players: '/api/players' as const,
     },
     registrationSummary: '/registration-summary' as const,
     dashboard: '/dashboard' as const,
@@ -39,99 +57,72 @@ const isAuthPath = (path: string): boolean => {
   const authPaths = [
     ROUTES.auth.login,
     ROUTES.auth.register,
-    ROUTES.auth.verifyEmail
+    ROUTES.auth.verifyEmail,
+    ROUTES.auth.callback
   ]
   return authPaths.includes(path as typeof authPaths[number])
 }
 
+const PUBLIC_ROUTES = ['/login', '/signup', '/auth/callback']
+const ADMIN_ROUTES = [
+  '/admin/manage-registrations',
+  '/admin/volleyball-players',
+  '/admin/auction',
+  '/admin/team-budgets'
+]
+
 export async function middleware(request: NextRequest) {
-  try {
-    const response = NextResponse.next()
-    const { pathname } = request.nextUrl
+  const res = NextResponse.next()
+  const supabase = createMiddlewareClient({ req: request, res })
+  const { data: { session }, error } = await supabase.auth.getSession()
 
-    // Create supabase server client
-    const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return request.cookies.get(name)?.value
-          },
-          set(name: string, value: string, options: CookieOptions) {
-            response.cookies.set({ name, value, ...options })
-          },
-          remove(name: string, options: CookieOptions) {
-            response.cookies.delete({ name, ...options })
-          },
-        },
-      }
-    )
+  const isPublicRoute = PUBLIC_ROUTES.some(route => request.nextUrl.pathname.startsWith(route))
+  const isAdminRoute = ADMIN_ROUTES.some(route => request.nextUrl.pathname.startsWith(route))
 
-    // Get authenticated user data
-    const { data: { user }, error } = await supabase.auth.getUser()
-
-    const isProtectedPath = pathStartsWith(pathname, [
-      ROUTES.protected.admin.base,
-      ROUTES.protected.registrationSummary,
-      ROUTES.protected.dashboard
-    ])
-
-    const isAdminPath = pathname.startsWith(ROUTES.protected.admin.base)
-
-    // Handle authentication paths (login/register)
-    if (isAuthPath(pathname)) {
-      if (user) {
-        // If user is already logged in, redirect to default page
-        return NextResponse.redirect(new URL(ROUTES.defaultRedirect, request.url))
-      }
-      return response
+  // Handle authentication
+  if (!session) {
+    if (!isPublicRoute) {
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/login'
+      redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
+      return NextResponse.redirect(redirectUrl)
     }
-
-    // Handle protected paths
-    if (isProtectedPath) {
-      if (!user) {
-        // Store the original URL to redirect back after login
-        const redirectUrl = new URL(ROUTES.auth.login, request.url)
-        redirectUrl.searchParams.set('redirectTo', pathname)
-        return NextResponse.redirect(redirectUrl)
-      }
-
-      // Special case: redirect /dashboard to default page
-      if (pathname === ROUTES.protected.dashboard) {
-        return NextResponse.redirect(new URL(ROUTES.defaultRedirect, request.url))
-      }
-
-      // Handle admin routes
-      if (isAdminPath) {
-        const userEmail = user.email
-        if (!userEmail?.endsWith('@pbel.in')) {
-          return NextResponse.redirect(new URL(ROUTES.defaultRedirect, request.url))
-        }
-      }
-    }
-
-    return response
-  } catch (error) {
-    console.error('Middleware error:', error)
-    return NextResponse.next()
+    return res
   }
+
+  // Handle admin routes
+  if (isAdminRoute) {
+    const isAdmin = session.user.email?.endsWith('@pbel.in') ||
+                   session.user.app_metadata?.role === 'admin' ||
+                   session.user.user_metadata?.role === 'admin'
+
+    if (!isAdmin) {
+      // Redirect non-admin users to registration summary
+      const redirectUrl = request.nextUrl.clone()
+      redirectUrl.pathname = '/registration-summary'
+      return NextResponse.redirect(redirectUrl)
+    }
+  }
+
+  // Handle public routes when user is authenticated
+  if (isPublicRoute && session) {
+    const redirectUrl = request.nextUrl.clone()
+    redirectUrl.pathname = '/registration-summary'
+    return NextResponse.redirect(redirectUrl)
+  }
+
+  return res
 }
 
-// Configure which paths the middleware should run on
 export const config = {
   matcher: [
-    // Protected routes
-    '/admin/:path*',
-    '/registration-summary',
-    '/dashboard',
-    
-    // Auth routes
-    '/login',
-    '/register',
-    '/verify-email',
-    
-    // Profile routes
-    '/profile/:path*'
-  ]
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - public (public files)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|public|images|api).*)',
+  ],
 } 

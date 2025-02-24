@@ -5,6 +5,8 @@ import { Box, Toolbar } from '@mui/material'
 import { Header } from '../Header'
 import { Sidebar } from '../Sidebar'
 
+const DRAWER_WIDTH = 120;
+
 export function DashboardLayout({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(true)
 
@@ -13,7 +15,7 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
   }
 
   return (
-    <Box sx={{ display: 'flex', minHeight: '100vh' }}>
+    <Box sx={{ display: 'flex' }}>
       <Header onMenuClick={toggleSidebar} isSidebarOpen={isSidebarOpen} />
       <Sidebar isOpen={isSidebarOpen} onClose={() => setIsSidebarOpen(false)} />
       <Box
@@ -21,10 +23,14 @@ export function DashboardLayout({ children }: { children: React.ReactNode }) {
         sx={{
           flexGrow: 1,
           p: 3,
-          width: { sm: `calc(100% - ${240}px)` },
+          ml: isSidebarOpen ? `${DRAWER_WIDTH}px` : 0,
+          transition: theme => theme.transitions.create('margin-left', {
+            easing: theme.transitions.easing.sharp,
+            duration: theme.transitions.duration.enteringScreen,
+          }),
         }}
       >
-        <Toolbar /> {/* This creates space for the header */}
+        <Toolbar />
         {children}
       </Box>
     </Box>

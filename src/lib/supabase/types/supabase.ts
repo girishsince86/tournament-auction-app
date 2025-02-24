@@ -45,70 +45,143 @@ export type AuctionSummary = z.infer<typeof AuctionSummarySchema>;
 export interface Database {
   public: {
     Tables: {
-      tournaments: {
-        Row: Tournament;
-        Insert: Omit<Tournament, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<Tournament, 'id' | 'created_at' | 'updated_at'>>;
-      };
-      tournament_rules: {
-        Row: TournamentRule;
-        Insert: Omit<TournamentRule, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<TournamentRule, 'id' | 'created_at' | 'updated_at'>>;
-      };
-      tournament_registrations: {
-        Row: TournamentRegistration & {
-          email: string;
-          date_of_birth: string | null;
-          parent_name: string | null;
-          parent_phone_number: string | null;
+      auction_queue: {
+        Row: {
+          id: string;
+          tournament_id: string;
+          player_id: string;
+          queue_position: number;
+          is_processed: boolean;
+          created_at: string;
+          updated_at: string;
         };
-        Insert: Omit<TournamentRegistration & {
-          email: string;
-          date_of_birth: string | null;
-          parent_name: string | null;
-          parent_phone_number: string | null;
-        }, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<TournamentRegistration & {
-          email: string;
-          date_of_birth: string | null;
-          parent_name: string | null;
-          parent_phone_number: string | null;
-        }, 'id' | 'created_at' | 'updated_at'>>;
+        Insert: Omit<Database['public']['Tables']['auction_queue']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Database['public']['Tables']['auction_queue']['Row'], 'id' | 'created_at' | 'updated_at'>>;
       };
       players: {
-        Row: Player;
-        Insert: Omit<Player, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<Player, 'id' | 'created_at' | 'updated_at'>>;
-      };
-      player_statistics: {
-        Row: PlayerStatistics;
-        Insert: Omit<PlayerStatistics, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<PlayerStatistics, 'id' | 'created_at' | 'updated_at'>>;
+        Row: {
+          id: string;
+          name: string;
+          age: number;
+          player_position: string;
+          base_price: number;
+          current_team_id: string | null;
+          image_url: string | null;
+          status: string;
+          phone_number: string;
+          apartment_number: string;
+          jersey_number: string | null;
+          tshirt_size: string;
+          skill_level: string;
+          height: number | null;
+          experience: number | null;
+          category_id: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['players']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Database['public']['Tables']['players']['Row'], 'id' | 'created_at' | 'updated_at'>>;
       };
       teams: {
-        Row: Team;
-        Insert: Omit<Team, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<Team, 'id' | 'created_at' | 'updated_at'>>;
-      };
-      team_statistics: {
-        Row: TeamStatistics;
-        Insert: Omit<TeamStatistics, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<TeamStatistics, 'id' | 'created_at' | 'updated_at'>>;
-      };
-      auction_settings: {
-        Row: AuctionSettings;
-        Insert: Omit<AuctionSettings, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<AuctionSettings, 'id' | 'created_at' | 'updated_at'>>;
+        Row: {
+          id: string;
+          name: string;
+          owner_name: string;
+          owner_id: string;
+          initial_budget: number;
+          remaining_budget: number;
+          max_players: number;
+          tournament_id: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['teams']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Database['public']['Tables']['teams']['Row'], 'id' | 'created_at' | 'updated_at'>>;
       };
       auction_rounds: {
-        Row: AuctionRound;
-        Insert: Omit<AuctionRound, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<AuctionRound, 'id' | 'created_at' | 'updated_at'>>;
+        Row: {
+          id: string;
+          tournament_id: string;
+          player_id: string;
+          status: string;
+          starting_price: number;
+          final_points: number | null;
+          winning_team_id: string | null;
+          is_manual_entry: boolean;
+          display_sequence: number;
+          auction_date: string;
+          conductor_notes: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['auction_rounds']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Database['public']['Tables']['auction_rounds']['Row'], 'id' | 'created_at' | 'updated_at'>>;
       };
-      bids: {
-        Row: Bid;
-        Insert: Omit<Bid, 'id' | 'created_at' | 'updated_at'>;
-        Update: Partial<Omit<Bid, 'id' | 'created_at' | 'updated_at'>>;
+      tournaments: {
+        Row: {
+          id: string;
+          name: string;
+          description: string;
+          start_date: string;
+          end_date: string;
+          registration_deadline: string;
+          max_teams: number;
+          max_players_per_team: number;
+          min_players_per_team: number;
+          team_points_budget: number;
+          is_active: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['tournaments']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Database['public']['Tables']['tournaments']['Row'], 'id' | 'created_at' | 'updated_at'>>;
+      };
+      player_categories: {
+        Row: {
+          id: string;
+          tournament_id: string;
+          name: string;
+          category_type: string;
+          base_points: number;
+          min_points: number;
+          max_points: number;
+          description: string;
+          skill_level: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['player_categories']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Database['public']['Tables']['player_categories']['Row'], 'id' | 'created_at' | 'updated_at'>>;
+      };
+      team_position_requirements: {
+        Row: {
+          id: string;
+          team_id: string;
+          position: string;
+          min_players: number;
+          max_players: number;
+          current_count: number;
+          points_allocated: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['team_position_requirements']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Database['public']['Tables']['team_position_requirements']['Row'], 'id' | 'created_at' | 'updated_at'>>;
+      };
+      team_skill_requirements: {
+        Row: {
+          id: string;
+          team_id: string;
+          skill_level: string;
+          min_players: number;
+          max_players: number;
+          current_count: number;
+          points_allocated: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: Omit<Database['public']['Tables']['team_skill_requirements']['Row'], 'id' | 'created_at' | 'updated_at'>;
+        Update: Partial<Omit<Database['public']['Tables']['team_skill_requirements']['Row'], 'id' | 'created_at' | 'updated_at'>>;
       };
     };
     Views: {
@@ -135,7 +208,7 @@ export interface Database {
         | 'P5_LEFT_BACK'
         | 'P6_MIDDLE_BACK'
         | 'ANY_POSITION';
-      player_status: 'AVAILABLE' | 'IN_AUCTION' | 'SOLD' | 'UNSOLD';
+      player_status: 'AVAILABLE' | 'IN_AUCTION' | 'ALLOCATED' | 'UNALLOCATED';
       skill_level: 
         | 'RECREATIONAL_C'
         | 'INTERMEDIATE_B'

@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
+import { cookies } from 'next/headers'
+import { Database } from '@/lib/supabase/types/supabase'
 
 export const dynamic = 'force-dynamic'
 
@@ -63,17 +66,22 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const supabase = createServerSupabaseClient()
-    if (!supabase) {
+    const supabase = createRouteHandlerClient<Database>({ cookies })
+
+    // Check if user is authenticated
+    const { data: { session }, error: authError } = await supabase.auth.getSession()
+    
+    if (authError || !session) {
       return NextResponse.json(
-        { error: 'Database client not available' },
-        { status: 503 }
+        { error: 'Unauthorized' },
+        { status: 401 }
       )
     }
 
-    const { data, error } = await supabase
+    // Get all tournaments with is_active flag
+    const { data: tournaments, error } = await supabase
       .from('tournaments')
       .select('*')
       .order('created_at', { ascending: false })
@@ -86,9 +94,12 @@ export async function GET() {
       )
     }
 
+    // Find the current (active) tournament
+    const currentTournament = tournaments.find(t => t.is_active)
+
     return NextResponse.json({
-      tournaments: data,
-      message: 'Tournaments retrieved successfully'
+      tournaments,
+      currentTournament
     })
   } catch (error) {
     console.error('Unexpected error:', error)

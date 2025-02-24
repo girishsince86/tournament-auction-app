@@ -16,6 +16,7 @@ import {
 } from '@mui/material'
 import { useRegistrationForm } from '../../../hooks/use-registration-form'
 import { useState } from 'react'
+import { SkillLevel, skillLevelDisplayText } from '@/lib/supabase/schema/players'
 
 interface PlayerProfileProps {
   onNext: () => void
@@ -23,10 +24,10 @@ interface PlayerProfileProps {
 }
 
 const skillLevels = [
-  { value: 'RECREATIONAL_C', label: 'Recreational C' },
-  { value: 'INTERMEDIATE_B', label: 'Intermediate B' },
-  { value: 'UPPER_INTERMEDIATE_BB', label: 'Upper Intermediate BB' },
-  { value: 'COMPETITIVE_A', label: 'Competitive A' },
+  { value: 'COMPETITIVE_A', label: skillLevelDisplayText.COMPETITIVE_A },
+  { value: 'UPPER_INTERMEDIATE_BB', label: skillLevelDisplayText.UPPER_INTERMEDIATE_BB },
+  { value: 'INTERMEDIATE_B', label: skillLevelDisplayText.INTERMEDIATE_B },
+  { value: 'RECREATIONAL_C', label: skillLevelDisplayText.RECREATIONAL_C },
 ]
 
 const playingPositions = [

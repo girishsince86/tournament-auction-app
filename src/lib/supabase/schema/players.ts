@@ -13,8 +13,8 @@ export const PlayerPosition = z.enum([
 export const PlayerStatus = z.enum([
   'AVAILABLE',
   'IN_AUCTION',
-  'SOLD',
-  'UNSOLD',
+  'ALLOCATED',
+  'UNALLOCATED',
 ]);
 
 export const SkillLevel = z.enum([
@@ -23,6 +23,22 @@ export const SkillLevel = z.enum([
   'UPPER_INTERMEDIATE_BB',
   'COMPETITIVE_A',
 ]);
+
+export type SkillLevel = z.infer<typeof SkillLevel>;
+
+export const skillLevelDisplayText: Record<SkillLevel, string> = {
+  'RECREATIONAL_C': 'Recreational',
+  'INTERMEDIATE_B': 'Intermediate',
+  'UPPER_INTERMEDIATE_BB': 'Upper Intermediate',
+  'COMPETITIVE_A': 'Competitive',
+};
+
+export const skillLevelLabels: Record<SkillLevel, string> = {
+  'COMPETITIVE_A': 'Level 1',
+  'UPPER_INTERMEDIATE_BB': 'Level 2',
+  'INTERMEDIATE_B': 'Level 3',
+  'RECREATIONAL_C': 'Level 4',
+};
 
 export const TShirtSize = z.enum([
   'XS',

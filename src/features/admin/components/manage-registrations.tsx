@@ -585,6 +585,40 @@ export function ManageRegistrations() {
       ),
     },
     {
+      field: 'payment_transaction_id',
+      headerName: 'Transaction ID',
+      width: 150,
+      filterable: true,
+      renderCell: (params) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            fontFamily: 'monospace',
+            color: params.value ? 'text.primary' : 'text.secondary',
+          }}
+        >
+          {params.value || '-'}
+        </Typography>
+      ),
+    },
+    {
+      field: 'payment_upi_id',
+      headerName: 'UPI ID',
+      width: 150,
+      filterable: true,
+      renderCell: (params) => (
+        <Typography 
+          variant="body2" 
+          sx={{ 
+            fontFamily: 'monospace',
+            color: params.value ? 'text.primary' : 'text.secondary',
+          }}
+        >
+          {params.value || '-'}
+        </Typography>
+      ),
+    },
+    {
       field: 'verified_by',
       headerName: 'Verified By',
       width: 130,
@@ -603,22 +637,15 @@ export function ManageRegistrations() {
     },
     {
       field: 'verified_at',
-      headerName: 'Verified On',
+      headerName: 'Verified At',
       width: 180,
       filterable: true,
-      type: 'dateTime',
-      valueGetter: (params: { row: TournamentRegistration }) => {
-        if (!params?.row) return null;
-        const value = params.row.verified_at;
-        if (!value) return null;
-        return new Date(value);
-      },
       renderCell: (params) => (
         <Typography 
           variant="body2" 
           sx={{ 
-            color: 'text.secondary',
-            fontSize: '0.875rem',
+            color: params.value ? 'success.main' : 'text.secondary',
+            fontFamily: theme.typography.fontFamily,
           }}
         >
           {params.value ? new Date(params.value).toLocaleString() : '-'}
@@ -627,25 +654,18 @@ export function ManageRegistrations() {
     },
     {
       field: 'created_at',
-      headerName: 'Registered On',
+      headerName: 'Created At',
       width: 180,
       filterable: true,
-      type: 'dateTime',
-      valueGetter: (params: { row: TournamentRegistration }) => {
-        if (!params?.row) return null;
-        const value = params.row.created_at;
-        if (!value) return null;
-        return new Date(value);
-      },
-      renderCell: (params: GridRenderCellParams<TournamentRegistration>) => (
+      renderCell: (params) => (
         <Typography 
           variant="body2" 
           sx={{ 
             color: 'text.secondary',
-            fontSize: '0.875rem',
+            fontFamily: theme.typography.fontFamily,
           }}
         >
-          {params.row.created_at ? new Date(params.row.created_at).toLocaleString() : '-'}
+          {new Date(params.value).toLocaleString()}
         </Typography>
       ),
     },
@@ -1037,6 +1057,8 @@ export function ManageRegistrations() {
                     'is_verified',
                     'amount_received',
                     'paid_to',
+                    'payment_transaction_id',
+                    'payment_upi_id',
                     'verified_by',
                     'verified_at',
                     'created_at'

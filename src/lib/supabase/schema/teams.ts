@@ -1,5 +1,21 @@
 import { z } from 'zod';
 
+export interface Team {
+    id: string;
+    name: string;
+    tournament_id: string;
+    owner_id: string;
+    created_at: string;
+    updated_at: string;
+    initial_budget: number;
+    remaining_budget: number;
+}
+
+export interface TeamWithBudget extends Team {
+    total_spent: number;
+    players_count: number;
+}
+
 export const TeamSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),
