@@ -66,36 +66,39 @@ const isAuthPath = (path: string): boolean => {
 const PUBLIC_ROUTES = [
   '/login', 
   '/signup', 
-  '/auth/callback',
-  '/tournaments/register'
+  '/auth/callback'
 ]
 
 const ADMIN_ROUTES = [
+  '/admin',
   '/admin/manage-registrations',
   '/admin/volleyball-players',
   '/admin/auction',
   '/admin/team-budgets'
 ]
 
-export async function middleware(request: NextRequest) {
-  // Skip middleware for tournament registration page
-  if (request.nextUrl.pathname === '/tournaments/register') {
-    return NextResponse.next()
-  }
+const PROTECTED_ROUTES = [
+  '/registration-summary',
+  '/dashboard',
+  '/admin',
+  '/teams'
+]
 
+export async function middleware(request: NextRequest) {
   const res = NextResponse.next()
   const supabase = createMiddlewareClient({ req: request, res })
   const { data: { session }, error } = await supabase.auth.getSession()
 
-  const isPublicRoute = PUBLIC_ROUTES.some(route => request.nextUrl.pathname.startsWith(route))
-  const isAdminRoute = ADMIN_ROUTES.some(route => request.nextUrl.pathname.startsWith(route))
+  const pathname = request.nextUrl.pathname
+  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route))
+  const isAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route))
 
   // Handle authentication
   if (!session) {
     if (!isPublicRoute) {
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.pathname = '/login'
-      redirectUrl.searchParams.set('redirectTo', request.nextUrl.pathname)
+      redirectUrl.searchParams.set('redirectTo', pathname)
       return NextResponse.redirect(redirectUrl)
     }
     return res
@@ -116,7 +119,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Handle public routes when user is authenticated
-  if (isPublicRoute && request.nextUrl.pathname !== '/tournaments/register' && session) {
+  if (isPublicRoute && session) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/registration-summary'
     return NextResponse.redirect(redirectUrl)
@@ -127,14 +130,14 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public (public files)
-     * - tournaments/register (tournament registration page)
-     */
-    '/((?!_next/static|_next/image|favicon.ico|public|images|api|tournaments/register).*)',
-  ],
+    // Match only specific protected routes
+    '/registration-summary',
+    '/dashboard/:path*',
+    '/admin/:path*',
+    '/teams/:path*',
+    // Match auth routes
+    '/login',
+    '/signup',
+    '/auth/callback'
+  ]
 } 
