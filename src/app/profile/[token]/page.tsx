@@ -446,7 +446,15 @@ export default function PlayerProfilePage({ params }: Props) {
                           <HeightIcon fontSize="small" sx={{ mr: 1, verticalAlign: 'middle' }} />
                           Height
                         </Typography>
-                        <Typography>{player.height} cm</Typography>
+                        <Typography>
+                          {(() => {
+                            const heightInM = typeof player.height === 'string' 
+                              ? parseFloat(player.height) 
+                              : player.height;
+                            const heightInCm = Math.round(heightInM * 100);
+                            return `${heightInCm} cm`;
+                          })()}
+                        </Typography>
                       </Stack>
                     </Grid>
                   )}

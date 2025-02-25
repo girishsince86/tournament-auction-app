@@ -93,6 +93,7 @@ export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname
   const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route))
   const isAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route))
+  const isProfileRoute = pathname.startsWith('/profile/')
 
   // Handle authentication
   if (!session) {
@@ -120,7 +121,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Handle public routes when user is authenticated
-  if (isPublicRoute && session) {
+  if (isPublicRoute && !isProfileRoute && session) {
     const redirectUrl = request.nextUrl.clone()
     redirectUrl.pathname = '/registration-summary'
     return NextResponse.redirect(redirectUrl)
