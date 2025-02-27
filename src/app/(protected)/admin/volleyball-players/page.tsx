@@ -68,7 +68,11 @@ export default function VolleyballPlayersPage() {
       }
 
       const { token } = await response.json()
-      const profileUrl = `${window.location.origin}/profile/${token}`
+      // Safely access window.location.origin with a fallback
+      const origin = typeof window !== 'undefined' 
+        ? window.location.origin 
+        : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      const profileUrl = `${origin}/profile/${token}`
       
       // Copy to clipboard
       await navigator.clipboard.writeText(profileUrl)

@@ -35,8 +35,8 @@ export default function ResetPasswordPage() {
       try {
         setIsLoading(true)
         
-        // Get the hash fragment from the URL
-        const hash = window.location.hash
+        // Get the hash fragment from the URL, safely checking for window
+        const hash = typeof window !== 'undefined' ? window.location.hash : '';
         
         if (!hash) {
           setError('Invalid or expired password reset link')

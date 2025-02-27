@@ -90,18 +90,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(validatedUser)
         
         // Skip redirection for registration and profile pages
-        const isPublicPage = window.location.pathname === '/tournaments/register' || 
-                           window.location.pathname.startsWith('/profile/')
-        if (!validatedUser && !window.location.pathname.startsWith('/login') && !isPublicPage) {
+        let isPublicPage = false
+        if (typeof window !== 'undefined') {
+          isPublicPage = window.location.pathname === '/tournaments/register' || 
+                         window.location.pathname.startsWith('/profile/')
+        }
+        
+        if (!validatedUser && !(typeof window !== 'undefined' && window.location.pathname.startsWith('/login')) && !isPublicPage) {
           router.push('/login')
         }
       } catch (error) {
         console.error('[Auth Error] Initial authentication error:', error)
         setUser(null)
         // Skip redirection for registration and profile pages
-        const isPublicPage = window.location.pathname === '/tournaments/register' || 
-                           window.location.pathname.startsWith('/profile/')
-        if (!window.location.pathname.startsWith('/login') && !isPublicPage) {
+        let isPublicPage = false
+        if (typeof window !== 'undefined') {
+          isPublicPage = window.location.pathname === '/tournaments/register' || 
+                         window.location.pathname.startsWith('/profile/')
+        }
+        
+        if (!(typeof window !== 'undefined' && window.location.pathname.startsWith('/login')) && !isPublicPage) {
           router.push('/login')
         }
       } finally {
@@ -121,9 +129,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setUser(null)
         setIsLoading(false)
         // Skip redirection for registration and profile pages
-        const isPublicPage = window.location.pathname === '/tournaments/register' || 
-                           window.location.pathname.startsWith('/profile/')
-        if (!window.location.pathname.startsWith('/login') && !isPublicPage) {
+        let isPublicPage = false
+        if (typeof window !== 'undefined') {
+          isPublicPage = window.location.pathname === '/tournaments/register' || 
+                         window.location.pathname.startsWith('/profile/')
+        }
+        
+        if (!(typeof window !== 'undefined' && window.location.pathname.startsWith('/login')) && !isPublicPage) {
           router.push('/login')
         }
         return
@@ -134,14 +146,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(validatedUser)
       
       if (event === 'SIGNED_IN' && validatedUser) {
-        if (window.location.pathname.startsWith('/login')) {
+        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/login')) {
           router.push('/registration-summary')
         }
       } else if (!validatedUser) {
         // Skip redirection for registration and profile pages
-        const isPublicPage = window.location.pathname === '/tournaments/register' || 
-                           window.location.pathname.startsWith('/profile/')
-        if (!window.location.pathname.startsWith('/login') && !isPublicPage) {
+        let isPublicPage = false
+        if (typeof window !== 'undefined') {
+          isPublicPage = window.location.pathname === '/tournaments/register' || 
+                         window.location.pathname.startsWith('/profile/')
+        }
+        
+        if (!(typeof window !== 'undefined' && window.location.pathname.startsWith('/login')) && !isPublicPage) {
           router.push('/login')
         }
       }
@@ -217,8 +233,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setIsLoading(true)
     try {
       console.log('[Auth Action] Attempting password reset')
+      
+      // Get the origin for the redirect URL, defaulting to a fallback if window is not available
+      const origin = typeof window !== 'undefined' 
+        ? window.location.origin 
+        : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+        redirectTo: `${origin}/reset-password`,
       })
 
       if (error) throw error

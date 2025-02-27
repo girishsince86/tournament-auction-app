@@ -3,6 +3,9 @@ import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs'
 import { cookies } from 'next/headers'
 import { Database } from '@/lib/supabase/types/supabase'
 
+// Mark this route as dynamic to prevent static generation errors
+export const dynamic = 'force-dynamic'
+
 // Helper function to check if a user is a full admin
 const isFullAdmin = (email?: string): boolean => {
   // Define known admin emails (these will have full admin access)
