@@ -10,17 +10,16 @@ const nextConfig = {
     ],
     unoptimized: true,
   },
-  // Set all pages to be dynamic by default
+  // Disable static generation completely
+  output: 'standalone',
+  // Set all pages to be server-side rendered
   experimental: {
     serverActions: {
       allowedOrigins: ['localhost:3000', 'pbel-volleyball.vercel.app'],
     },
-  },
-  // Force all pages to be server-side rendered
-  output: 'standalone',
-  // Disable static optimization
-  compiler: {
-    styledComponents: true,
+    // Disable static optimization completely
+    isrMemoryCacheSize: 0,
+    serverComponentsExternalPackages: ['*'],
   },
   // Force all pages to be server-side rendered
   staticPageGenerationTimeout: 1,
@@ -28,6 +27,14 @@ const nextConfig = {
   env: {
     NEXT_DISABLE_STATIC_GENERATION: 'true',
   },
+  // Disable static optimization
+  compiler: {
+    styledComponents: true,
+  },
+  // Disable static page generation
+  generateEtags: false,
+  poweredByHeader: false,
+  trailingSlash: false,
 }
 
 module.exports = nextConfig
