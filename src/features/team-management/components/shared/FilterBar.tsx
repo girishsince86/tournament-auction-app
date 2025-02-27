@@ -15,22 +15,25 @@ import {
 import ClearIcon from '@mui/icons-material/Clear';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import SearchIcon from '@mui/icons-material/Search';
-import type { FilterState } from '../../types';
-import { POSITIONS, SKILL_LEVELS } from '@/lib/constants';
+import type { FilterState } from '../../types/filter';
+import { POSITIONS, SKILL_LEVELS, CATEGORY_LABELS, INITIAL_FILTER_STATE } from '../../constants/index';
+import type { PositionConfig, SkillLevelConfig } from '../../constants/index';
 import React from 'react';
 
 interface FilterBarProps {
-    filterState: FilterState;
+    filterState?: FilterState;
     onFilterChange: (newState: FilterState) => void;
     onClearFilters: () => void;
     title?: string;
+    showCategoryFilter?: boolean;
 }
 
 export function FilterBar({
-    filterState,
+    filterState = INITIAL_FILTER_STATE,
     onFilterChange,
     onClearFilters,
-    title = 'Filter Players'
+    title = 'Filter Players',
+    showCategoryFilter = false
 }: FilterBarProps) {
     const handleFilterChange = (field: keyof FilterState, value: string | number) => {
         onFilterChange({
@@ -63,21 +66,64 @@ export function FilterBar({
         >
             <Grid container spacing={2}>
                 <Grid item xs={12}>
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-                        <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <ManageSearchIcon color="primary" />
-                            {title}
-                        </Typography>
-                        <Button
-                            size="small"
-                            startIcon={<ClearIcon />}
-                            onClick={onClearFilters}
-                        >
-                            Clear All Filters
-                        </Button>
-                    </Box>
+                    {title && (
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                            <Typography variant="subtitle1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <ManageSearchIcon color="primary" />
+                                {title}
+                            </Typography>
+                            <Button
+                                size="small"
+                                startIcon={<ClearIcon />}
+                                onClick={onClearFilters}
+                            >
+                                Clear All Filters
+                            </Button>
+                        </Box>
+                    )}
+                    {!title && (
+                        <Box display="flex" justifyContent="flex-end" mb={2}>
+                            <Button
+                                size="small"
+                                startIcon={<ClearIcon />}
+                                onClick={onClearFilters}
+                            >
+                                Clear All Filters
+                            </Button>
+                        </Box>
+                    )}
                 </Grid>
-                <Grid item xs={12} sm={3}>
+                {showCategoryFilter && (
+                    <Grid item xs={12} sm={4}>
+                        <FormControl fullWidth size="small">
+                            <InputLabel>Category</InputLabel>
+                            <Select
+                                value={filterState.category}
+                                label="Category"
+                                onChange={(e) => handleFilterChange('category', e.target.value)}
+                            >
+                                <MenuItem value="">All Categories</MenuItem>
+                                {CATEGORY_LABELS.map((cat) => (
+                                    <MenuItem 
+                                        key={cat.value} 
+                                        value={cat.value}
+                                        sx={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: 1
+                                        }}
+                                    >
+                                        <Box component="span" sx={{ color: cat.color }}>
+                                            {React.createElement(cat.icon)}
+                                        </Box>
+                                        {cat.label}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
+                    </Grid>
+                )}
+                <Grid item xs={12} sm={4}>
                     <FormControl fullWidth size="small">
                         <InputLabel>Position</InputLabel>
                         <Select
@@ -86,7 +132,7 @@ export function FilterBar({
                             onChange={(e) => handleFilterChange('position', e.target.value)}
                         >
                             <MenuItem value="">All Positions</MenuItem>
-                            {POSITIONS.map((pos) => (
+                            {POSITIONS.map((pos: PositionConfig) => (
                                 <MenuItem 
                                     key={pos.value} 
                                     value={pos.value}
@@ -105,7 +151,7 @@ export function FilterBar({
                         </Select>
                     </FormControl>
                 </Grid>
-                <Grid item xs={12} sm={3}>
+                <Grid item xs={12} sm={4}>
                     <FormControl fullWidth size="small">
                         <InputLabel>Skill Level</InputLabel>
                         <Select
@@ -114,7 +160,7 @@ export function FilterBar({
                             onChange={(e) => handleFilterChange('skillLevel', e.target.value)}
                         >
                             <MenuItem value="">All Skill Levels</MenuItem>
-                            {SKILL_LEVELS.map((skill) => (
+                            {SKILL_LEVELS.map((skill: SkillLevelConfig) => (
                                 <MenuItem 
                                     key={skill.value} 
                                     value={skill.value}
@@ -132,32 +178,6 @@ export function FilterBar({
                             ))}
                         </Select>
                     </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                    <TextField
-                        fullWidth
-                        size="small"
-                        label="Min Price"
-                        type="number"
-                        value={filterState.minPrice}
-                        onChange={(e) => handleFilterChange('minPrice', e.target.value === '' ? '' : Number(e.target.value))}
-                        InputProps={{
-                            inputProps: { min: 0 }
-                        }}
-                    />
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                    <TextField
-                        fullWidth
-                        size="small"
-                        label="Max Price"
-                        type="number"
-                        value={filterState.maxPrice}
-                        onChange={(e) => handleFilterChange('maxPrice', e.target.value === '' ? '' : Number(e.target.value))}
-                        InputProps={{
-                            inputProps: { min: 0 }
-                        }}
-                    />
                 </Grid>
                 <Grid item xs={12}>
                     <TextField

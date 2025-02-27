@@ -1,10 +1,10 @@
 import { Box, Typography, Paper, Grid, Card, CardContent, Chip } from '@mui/material'
 
-export default function PlayersPage() {
+export default function ManagePlayersPage() {
   return (
     <Box p={3}>
       <Typography variant="h4" gutterBottom>
-        Players
+        Manage Players
       </Typography>
 
       <Grid container spacing={3}>

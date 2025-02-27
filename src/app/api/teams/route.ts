@@ -19,14 +19,19 @@ export async function GET(request: NextRequest) {
 
         const supabase = createRouteHandlerClient<Database>({ cookies });
 
-        // Get basic team information without player counts for now
+        // Get basic team information
         const { data: teams, error } = await supabase
             .from('teams')
             .select(`
                 id,
                 name,
                 initial_budget,
-                remaining_budget
+                remaining_budget,
+                team_owners (
+                    id,
+                    name,
+                    email
+                )
             `)
             .eq('tournament_id', tournamentId)
             .order('name');
@@ -43,17 +48,44 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ teams: [] });
         }
 
-        // Transform the response with a default players count
-        const teamsWithDefaultCount = teams.map(team => ({
-            id: team.id,
-            name: team.name,
-            initial_budget: team.initial_budget,
-            remaining_budget: team.remaining_budget,
-            total_spent: team.initial_budget - team.remaining_budget,
-            players_count: 9 // Changed to 9 players per team
-        }));
+        // Get player counts for each team
+        const playerCountPromises = teams.map(async (team) => {
+            const { count, error: countError } = await supabase
+                .from('auction_rounds')
+                .select('*', { count: 'exact', head: true })
+                .eq('winning_team_id', team.id)
+                .eq('tournament_id', tournamentId);
+                
+            if (countError) {
+                console.error(`Error fetching player count for team ${team.id}:`, countError);
+                return 0;
+            }
+            
+            return count || 0;
+        });
 
-        return NextResponse.json({ teams: teamsWithDefaultCount });
+        const playerCounts = await Promise.all(playerCountPromises);
+
+        // Transform the response with owner name and actual player count
+        const transformedTeams = teams.map((team, index) => {
+            // Get the first team owner's name or use 'No Owner' as fallback
+            const ownerName = team.team_owners && team.team_owners.length > 0 
+                ? team.team_owners[0].name 
+                : 'No Owner';
+            
+            return {
+                id: team.id,
+                name: team.name,
+                owner_id: team.team_owners && team.team_owners.length > 0 ? team.team_owners[0].id : null,
+                owner_name: ownerName,
+                initial_budget: team.initial_budget,
+                remaining_budget: team.remaining_budget,
+                total_spent: team.initial_budget - team.remaining_budget,
+                players_count: playerCounts[index]
+            };
+        });
+
+        return NextResponse.json({ teams: transformedTeams });
     } catch (err) {
         console.error('Teams API error:', err);
         return NextResponse.json(

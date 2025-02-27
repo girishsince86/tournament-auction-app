@@ -29,8 +29,7 @@ import {
   GridFilterModel,
   GridSortModel,
   GridPaginationModel,
-  LicenseInfo,
-  GridValueGetter,
+  GridRowSelectionModel,
 } from '@mui/x-data-grid-pro'
 import {
   Visibility as ViewIcon,
@@ -46,18 +45,15 @@ import {
   ExpandLess as ExpandLessIcon,
   Groups as GroupsIcon,
   BarChart as BarChartIcon,
+  Add as AddIcon,
 } from '@mui/icons-material'
 import { useAuth } from '@/features/auth/context/auth-context'
 import { RegistrationDetailModal } from './registration-detail-modal'
 import { VerifyPaymentModal } from './verify-payment-modal'
-import { TournamentRegistration } from '@/features/tournaments/types/registration'
+import { AddRegistrationModal } from './add-registration-modal'
+import { TournamentRegistration, RegistrationCategory } from '@/features/tournaments/types/registration'
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts'
 import toast from 'react-hot-toast'
-
-// Set MUI X License
-if (process.env.NEXT_PUBLIC_MUI_X_KEY) {
-  LicenseInfo.setLicenseKey(process.env.NEXT_PUBLIC_MUI_X_KEY)
-}
 
 const REGISTRATION_AMOUNT = 600
 
@@ -116,6 +112,10 @@ export function ManageRegistrations() {
   })
   const theme = useTheme();
   const [isHeaderExpanded, setIsHeaderExpanded] = useState(true)
+  
+  // Add registration modal state
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false)
+  const [selectedCategory, setSelectedCategory] = useState<RegistrationCategory>(RegistrationCategory.VOLLEYBALL_OPEN_MEN)
 
   // Check if user can verify payments
   const canVerifyPayments = user?.email?.match(/@pbel\.in$/) && 
@@ -252,6 +252,41 @@ export function ManageRegistrations() {
       const errorMessage = err instanceof Error ? err.message : 'Failed to verify payment'
       setError(errorMessage)
       toast.error(errorMessage)
+    }
+  }
+
+  // Handle adding a new registration
+  const handleAddRegistration = (category: RegistrationCategory) => {
+    setSelectedCategory(category)
+    setIsAddModalOpen(true)
+  }
+
+  // Handle submitting a new registration
+  const handleAddRegistrationSubmit = async (data: Partial<TournamentRegistration>) => {
+    try {
+      const response = await fetch('/api/admin/registrations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      })
+
+      if (!response.ok) {
+        const errorData = await response.json()
+        throw new Error(errorData.message || 'Failed to add registration')
+      }
+
+      // Refresh the registrations list
+      fetchRegistrations()
+      fetchSummary()
+      
+      // Success toast is already shown in the modal component
+      // toast.success('Registration added successfully')
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add registration'
+      toast.error(errorMessage)
+      throw err
     }
   }
 
@@ -743,6 +778,71 @@ export function ManageRegistrations() {
                 </IconButton>
               </Tooltip>
             </Box>
+
+            {/* Add Registration Buttons */}
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+              <Button
+                variant="outlined"
+                color="primary"
+                size="small"
+                startIcon={<AddIcon />}
+                endIcon={<VolleyballIcon />}
+                onClick={() => handleAddRegistration(RegistrationCategory.VOLLEYBALL_OPEN_MEN)}
+                sx={{ 
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontWeight: 500,
+                }}
+              >
+                Add Volleyball Registration
+              </Button>
+              <Button
+                variant="outlined"
+                color="secondary"
+                size="small"
+                startIcon={<AddIcon />}
+                endIcon={<ThrowballIcon />}
+                onClick={() => handleAddRegistration(RegistrationCategory.THROWBALL_WOMEN)}
+                sx={{ 
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontWeight: 500,
+                }}
+              >
+                Add Throwball Women
+              </Button>
+              <Button
+                variant="outlined"
+                color="info"
+                size="small"
+                startIcon={<AddIcon />}
+                endIcon={<ThrowballIcon />}
+                onClick={() => handleAddRegistration(RegistrationCategory.THROWBALL_13_17_MIXED)}
+                sx={{ 
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontWeight: 500,
+                }}
+              >
+                Add Throwball 13-17
+              </Button>
+              <Button
+                variant="outlined"
+                color="success"
+                size="small"
+                startIcon={<AddIcon />}
+                endIcon={<ThrowballIcon />}
+                onClick={() => handleAddRegistration(RegistrationCategory.THROWBALL_8_12_MIXED)}
+                sx={{ 
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontWeight: 500,
+                }}
+              >
+                Add Throwball 8-12
+              </Button>
+            </Box>
+
             <Collapse in={isHeaderExpanded} timeout={300}>
               <Box>
                 <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
@@ -1150,6 +1250,15 @@ export function ManageRegistrations() {
           />
         </>
       )}
+
+      {/* Add Registration Modal */}
+      <AddRegistrationModal
+        open={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        category={selectedCategory}
+        onSubmit={handleAddRegistrationSubmit}
+        currentUser={getVerifierName(user?.email || '')}
+      />
     </Box>
   )
 } 

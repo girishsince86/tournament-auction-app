@@ -1,0 +1,174 @@
+import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
+import { cookies } from 'next/headers';
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = createRouteHandlerClient({ cookies });
+    
+    // Check if user is authenticated and has admin role
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized: You must be logged in' },
+        { status: 401 }
+      );
+    }
+
+    // Check if user has admin role
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', session.user.id)
+      .single();
+
+    if (userError || !userData || userData.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Forbidden: Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    // Parse request body
+    const body = await request.json();
+    const { 
+      category = null, 
+      tournamentId = null, 
+      updateExisting = false 
+    } = body;
+
+    console.log('Loading players from registrations:', { 
+      category, 
+      tournamentId, 
+      updateExisting 
+    });
+
+    // Call the database function
+    const { data, error } = await supabase.rpc(
+      'load_players_from_registrations',
+      {
+        p_registration_category: category,
+        p_tournament_id: tournamentId,
+        p_update_existing: updateExisting
+      }
+    );
+
+    if (error) {
+      console.error('Error loading players from registrations:', error);
+      return NextResponse.json(
+        { error: `Failed to load players: ${error.message}` },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      data: data[0]
+    });
+  } catch (error) {
+    console.error('Unexpected error loading players from registrations:', error);
+    return NextResponse.json(
+      { error: 'An unexpected error occurred' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = createRouteHandlerClient({ cookies });
+    
+    // Check if user is authenticated and has admin role
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized: You must be logged in' },
+        { status: 401 }
+      );
+    }
+
+    // Check if user has admin role
+    const { data: userData, error: userError } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', session.user.id)
+      .single();
+
+    if (userError || !userData || userData.role !== 'ADMIN') {
+      return NextResponse.json(
+        { error: 'Forbidden: Admin access required' },
+        { status: 403 }
+      );
+    }
+
+    // Parse URL parameters
+    const url = new URL(request.url);
+    const category = url.searchParams.get('category');
+
+    console.log('Cleaning up players from registrations:', { category });
+
+    // Call the database function
+    const { data, error } = await supabase.rpc(
+      'cleanup_players_from_registrations',
+      {
+        p_registration_category: category
+      }
+    );
+
+    if (error) {
+      console.error('Error cleaning up players from registrations:', error);
+      return NextResponse.json(
+        { error: `Failed to clean up players: ${error.message}` },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      playersDeleted: data
+    });
+  } catch (error) {
+    console.error('Unexpected error cleaning up players from registrations:', error);
+    return NextResponse.json(
+      { error: 'An unexpected error occurred' },
+      { status: 500 }
+    );
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const supabase = createRouteHandlerClient({ cookies });
+    
+    // Check if user is authenticated
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      return NextResponse.json(
+        { error: 'Unauthorized: You must be logged in' },
+        { status: 401 }
+      );
+    }
+
+    // Call the database function to get registration statistics
+    const { data, error } = await supabase.rpc('get_registration_statistics');
+
+    if (error) {
+      console.error('Error getting registration statistics:', error);
+      return NextResponse.json(
+        { error: `Failed to get statistics: ${error.message}` },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      success: true,
+      statistics: data
+    });
+  } catch (error) {
+    console.error('Unexpected error getting registration statistics:', error);
+    return NextResponse.json(
+      { error: 'An unexpected error occurred' },
+      { status: 500 }
+    );
+  }
+} 

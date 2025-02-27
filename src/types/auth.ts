@@ -1,7 +1,19 @@
 import { User } from '@supabase/supabase-js'
 
+export type UserRole = 'admin' | 'team_owner' | 'user'
+
 export interface AuthUser extends User {
-  // Add any additional user properties we might need
+  role?: UserRole
+  user_metadata: {
+    role?: UserRole
+    [key: string]: any
+  }
+}
+
+export interface AuthSession {
+  user: AuthUser
+  access_token: string
+  refresh_token: string
 }
 
 export interface AuthState {

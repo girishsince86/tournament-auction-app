@@ -1,6 +1,6 @@
 import { Chip, type ChipProps } from '@mui/material';
 import type { PlayerPosition, SkillLevel } from '@/types/database';
-import type { PositionConfig, SkillConfig } from '../../constants';
+import type { PositionConfig, SkillLevelConfig as SkillConfig } from '../../constants';
 import { createElement } from 'react';
 
 interface PlayerChipProps extends Omit<ChipProps, 'label' | 'icon'> {

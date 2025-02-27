@@ -10,7 +10,13 @@ import {
     LinearProgress
 } from '@mui/material';
 import type { SimulationState } from '../../hooks/useTeamSimulation';
-import { POSITIONS, SKILL_LEVELS, CATEGORY_LABELS } from '../../constants';
+import { POSITIONS, SKILL_LEVELS } from '@/lib/constants';
+
+// Utility function to format points in crores
+function formatPointsInCrores(points: number): string {
+    const crores = points / 10000000; // 1 crore = 10 million
+    return `${crores.toLocaleString()} Cr points`;
+}
 
 interface SimulationSummaryProps {
     simulation: SimulationState;
@@ -35,8 +41,8 @@ export function SimulationSummary({ simulation, isPreAuction }: SimulationSummar
     } = simulation;
 
     // Check if there are any position or skill requirements set
-    const hasPositionRequirements = Object.values(positionCounts).some(count => count.required > 0);
-    const hasSkillRequirements = Object.values(skillLevelCounts).some(count => count.required > 0);
+    const hasPositionRequirements = Object.values(positionCounts || {}).some(count => count?.required > 0);
+    const hasSkillRequirements = Object.values(skillLevelCounts || {}).some(count => count?.required > 0);
 
     const budgetUtilization = ((initialBudget - remainingBudget + simulatedBudget) / initialBudget) * 100;
 
@@ -52,7 +58,7 @@ export function SimulationSummary({ simulation, isPreAuction }: SimulationSummar
                     <Alert severity="error">
                         <AlertTitle>Budget Exceeded</AlertTitle>
                         Simulated preferences exceed available budget by 
-                        ₹{(simulatedBudget - remainingBudget).toLocaleString()}
+                        {formatPointsInCrores(simulatedBudget - remainingBudget)}
                     </Alert>
                 )}
                 {!playerCountValid && (
@@ -98,7 +104,7 @@ export function SimulationSummary({ simulation, isPreAuction }: SimulationSummar
                             Initial Budget
                         </Typography>
                         <Typography variant="h6">
-                            ₹{initialBudget.toLocaleString()}
+                            {formatPointsInCrores(initialBudget)}
                         </Typography>
                     </Grid>
                     <Grid item xs={4}>
@@ -106,7 +112,7 @@ export function SimulationSummary({ simulation, isPreAuction }: SimulationSummar
                             Simulated Spend
                         </Typography>
                         <Typography variant="h6" color={budgetValid ? "success.main" : "error.main"}>
-                            ₹{simulatedBudget.toLocaleString()}
+                            {formatPointsInCrores(simulatedBudget)}
                         </Typography>
                     </Grid>
                     <Grid item xs={4}>
@@ -114,7 +120,7 @@ export function SimulationSummary({ simulation, isPreAuction }: SimulationSummar
                             Remaining After Simulation
                         </Typography>
                         <Typography variant="h6" color={budgetValid ? "inherit" : "error.main"}>
-                            ₹{(remainingBudget - simulatedBudget).toLocaleString()}
+                            {formatPointsInCrores(remainingBudget - simulatedBudget)}
                         </Typography>
                     </Grid>
                 </Grid>
@@ -128,7 +134,7 @@ export function SimulationSummary({ simulation, isPreAuction }: SimulationSummar
                     </Typography>
                     <Grid container spacing={2}>
                         {POSITIONS.map(pos => {
-                            const counts = positionCounts[pos.value];
+                            const counts = positionCounts?.[pos.value];
                             if (!counts || counts.required === 0) return null;
                             
                             const total = counts.current + counts.simulated;
@@ -173,7 +179,7 @@ export function SimulationSummary({ simulation, isPreAuction }: SimulationSummar
                     </Typography>
                     <Grid container spacing={2}>
                         {SKILL_LEVELS.map(skill => {
-                            const counts = skillLevelCounts[skill.value];
+                            const counts = skillLevelCounts?.[skill.value];
                             if (!counts || counts.required === 0) return null;
                             
                             const total = counts.current + counts.simulated;
@@ -216,21 +222,19 @@ export function SimulationSummary({ simulation, isPreAuction }: SimulationSummar
                     Category Distribution
                 </Typography>
                 <Grid container spacing={2}>
-                    {CATEGORY_LABELS.map(category => {
-                        const counts = categoryDistribution[category.value];
+                    {Object.entries(categoryDistribution).map(([category, counts]) => {
                         const total = counts.current + counts.simulated;
                         const isValid = total >= counts.required;
 
                         return (
-                            <Grid item xs={12} sm={6} md={4} key={category.value}>
+                            <Grid item xs={12} sm={6} md={4} key={category}>
                                 <Paper variant="outlined" sx={{ p: 2 }}>
                                     <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                                        <Typography variant="subtitle2">{category.label}</Typography>
+                                        <Typography variant="subtitle2">{category}</Typography>
                                         <Chip 
                                             size="small"
                                             label={`${total}${counts.required > 0 ? `/${counts.required} required` : ' total'}`}
                                             color={isValid ? "success" : "error"}
-                                            sx={{ bgcolor: category.color }}
                                         />
                                     </Stack>
                                     <Stack direction="row" spacing={1}>

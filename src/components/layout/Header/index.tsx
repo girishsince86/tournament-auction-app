@@ -1,9 +1,11 @@
 'use client'
 
-import { AppBar, Toolbar, IconButton, Typography, Box } from '@mui/material'
+import { AppBar, Toolbar, IconButton, Typography, Box, Button } from '@mui/material'
 import MenuIcon from '@mui/icons-material/Menu'
 import { UserMenu } from './UserMenu'
 import Image from 'next/image'
+import Link from 'next/link'
+import { SportsVolleyball as VolleyballIcon } from '@mui/icons-material'
 
 interface HeaderProps {
   onMenuClick: () => void
@@ -62,6 +64,15 @@ export function Header({ onMenuClick, isSidebarOpen }: HeaderProps) {
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Button
+            component={Link}
+            href="/players"
+            color="primary"
+            startIcon={<VolleyballIcon />}
+            sx={{ display: { xs: 'none', sm: 'flex' } }}
+          >
+            Players
+          </Button>
           <UserMenu />
         </Box>
       </Toolbar>

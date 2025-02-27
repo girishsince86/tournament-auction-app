@@ -74,6 +74,10 @@ const config: Config = {
         fadeOut: 'fadeOut 0.3s ease-in-out',
         slideIn: 'slideIn 0.3s ease-in-out',
         slideOut: 'slideOut 0.3s ease-in-out',
+        'spin-slow': 'spin 3s linear infinite',
+        'slideInFromBottom': 'slideInFromBottom 0.5s ease-out forwards',
+        'bounce-slow': 'bounce 3s infinite',
+        'pulse-slow': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
       },
       keyframes: {
         fadeIn: {
@@ -92,10 +96,20 @@ const config: Config = {
           '0%': { transform: 'translateY(0)' },
           '100%': { transform: 'translateY(100%)' },
         },
+        slideInFromBottom: {
+          '0%': { 
+            transform: 'translateY(20px)',
+            opacity: '0'
+          },
+          '100%': { 
+            transform: 'translateY(0)',
+            opacity: '1'
+          },
+        },
       },
     },
   },
-  plugins: [],
+  plugins: [require("tailwindcss-animate")],
 }
 
 export default config 

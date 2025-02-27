@@ -124,9 +124,15 @@ export async function POST(
         const body = await request.json();
         const { player_ids, max_bids } = body;
 
-        console.log('Received request:', { teamId, player_ids, max_bids }); // Debug log
+        console.log('POST /api/teams/[teamId]/preferred-players - Received request:', { 
+            teamId, 
+            player_ids: player_ids?.length, 
+            max_bids: max_bids?.length,
+            body
+        }); // Enhanced debug log
 
         if (!Array.isArray(player_ids) || player_ids.length === 0) {
+            console.error('Invalid player_ids:', player_ids);
             return NextResponse.json(
                 { error: 'Player IDs are required' },
                 { status: 400 }
@@ -134,6 +140,7 @@ export async function POST(
         }
 
         if (!Array.isArray(max_bids) || max_bids.length !== player_ids.length) {
+            console.error('Invalid max_bids:', max_bids);
             return NextResponse.json(
                 { error: 'Max bids array must match player IDs array' },
                 { status: 400 }
@@ -142,7 +149,12 @@ export async function POST(
 
         // Check if user is authenticated
         const { data: { session }, error: authError } = await supabase.auth.getSession();
-        console.log('Session check:', { session: !!session, authError }); // Debug log
+        console.log('Session check:', { 
+            sessionExists: !!session, 
+            userId: session?.user?.id,
+            userEmail: session?.user?.email,
+            authError: authError?.message 
+        }); // Enhanced debug log
 
         if (authError) {
             console.error('Auth error:', authError); // Debug log
@@ -202,20 +214,36 @@ export async function POST(
             updated_at: new Date().toISOString()
         }));
 
-        console.log('Inserting preferences:', preferencesToInsert); // Debug log
+        console.log('Inserting preferences:', {
+            count: preferencesToInsert.length,
+            firstItem: preferencesToInsert[0],
+            lastItem: preferencesToInsert[preferencesToInsert.length - 1]
+        }); // Enhanced debug log
 
+        // Insert directly into preferred_players table
         const { data: preferences, error: preferenceError } = await supabase
             .from('preferred_players')
             .upsert(preferencesToInsert)
             .select();
-
+                
         if (preferenceError) {
-            console.error('Preference error:', preferenceError); // Debug log
+            console.error('Error with preferred_players table:', {
+                message: preferenceError.message,
+                details: preferenceError.details,
+                hint: preferenceError.hint
+            });
+            
             return NextResponse.json(
                 { error: 'Failed to add preferred players', details: preferenceError.message },
                 { status: 500 }
             );
         }
+        
+        console.log('Successfully added preferences using preferred_players table');
+        console.log('Successfully added preferences:', {
+            count: preferences?.length,
+            success: true
+        }); // Success log
 
         return NextResponse.json({ 
             success: true,
@@ -223,7 +251,7 @@ export async function POST(
         });
 
     } catch (error) {
-        console.error('Unexpected error:', error);
+        console.error('Unexpected error in POST /api/teams/[teamId]/preferred-players:', error);
         return NextResponse.json(
             { error: 'An unexpected error occurred', details: error instanceof Error ? error.message : 'Unknown error' },
             { status: 500 }

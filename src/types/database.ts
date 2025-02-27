@@ -100,8 +100,15 @@ export interface Team extends BaseEntity {
     initial_budget: number;
     remaining_budget: number;
     max_players: number;
-    owner_id: string;
     tournament_id: string;
+    team_owners?: TeamOwner[];
+}
+
+export interface TeamOwner extends BaseEntity {
+    auth_user_id: string | null;
+    email: string;
+    name: string;
+    team_id: string | null;
 }
 
 export interface TeamCombinedRequirement extends BaseEntity {

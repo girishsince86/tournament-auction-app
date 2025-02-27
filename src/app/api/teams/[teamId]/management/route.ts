@@ -3,169 +3,210 @@ import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
 import { Database } from '@/lib/supabase/types/supabase';
 
-export async function GET(
-    request: NextRequest,
-    { params }: { params: { teamId: string } }
-) {
-    try {
-        const supabase = createRouteHandlerClient<Database>({ cookies });
-        const { teamId } = params;
+// Helper function to check if a user is a full admin
+const isFullAdmin = (email?: string): boolean => {
+  // Define known admin emails (these will have full admin access)
+  const adminEmails = [
+    'girish@pbel.in', // Super admin
+    'admin@pbel.in',  // Admin
+    'amit@pbel.in',   // Admin
+    'vasu@pbel.in'    // Admin
+  ]; // Add all admin emails here
+  return email ? adminEmails.includes(email) : false;
+}
 
-        // Check if user is authenticated
-        const { data: { session }, error: authError } = await supabase.auth.getSession();
-        if (authError || !session) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
-        }
+// Define explicit list of team owner emails
+const teamOwnerEmails = [
+  'naveen@pbel.in',
+  'anish@pbel.in',
+  'subhamitra@pbel.in',
+  'raju@pbel.in',
+  'saravana@pbel.in',
+  'praveenraj@pbel.in',
+  'romesh@pbel.in',
+  'srinivas@pbel.in',
+  'sraveen@pbel.in'
+];
 
-        // Check if user is admin
-        const isAdmin = session.user.email?.endsWith('@pbel.in');
+// Helper function to check if a user is a team owner
+const isTeamOwner = (email?: string): boolean => {
+  return email ? teamOwnerEmails.includes(email) : false;
+}
 
-        // Get team basic info
-        const { data: team, error: teamError } = await supabase
-            .from('teams')
-            .select(`
-                *,
-                owner_id,
-                tournament_id,
-                tournaments!inner (
-                    id,
-                    name
-                )
-            `)
-            .eq('id', teamId)
-            .single();
+async function checkTeamAccess(supabase: any, teamId: string, userId: string, userEmail: string) {
+  // If user is admin, allow access
+  if (isFullAdmin(userEmail)) {
+    return true;
+  }
 
-        if (teamError || !team) {
-            return NextResponse.json(
-                { error: 'Team not found' },
-                { status: 404 }
-            );
-        }
+  // If user is a team owner, check if they own this team
+  if (isTeamOwner(userEmail)) {
+    // Check if user is owner of this specific team
+    const { data: teamOwner, error } = await supabase
+      .from('team_owners')
+      .select('*')
+      .eq('team_id', teamId)
+      .eq('auth_user_id', userId)
+      .maybeSingle();
 
-        // Verify team ownership or admin status
-        if (!isAdmin && team.owner_id !== session.user.id) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 403 }
-            );
-        }
+    if (error) throw new Error(`Team ownership check failed: ${error.message}`);
+    return !!teamOwner;
+  }
 
-        // Get tournament category requirements
-        const { data: categoryRequirements, error: categoryError } = await supabase
-            .from('player_categories')
-            .select(`
-                category_type,
-                min_points,
-                max_points,
-                description
-            `)
-            .eq('tournament_id', team.tournament_id);
+  // Not admin or team owner
+  return false;
+}
 
-        if (categoryError) {
-            console.error('Error fetching category requirements:', categoryError);
-        }
+export async function GET(request: NextRequest, { params }: { params: { teamId: string } }) {
+  try {
+    const supabase = createRouteHandlerClient<Database>({ cookies });
+    const { teamId } = params;
 
-        // Get team combined requirements
-        const { data: combinedRequirements, error: requirementsError } = await supabase
-            .from('team_combined_requirements')
-            .select('*')
-            .eq('team_id', teamId);
-
-        // Get current team players
-        const { data: players, error: playersError } = await supabase
-            .from('players')
-            .select(`
-                id,
-                name,
-                player_position,
-                skill_level,
-                base_price,
-                status,
-                category:player_categories!inner (
-                    category_type,
-                    name,
-                    base_points
-                ),
-                auction_rounds!inner (
-                    final_points
-                )
-            `)
-            .eq('current_team_id', teamId);
-
-        // Transform players data to include final_bid_points
-        const playersWithBids = players?.map(player => ({
-            ...player,
-            final_bid_points: player.auction_rounds?.[0]?.final_points || player.base_price,
-            auction_rounds: undefined // Remove the auction_rounds from the response
-        })) || [];
-
-        // Get budget information
-        const { data: budgetHistory, error: budgetError } = await supabase
-            .from('budget_history')
-            .select('*')
-            .eq('team_id', teamId)
-            .order('created_at', { ascending: false })
-            .limit(10);
-
-        // Get available players for this tournament
-        const { data: availablePlayers, error: availablePlayersError } = await supabase
-            .from('players')
-            .select(`
-                id,
-                name,
-                player_position,
-                skill_level,
-                base_price,
-                status,
-                category:player_categories!inner (
-                    tournament_id,
-                    category_type,
-                    name,
-                    base_points
-                )
-            `)
-            .eq('category.tournament_id', team.tournament_id)
-            .order('name');
-
-        // Get team's player preferences
-        const { data: preferences, error: preferencesError } = await supabase
-            .from('preferred_players')
-            .select('*')
-            .eq('team_id', teamId);
-
-        // Add preference information to available players
-        const availablePlayersWithPreferences = availablePlayers?.map(player => ({
-            ...player,
-            is_preferred: preferences?.some(pref => pref.player_id === player.id) || false,
-            preference: preferences?.find(pref => pref.player_id === player.id)
-        })) || [];
-
-        return NextResponse.json({
-            team: {
-                id: team.id,
-                name: team.name,
-                initial_budget: team.initial_budget,
-                remaining_budget: team.remaining_budget,
-            },
-            tournament: team.tournaments,
-            requirements: combinedRequirements || [],
-            categoryRequirements: categoryRequirements || [],
-            current_players: playersWithBids,
-            available_players: availablePlayersWithPreferences,
-            budget_history: budgetHistory || [],
-            isAdmin
-        });
-
-    } catch (error) {
-        console.error('Error in team management:', error);
-        return NextResponse.json(
-            { error: 'Internal server error' },
-            { status: 500 }
-        );
+    // Validate UUID format
+    if (!teamId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+      return NextResponse.json(
+        { error: 'Invalid team ID format' },
+        { status: 400 }
+      );
     }
+
+    // Check authentication
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw new Error('Authentication error');
+    if (!session) throw new Error('Not authenticated');
+
+    // Check authorization
+    const hasAccess = await checkTeamAccess(supabase, teamId, session.user.id, session.user.email || '');
+    if (!hasAccess) {
+      return NextResponse.json(
+        { error: 'You do not have permission to access this team\'s data' },
+        { status: 403 }
+      );
+    }
+
+    // Get team basic info with owner details
+    const { data: team, error: teamError } = await supabase
+      .from('teams')
+      .select(`
+        id,
+        name,
+        initial_budget,
+        remaining_budget,
+        min_players,
+        max_players,
+        tournament_id,
+        team_owners (
+          id,
+          name,
+          email,
+          auth_user_id
+        ),
+        tournaments (
+          id,
+          name
+        ),
+        players:auction_rounds (
+          id,
+          final_points,
+          player:players (
+            id,
+            name,
+            player_position,
+            skill_level,
+            base_price,
+            profile_image_url,
+            category:player_categories (*)
+          )
+        )
+      `)
+      .eq('id', teamId)
+      .maybeSingle();
+
+    if (teamError) {
+      console.error('Team fetch error:', teamError);
+      return NextResponse.json(
+        { error: 'Team not found', details: teamError.message },
+        { status: 404 }
+      );
+    }
+
+    if (!team) {
+      console.error('No team found with ID:', teamId);
+      return NextResponse.json(
+        { error: 'Team not found' },
+        { status: 404 }
+      );
+    }
+
+    // Transform the players data to a simpler format
+    const players = team.players
+      ?.filter(p => p.player) // Filter out any null player references
+      .map(p => ({
+        ...p.player,
+        final_bid_points: p.final_points
+      })) || [];
+
+    // Get available players with preference status
+    const { data: availablePlayers, error: playersError } = await supabase
+      .from('players')
+      .select(`
+        *,
+        category:player_categories!inner(*),
+        is_preferred:preferred_players!left(
+          id,
+          max_bid,
+          notes
+        )
+      `)
+      .eq('status', 'AVAILABLE')
+      .eq('category.tournament_id', team.tournament_id)
+      .eq('preferred_players.team_id', teamId);
+
+    if (playersError) {
+      console.error('Players error:', playersError);
+      return NextResponse.json(
+        { error: 'Failed to fetch available players', details: playersError.message },
+        { status: 500 }
+      );
+    }
+
+    // Get tournament category requirements
+    const { data: categoryRequirements, error: categoryError } = await supabase
+      .from('player_categories')
+      .select(`
+        category_type,
+        min_points,
+        max_points,
+        description
+      `)
+      .eq('tournament_id', team.tournament_id);
+
+    if (categoryError) {
+      return NextResponse.json(
+        { error: 'Failed to fetch category requirements' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json({
+      team: {
+        ...team,
+        players
+      },
+      categoryRequirements,
+      available_players: availablePlayers.map(player => ({
+        ...player,
+        is_preferred: player.is_preferred?.length > 0
+      }))
+    });
+
+  } catch (error) {
+    console.error('Team management error:', error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : 'An unexpected error occurred' },
+      { status: 500 }
+    );
+  }
 }
 
 export async function PUT(
@@ -180,39 +221,13 @@ export async function PUT(
         // Validate request body
         const { requirements } = body;
 
-        // Check if user is authenticated
-        const { data: { session }, error: authError } = await supabase.auth.getSession();
-        if (authError || !session) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 401 }
-            );
-        }
+        // Check authentication
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+        if (sessionError) throw new Error('Authentication error');
+        if (!session) throw new Error('Not authenticated');
 
-        // Check if user is admin
-        const isAdmin = session.user.email?.endsWith('@pbel.in');
-
-        // Verify team ownership
-        const { data: team, error: teamError } = await supabase
-            .from('teams')
-            .select('owner_id')
-            .eq('id', teamId)
-            .single();
-
-        if (teamError || !team) {
-            return NextResponse.json(
-                { error: 'Team not found' },
-                { status: 404 }
-            );
-        }
-
-        // Allow both admin and team owner to update
-        if (!isAdmin && team.owner_id !== session.user.id) {
-            return NextResponse.json(
-                { error: 'Unauthorized' },
-                { status: 403 }
-            );
-        }
+        // Check authorization
+        await checkTeamAccess(supabase, teamId, session.user.id, session.user.email || '');
 
         // Update requirements
         if (requirements) {
@@ -231,16 +246,18 @@ export async function PUT(
             }
         }
 
-        return NextResponse.json({
-            success: true,
-            message: 'Team requirements updated successfully'
-        });
+        return NextResponse.json({ success: true });
 
     } catch (error) {
-        console.error('Error updating team requirements:', error);
-        return NextResponse.json(
-            { error: 'Internal server error' },
-            { status: 500 }
+        console.error('Team management API error:', error);
+        return new NextResponse(
+            JSON.stringify({
+                error: error instanceof Error ? error.message : 'Internal server error'
+            }),
+            {
+                status: error instanceof Error && error.message.includes('permission') ? 403 : 500,
+                headers: { 'Content-Type': 'application/json' }
+            }
         );
     }
 } 

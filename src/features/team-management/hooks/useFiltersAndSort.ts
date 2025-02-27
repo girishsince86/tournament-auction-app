@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
-import type { FilterState, SortState, PlayerWithPreference } from '../types';
-import { INITIAL_FILTER_STATE, INITIAL_SORT_STATE } from '../constants';
+import type { FilterState, SortState } from '../types/filter';
+import type { PlayerWithPreference } from '../types/player';
+import { INITIAL_FILTER_STATE, INITIAL_SORT_STATE } from '../constants/index';
 
 interface UseFiltersAndSortReturn {
     filterState: FilterState;
@@ -25,9 +26,8 @@ export function useFiltersAndSort(): UseFiltersAndSortReturn {
             const matchesSearch = player.name.toLowerCase().includes(filterState.searchQuery.toLowerCase());
             const matchesPosition = !filterState.position || player.player_position === filterState.position;
             const matchesSkill = !filterState.skillLevel || player.skill_level === filterState.skillLevel;
-            const matchesMinPrice = !filterState.minPrice || player.base_price >= filterState.minPrice;
-            const matchesMaxPrice = !filterState.maxPrice || player.base_price <= filterState.maxPrice;
-            return matchesSearch && matchesPosition && matchesSkill && matchesMinPrice && matchesMaxPrice;
+            const matchesCategory = !filterState.category || player.category?.category_type === filterState.category;
+            return matchesSearch && matchesPosition && matchesSkill && matchesCategory;
         }) || [];
     }, [filterState]);
 

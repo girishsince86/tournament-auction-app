@@ -13,10 +13,10 @@ import {
     CircularProgress,
     Chip
 } from '@mui/material';
-import type { PlayerWithPreference } from '../../types';
-import type { PositionConfig, SkillConfig, CategoryConfig } from '../../constants';
+import type { PlayerWithPreference } from '../../types/player';
+import type { PositionConfig, SkillLevelConfig as SkillConfig, CategoryConfig } from '../../constants/index';
 import { PlayerChip } from '../shared/PlayerChip';
-import { POSITIONS, SKILL_LEVELS, CATEGORY_LABELS } from '../../constants';
+import { POSITIONS, SKILL_LEVELS, CATEGORY_LABELS } from '../../constants/index';
 
 interface CurrentSquadTableProps {
     players?: (PlayerWithPreference & { final_bid_points?: number })[];
@@ -35,10 +35,10 @@ export function CurrentSquadTable({ players = [], isLoading }: CurrentSquadTable
     }
 
     const getPositionConfig = (position: string): PositionConfig => 
-        POSITIONS.find(p => p.value === position) || POSITIONS[0];
+        POSITIONS.find((p: PositionConfig) => p.value === position) || POSITIONS[0];
 
     const getSkillConfig = (skill: string): SkillConfig => 
-        SKILL_LEVELS.find(s => s.value === skill) || SKILL_LEVELS[0];
+        SKILL_LEVELS.find((s: SkillConfig) => s.value === skill) || SKILL_LEVELS[0];
 
     return (
         <TableContainer component={Paper}>
@@ -49,8 +49,8 @@ export function CurrentSquadTable({ players = [], isLoading }: CurrentSquadTable
                         <TableCell>Position</TableCell>
                         <TableCell>Skill Level</TableCell>
                         <TableCell>Category</TableCell>
-                        <TableCell align="right">Base Price</TableCell>
-                        <TableCell align="right">Final Points</TableCell>
+                        <TableCell align="right">Base Points</TableCell>
+                        <TableCell align="right">Final Bid</TableCell>
                     </TableRow>
                 </TableHead>
                 <TableBody>
@@ -95,10 +95,10 @@ export function CurrentSquadTable({ players = [], isLoading }: CurrentSquadTable
                                 ) : '-'}
                             </TableCell>
                             <TableCell align="right">
-                                ₹{player.base_price.toLocaleString()}
+                                {player.base_price.toLocaleString()} points
                             </TableCell>
                             <TableCell align="right">
-                                ₹{(player.final_bid_points || player.base_price).toLocaleString()}
+                                {(player.final_bid_points || player.base_price).toLocaleString()} points
                             </TableCell>
                         </TableRow>
                     ))}

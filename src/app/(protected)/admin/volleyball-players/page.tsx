@@ -1,5 +1,6 @@
 'use client'
 
+import '@/lib/mui-license'; // Import MUI license utility
 import { useState, useCallback, useEffect } from 'react'
 import {
   Box,
@@ -88,24 +89,28 @@ export default function VolleyballPlayersPage() {
       width: 120,
       sortable: false,
       filterable: false,
-      renderCell: (params: GridRenderCellParams<TournamentRegistration>) => (
-        <Stack direction="row" spacing={1}>
-          <Tooltip title={params.row.profile_token ? "Copy Profile Link" : "Generate Profile Link"}>
-            <IconButton
-              size="small"
-              onClick={() => generateProfileLink(params.row.id)}
-              color={params.row.profile_token ? "primary" : "default"}
-            >
-              <CopyIcon fontSize="small" />
-            </IconButton>
-          </Tooltip>
-          {params.row.profile_image_url && (
-            <Tooltip title="Has Profile Image">
-              <VerifiedIcon color="success" fontSize="small" />
+      renderCell: (params: GridRenderCellParams<TournamentRegistration>) => {
+        if (!params || !params.row) return null;
+        
+        return (
+          <Stack direction="row" spacing={1}>
+            <Tooltip title={params.row.profile_token ? "Copy Profile Link" : "Generate Profile Link"}>
+              <IconButton
+                size="small"
+                onClick={() => generateProfileLink(params.row.id)}
+                color={params.row.profile_token ? "primary" : "default"}
+              >
+                <CopyIcon fontSize="small" />
+              </IconButton>
             </Tooltip>
-          )}
-        </Stack>
-      ),
+            {params.row.profile_image_url && (
+              <Tooltip title="Has Profile Image">
+                <VerifiedIcon color="success" fontSize="small" />
+              </Tooltip>
+            )}
+          </Stack>
+        );
+      },
     },
     {
       field: 'first_name',
@@ -141,31 +146,35 @@ export default function VolleyballPlayersPage() {
       field: 'profile_status',
       headerName: 'Profile Status',
       width: 150,
-      renderCell: (params: GridRenderCellParams<TournamentRegistration>) => (
-        <Box
-          sx={{
-            backgroundColor: params.row.profile_image_url ? 'success.lighter' : 'warning.lighter',
-            color: params.row.profile_image_url ? 'success.dark' : 'warning.dark',
-            py: 0.5,
-            px: 1.5,
-            borderRadius: 1,
-            fontSize: '0.875rem',
-            fontWeight: 500,
-            display: 'flex',
-            alignItems: 'center',
-            gap: 0.5,
-          }}
-        >
-          {params.row.profile_image_url ? (
-            <>
-              <CameraIcon fontSize="small" />
-              Image Added
-            </>
-          ) : (
-            'No Image'
-          )}
-        </Box>
-      ),
+      renderCell: (params: GridRenderCellParams<TournamentRegistration>) => {
+        if (!params || !params.row) return null;
+        
+        return (
+          <Box
+            sx={{
+              backgroundColor: params.row.profile_image_url ? 'success.lighter' : 'warning.lighter',
+              color: params.row.profile_image_url ? 'success.dark' : 'warning.dark',
+              py: 0.5,
+              px: 1.5,
+              borderRadius: 1,
+              fontSize: '0.875rem',
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 0.5,
+            }}
+          >
+            {params.row.profile_image_url ? (
+              <>
+                <CameraIcon fontSize="small" />
+                Image Added
+              </>
+            ) : (
+              'No Image'
+            )}
+          </Box>
+        );
+      },
     },
   ]
 

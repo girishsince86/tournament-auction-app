@@ -7,7 +7,8 @@ import {
     Button,
     TextField,
     Stack,
-    Alert
+    Alert,
+    InputAdornment
 } from '@mui/material';
 import type { PlayerWithPreference } from '../../types';
 
@@ -44,7 +45,7 @@ export function EditPreferenceDialog({
             setIsSaving(true);
 
             if (maxBid < player.base_price) {
-                setError(`Max bid must be at least ${player.base_price}`);
+                setError(`Max bid must be at least ${player.base_price.toLocaleString()} points`);
                 return;
             }
 
@@ -55,6 +56,19 @@ export function EditPreferenceDialog({
         } finally {
             setIsSaving(false);
         }
+    };
+
+    const handleMaxBidChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = Number(e.target.value);
+        const basePrice = player?.base_price || 0;
+        // Round to nearest 10 lakhs
+        const roundedValue = Math.round(value / 1000000) * 1000000;
+        if (roundedValue < basePrice) {
+            setError(`Max bid must be at least ${basePrice.toLocaleString()} points`);
+        } else {
+            setError(null);
+        }
+        setMaxBid(roundedValue);
     };
 
     return (
@@ -83,23 +97,28 @@ export function EditPreferenceDialog({
                                 fullWidth
                             />
                             <TextField
-                                label="Base Price"
-                                value={`₹${player.base_price.toLocaleString()}`}
-                                disabled
                                 fullWidth
+                                disabled
+                                size="small"
+                                label="Base Points"
+                                value={`${player.base_price.toLocaleString()} points`}
                             />
                             <TextField
-                                label="Max Bid"
+                                label="Maximum Bid"
                                 type="number"
                                 value={maxBid}
-                                onChange={(e) => setMaxBid(Number(e.target.value))}
-                                error={maxBid < (player.base_price || 0)}
-                                helperText={maxBid < (player.base_price || 0) ? 'Must be ≥ base price' : ''}
-                                InputProps={{
-                                    startAdornment: '₹',
-                                    inputProps: { min: player.base_price }
-                                }}
+                                onChange={handleMaxBidChange}
                                 fullWidth
+                                margin="normal"
+                                required
+                                error={!!error}
+                                helperText={error}
+                                InputProps={{
+                                    endAdornment: <InputAdornment position="end">points</InputAdornment>,
+                                    inputProps: {
+                                        step: 1000000 // Step in 10 lakhs
+                                    }
+                                }}
                             />
                             <TextField
                                 label="Notes"

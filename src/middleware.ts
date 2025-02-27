@@ -27,7 +27,7 @@ const ROUTES = {
     admin: {
       base: '/admin' as const,
       manageRegistrations: '/admin/manage-registrations' as const,
-      volleyballPlayers: '/admin/volleyball-players' as const,
+      managePlayers: '/manage-players' as const,
     },
     api: {
       base: '/api' as const,
@@ -73,7 +73,7 @@ const PUBLIC_ROUTES = [
 const ADMIN_ROUTES = [
   '/admin',
   '/admin/manage-registrations',
-  '/admin/volleyball-players',
+  '/manage-players',
   '/admin/auction',
   '/admin/team-budgets'
 ]
@@ -82,8 +82,39 @@ const PROTECTED_ROUTES = [
   '/registration-summary',
   '/dashboard',
   '/admin',
-  '/teams'
+  '/teams',
+  '/team-management'
 ]
+
+// Helper function to check if a user is a full admin
+const isFullAdmin = (email?: string): boolean => {
+  // Define known admin emails (these will have full admin access)
+  const adminEmails = [
+    'girish@pbel.in', // Super admin
+    'admin@pbel.in',  // Admin
+    'amit@pbel.in',   // Admin
+    'vasu@pbel.in'    // Admin
+  ]; // Add all admin emails here
+  return email ? adminEmails.includes(email) : false;
+}
+
+// Define explicit list of team owner emails
+const teamOwnerEmails = [
+  'naveen@pbel.in',
+  'anish@pbel.in',
+  'subhamitra@pbel.in',
+  'raju@pbel.in',
+  'saravana@pbel.in',
+  'praveenraj@pbel.in',
+  'romesh@pbel.in',
+  'srinivas@pbel.in',
+  'sraveen@pbel.in'
+];
+
+// Helper function to check if a user is a team owner
+const isTeamOwner = (email?: string): boolean => {
+  return email ? teamOwnerEmails.includes(email) : false;
+}
 
 export async function middleware(request: NextRequest) {
   const res = NextResponse.next()
@@ -94,6 +125,7 @@ export async function middleware(request: NextRequest) {
   const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route))
   const isAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route))
   const isProfileRoute = pathname.startsWith('/profile/')
+  const isTeamManagementRoute = pathname.startsWith('/team-management')
 
   // Handle authentication
   if (!session) {
@@ -106,13 +138,10 @@ export async function middleware(request: NextRequest) {
     return res
   }
 
-  // Handle admin routes
+  // Handle admin routes - only allow full admins
   if (isAdminRoute) {
-    const isAdmin = session.user.email?.endsWith('@pbel.in') ||
-                   session.user.app_metadata?.role === 'admin' ||
-                   session.user.user_metadata?.role === 'admin'
-
-    if (!isAdmin) {
+    // Check if user is a full admin (not just a team owner with pbel.in email)
+    if (!isFullAdmin(session.user.email)) {
       // Redirect non-admin users to registration summary
       const redirectUrl = request.nextUrl.clone()
       redirectUrl.pathname = '/registration-summary'
@@ -127,6 +156,11 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(redirectUrl)
   }
 
+  // Get user's role from metadata
+  const { data: { user } } = await supabase.auth.getUser()
+  const userRole = user?.user_metadata?.role || user?.app_metadata?.role
+
+  // No need to protect team owner profile routes - any authenticated user can access
   return res
 }
 
@@ -141,6 +175,7 @@ export const config = {
     // Match auth routes
     '/login',
     '/signup',
-    '/auth/callback'
+    '/auth/callback',
+    '/team-management/:path*'
   ]
 } 

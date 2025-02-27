@@ -183,6 +183,35 @@ export interface Database {
         Insert: Omit<Database['public']['Tables']['team_skill_requirements']['Row'], 'id' | 'created_at' | 'updated_at'>;
         Update: Partial<Omit<Database['public']['Tables']['team_skill_requirements']['Row'], 'id' | 'created_at' | 'updated_at'>>;
       };
+      team_owners: {
+        Row: {
+          id: string;
+          auth_user_id: string | null;
+          email: string;
+          name: string;
+          team_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          auth_user_id?: string | null;
+          email: string;
+          name: string;
+          team_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          auth_user_id?: string | null;
+          email?: string;
+          name?: string;
+          team_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
     };
     Views: {
       team_summaries: {

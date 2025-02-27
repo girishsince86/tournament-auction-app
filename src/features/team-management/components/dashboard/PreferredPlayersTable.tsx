@@ -18,10 +18,10 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import type { PlayerWithPreference } from '../../types';
-import type { PositionConfig, SkillConfig, CategoryConfig } from '../../constants';
+import type { PlayerWithPreference } from '../../types/player';
+import type { PositionConfig, SkillLevelConfig as SkillConfig, CategoryConfig } from '../../constants/index';
 import { PlayerChip } from '../shared/PlayerChip';
-import { POSITIONS, SKILL_LEVELS, CATEGORY_LABELS } from '../../constants';
+import { POSITIONS, SKILL_LEVELS, CATEGORY_LABELS } from '../../constants/index';
 import { ConfirmationDialog } from '../dialogs/ConfirmationDialog';
 
 interface PreferredPlayersTableProps {
@@ -58,10 +58,10 @@ export function PreferredPlayersTable({
     }
 
     const getPositionConfig = (position: string): PositionConfig => 
-        POSITIONS.find(p => p.value === position) || POSITIONS[0];
+        POSITIONS.find((p: PositionConfig) => p.value === position) || POSITIONS[0];
 
     const getSkillConfig = (skill: string): SkillConfig => 
-        SKILL_LEVELS.find(s => s.value === skill) || SKILL_LEVELS[0];
+        SKILL_LEVELS.find((s: SkillConfig) => s.value === skill) || SKILL_LEVELS[0];
 
     return (
         <Box>
@@ -86,8 +86,8 @@ export function PreferredPlayersTable({
                             <TableCell>Position</TableCell>
                             <TableCell>Skill Level</TableCell>
                             <TableCell>Category</TableCell>
-                            <TableCell align="right">Base Price</TableCell>
-                            <TableCell align="right">Max Bid</TableCell>
+                            <TableCell align="right">Base Points</TableCell>
+                            <TableCell align="right">Maximum Bid</TableCell>
                             <TableCell>Notes</TableCell>
                             <TableCell align="right">Actions</TableCell>
                         </TableRow>
@@ -134,10 +134,10 @@ export function PreferredPlayersTable({
                                     ) : '-'}
                                 </TableCell>
                                 <TableCell align="right">
-                                    ₹{player.base_price.toLocaleString()}
+                                    {player.base_price.toLocaleString()} points
                                 </TableCell>
                                 <TableCell align="right">
-                                    ₹{(player.preference?.max_bid || player.base_price).toLocaleString()}
+                                    {(player.preference?.max_bid || player.base_price).toLocaleString()} points
                                 </TableCell>
                                 <TableCell>
                                     <Typography 

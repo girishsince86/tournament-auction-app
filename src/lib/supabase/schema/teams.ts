@@ -16,10 +16,19 @@ export interface TeamWithBudget extends Team {
     players_count: number;
 }
 
+export const TeamOwnerSchema = z.object({
+  id: z.string().uuid(),
+  auth_user_id: z.string().uuid().nullable(),
+  email: z.string().email(),
+  name: z.string().min(1),
+  team_id: z.string().uuid().nullable(),
+  created_at: z.string().datetime(),
+  updated_at: z.string().datetime(),
+});
+
 export const TeamSchema = z.object({
   id: z.string().uuid(),
   name: z.string().min(1),
-  owner_id: z.string().uuid(),
   tournament_id: z.string().uuid(),
   initial_budget: z.number().min(0),
   remaining_budget: z.number().min(0),
@@ -27,6 +36,7 @@ export const TeamSchema = z.object({
   logo_url: z.string().url().optional(),
   created_at: z.string().datetime(),
   updated_at: z.string().datetime(),
+  team_owners: z.array(TeamOwnerSchema).optional(),
 });
 
 export const TeamStatisticsSchema = z.object({

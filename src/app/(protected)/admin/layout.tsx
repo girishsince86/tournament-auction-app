@@ -86,9 +86,15 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     },
     { 
       label: 'Player Database', 
-      href: '/admin/volleyball-players',
+      href: '/manage-players',
       icon: <PlayerIcon />,
       description: 'Manage player profiles and categories'
+    },
+    { 
+      label: 'Player Registrations', 
+      href: '/admin/player-registrations',
+      icon: <PlayerIcon />,
+      description: 'Manage player registrations and load players'
     },
   ];
 

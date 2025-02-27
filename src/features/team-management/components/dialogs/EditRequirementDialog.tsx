@@ -81,10 +81,10 @@ export function EditRequirementDialog({
     };
 
     const getPositionConfig = (position: string) => 
-        POSITIONS.find(p => p.value === position) || POSITIONS[0];
+        POSITIONS.find((p: any) => p.value === position) || POSITIONS[0];
 
     const getSkillConfig = (skill: string) => 
-        SKILL_LEVELS.find(s => s.value === skill) || SKILL_LEVELS[0];
+        SKILL_LEVELS.find((s: any) => s.value === skill) || SKILL_LEVELS[0];
 
     return (
         <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>

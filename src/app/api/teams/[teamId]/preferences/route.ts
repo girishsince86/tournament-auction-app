@@ -22,10 +22,18 @@ export async function PUT(
             );
         }
 
+        // Check if user is admin
+        const isAdmin = session.user.email?.endsWith('@pbel.in');
+
         // Verify team ownership
         const { data: team, error: teamError } = await supabase
             .from('teams')
-            .select('owner_id')
+            .select(`
+                id,
+                team_owners!inner (
+                    auth_user_id
+                )
+            `)
             .eq('id', teamId)
             .single();
 
@@ -36,7 +44,7 @@ export async function PUT(
             );
         }
 
-        if (team.owner_id !== session.user.id) {
+        if (!isAdmin && team.team_owners[0].auth_user_id !== session.user.id) {
             return NextResponse.json(
                 { error: 'Unauthorized' },
                 { status: 403 }

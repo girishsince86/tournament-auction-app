@@ -1,5 +1,5 @@
 import type { PlayerPosition, SkillLevel, CategoryType } from '@/types/database';
-import type { FilterState, SortState } from '../types';
+import type { FilterState, SortState } from '../types/filter';
 import { SportsVolleyball as VolleyballIcon } from '@mui/icons-material';
 import GroupIcon from '@mui/icons-material/Group';
 import StarIcon from '@mui/icons-material/Star';
@@ -12,7 +12,7 @@ export interface PositionConfig {
     order: number;
 }
 
-export interface SkillConfig {
+export interface SkillLevelConfig {
     value: SkillLevel;
     label: string;
     color: string;
@@ -30,42 +30,42 @@ export interface CategoryConfig {
 
 export const POSITIONS: PositionConfig[] = [
     {
-        value: 'P1_RIGHT_BACK' as PlayerPosition,
+        value: 'P1_RIGHT_BACK',
         label: 'Right Back (P1)',
-        color: '#FF5722',
+        color: '#4CAF50',
         icon: VolleyballIcon,
         order: 1
     },
     {
-        value: 'P2_RIGHT_FRONT' as PlayerPosition,
+        value: 'P2_RIGHT_FRONT',
         label: 'Right Front (P2)',
         color: '#2196F3',
         icon: VolleyballIcon,
         order: 2
     },
     {
-        value: 'P3_MIDDLE_FRONT' as PlayerPosition,
+        value: 'P3_MIDDLE_FRONT',
         label: 'Middle Front (P3)',
-        color: '#4CAF50',
+        color: '#9C27B0',
         icon: VolleyballIcon,
         order: 3
     },
     {
-        value: 'P4_LEFT_FRONT' as PlayerPosition,
+        value: 'P4_LEFT_FRONT',
         label: 'Left Front (P4)',
-        color: '#9C27B0',
+        color: '#F44336',
         icon: VolleyballIcon,
         order: 4
     },
     {
-        value: 'P5_LEFT_BACK' as PlayerPosition,
+        value: 'P5_LEFT_BACK',
         label: 'Left Back (P5)',
-        color: '#FFC107',
+        color: '#FF9800',
         icon: VolleyballIcon,
         order: 5
     },
     {
-        value: 'P6_MIDDLE_BACK' as PlayerPosition,
+        value: 'P6_MIDDLE_BACK',
         label: 'Middle Back (P6)',
         color: '#607D8B',
         icon: VolleyballIcon,
@@ -73,7 +73,7 @@ export const POSITIONS: PositionConfig[] = [
     }
 ];
 
-export const SKILL_LEVELS: SkillConfig[] = [
+export const SKILL_LEVELS: SkillLevelConfig[] = [
     {
         value: 'RECREATIONAL_C',
         label: 'Recreational',
@@ -130,19 +130,14 @@ export const CATEGORY_LABELS: CategoryConfig[] = [
 
 export const DASHBOARD_TABS = [
     {
+        value: 0,
         label: 'Current Squad',
-        icon: GroupIcon,
-        value: 0
+        icon: GroupIcon
     },
     {
+        value: 1,
         label: 'Preferred Players',
-        icon: StarIcon,
-        value: 1
-    },
-    {
-        label: 'Team Requirements',
-        icon: VolleyballIcon,
-        value: 2
+        icon: StarIcon
     }
 ] as const;
 
@@ -150,8 +145,7 @@ export const INITIAL_FILTER_STATE: FilterState = {
     position: '',
     skillLevel: '',
     searchQuery: '',
-    minPrice: '',
-    maxPrice: ''
+    category: ''
 };
 
 export const INITIAL_SORT_STATE: SortState = {

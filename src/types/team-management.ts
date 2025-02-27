@@ -159,4 +159,19 @@ export interface TeamValidationError {
 export interface TeamValidationResult {
     isValid: boolean;
     errors: TeamValidationError[];
+}
+
+export interface PlayerCategoryRequirement {
+    category_type: 'MARQUEE' | 'CAPPED' | 'UNCAPPED';
+    min_players: number;
+    max_players?: number;
+    current_count: number;
+}
+
+export interface TeamCompositionStatus {
+    total_players: number;
+    min_players: number;
+    max_players: number;
+    category_requirements: PlayerCategoryRequirement[];
+    is_valid: boolean;
 } 

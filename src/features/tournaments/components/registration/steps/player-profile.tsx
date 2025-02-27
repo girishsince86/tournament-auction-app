@@ -87,7 +87,7 @@ export function PlayerProfile({ onNext, onBack }: PlayerProfileProps) {
   }
 
   const handleHeightChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const value = parseFloat(event.target.value)
+    const value = Math.round(parseFloat(event.target.value))  // Round to nearest whole number
     const error = validateField('height', value)
     setErrors(prev => ({ ...prev, height: error }))
     updateFormData({ height: value })
@@ -141,8 +141,11 @@ export function PlayerProfile({ onNext, onBack }: PlayerProfileProps) {
             value={formData.height || ''}
             onChange={handleHeightChange}
             error={!!errors.height}
-            helperText={errors.height || 'Enter your height in centimeters'}
-            InputProps={{ inputProps: { min: 100, max: 250, step: 0.01 } }}
+            helperText={errors.height || 'Enter your height in centimeters (e.g., 175 for 1.75m)'}
+            InputProps={{ 
+              inputProps: { min: 100, max: 250, step: 1 },
+              endAdornment: <Typography variant="caption" sx={{ ml: 1 }}>cm</Typography>
+            }}
           />
         </Grid>
         <Grid item xs={12} sm={6}>

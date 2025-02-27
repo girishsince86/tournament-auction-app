@@ -307,6 +307,7 @@ export default function PlayerProfilePage({ params }: Props) {
                         aspectRatio: '1',
                         position: 'relative',
                         overflow: 'hidden',
+                        bgcolor: 'grey.100',
                       }}
                     >
                       <Image
@@ -314,7 +315,7 @@ export default function PlayerProfilePage({ params }: Props) {
                         alt={`${player.first_name} ${player.last_name}`}
                         fill
                         sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                        style={{ objectFit: 'cover' }}
+                        style={{ objectFit: 'contain' }}
                       />
                     </Box>
                     <Box sx={{ p: 2, pt: 0 }}>
