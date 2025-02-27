@@ -5,12 +5,17 @@ import { useRouter } from 'next/navigation'
 import { createBrowserClient } from '@supabase/ssr'
 import { Database } from '@/lib/supabase/types/supabase'
 import { toast } from 'react-hot-toast'
+import { SupabaseClient } from '@supabase/supabase-js'
 
 // Initialize Supabase client with environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-const supabase = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
+// Only create the browser client when window is defined
+const createSupabaseClient = () => {
+  if (typeof window === 'undefined') return null;
+  return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
+};
 
 interface AuthUser {
   id: string
@@ -46,9 +51,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const [supabase, setSupabase] = useState<SupabaseClient<Database> | null>(null)
+
+  // Initialize Supabase client on mount
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const client = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
+      setSupabase(client);
+    }
+  }, []);
 
   // Validate user authentication
   const validateUser = async (source: string) => {
+    if (!supabase) return null;
+    
     console.log('[Auth Validation] Validating user from:', source, {
       user: user ? {
         id: user.id,
@@ -84,6 +100,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   useEffect(() => {
+    if (!supabase) return;
+    
     const getAuthenticatedUser = async () => {
       try {
         const validatedUser = await validateUser('initial mount')
@@ -169,9 +187,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.log('[Auth Cleanup] Unsubscribing from auth state changes')
       subscription.unsubscribe()
     }
-  }, [router])
+  }, [router, supabase])
 
   const signIn = async (email: string, password: string) => {
+    if (!supabase) return;
+    
     setIsLoading(true)
     try {
       console.log('[Auth Action] Attempting sign in')
@@ -208,6 +228,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signOut = async () => {
+    if (!supabase) return;
+    
     try {
       console.log('[Auth Action] Attempting sign out')
       const { error } = await supabase.auth.signOut()
@@ -230,6 +252,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const resetPassword = async (email: string) => {
+    if (!supabase) return;
+    
     setIsLoading(true)
     try {
       console.log('[Auth Action] Attempting password reset')

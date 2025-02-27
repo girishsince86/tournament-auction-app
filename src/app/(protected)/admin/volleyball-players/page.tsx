@@ -26,6 +26,8 @@ import {
 import { TournamentRegistration } from '@/features/tournaments/types/registration'
 import toast from 'react-hot-toast'
 
+export const dynamic = 'force-dynamic'
+
 export default function VolleyballPlayersPage() {
   const [players, setPlayers] = useState<TournamentRegistration[]>([])
   const [loading, setLoading] = useState(true)

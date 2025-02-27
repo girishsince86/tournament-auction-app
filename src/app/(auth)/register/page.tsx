@@ -3,6 +3,8 @@
 import { Container, Paper, Typography, Box, Button, Alert } from '@mui/material'
 import { useRouter } from 'next/navigation'
 
+export const dynamic = 'force-dynamic'
+
 export default function RegisterPage() {
   const router = useRouter()
 

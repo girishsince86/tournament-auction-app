@@ -116,66 +116,26 @@ const isTeamOwner = (email?: string): boolean => {
   return email ? teamOwnerEmails.includes(email) : false;
 }
 
-export async function middleware(request: NextRequest) {
-  const res = NextResponse.next()
-  const supabase = createMiddlewareClient({ req: request, res })
-  const { data: { session }, error } = await supabase.auth.getSession()
-
-  const pathname = request.nextUrl.pathname
-  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route))
-  const isAdminRoute = ADMIN_ROUTES.some(route => pathname.startsWith(route))
-  const isProfileRoute = pathname.startsWith('/profile/')
-  const isTeamManagementRoute = pathname.startsWith('/team-management')
-
-  // Handle authentication
-  if (!session) {
-    if (!isPublicRoute) {
-      const redirectUrl = request.nextUrl.clone()
-      redirectUrl.pathname = '/login'
-      redirectUrl.searchParams.set('redirectTo', pathname)
-      return NextResponse.redirect(redirectUrl)
-    }
-    return res
-  }
-
-  // Handle admin routes - only allow full admins
-  if (isAdminRoute) {
-    // Check if user is a full admin (not just a team owner with pbel.in email)
-    if (!isFullAdmin(session.user.email)) {
-      // Redirect non-admin users to registration summary
-      const redirectUrl = request.nextUrl.clone()
-      redirectUrl.pathname = '/registration-summary'
-      return NextResponse.redirect(redirectUrl)
-    }
-  }
-
-  // Handle public routes when user is authenticated
-  if (isPublicRoute && !isProfileRoute && session) {
-    const redirectUrl = request.nextUrl.clone()
-    redirectUrl.pathname = '/registration-summary'
-    return NextResponse.redirect(redirectUrl)
-  }
-
-  // Get user's role from metadata
-  const { data: { user } } = await supabase.auth.getUser()
-  const userRole = user?.user_metadata?.role || user?.app_metadata?.role
-
-  // No need to protect team owner profile routes - any authenticated user can access
-  return res
+// This middleware ensures all pages are dynamically rendered
+export function middleware(request: NextRequest) {
+  const response = NextResponse.next()
+  
+  // Add a header to force dynamic rendering
+  response.headers.set('x-middleware-cache', 'no-cache')
+  
+  return response
 }
 
+// Configure middleware to run on all routes
 export const config = {
   matcher: [
-    // Match only specific protected routes
-    '/registration-summary',
-    '/dashboard/:path*',
-    '/admin/:path*',
-    '/teams/:path*',
-    '/profile/:path*',
-    // Match auth routes
-    '/login',
-    '/signup',
-    '/auth/callback',
-    '/team-management/:path*'
-  ]
+    /*
+     * Match all request paths except for the ones starting with:
+     * - api (API routes)
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+  ],
 } 
