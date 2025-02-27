@@ -30,6 +30,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
+  resetPassword: (email: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -38,6 +39,7 @@ const AuthContext = createContext<AuthContextType>({
   signIn: async () => {},
   signUp: async () => {},
   signOut: async () => {},
+  resetPassword: async () => {},
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -178,24 +180,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string) => {
-    setIsLoading(true)
     try {
-      console.log('[Auth Action] Attempting sign up')
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
-      })
-
-      if (error) throw error
-      
-      // Validate user after sign up
-      const validatedUser = await validateUser('post sign up')
-      if (!validatedUser) {
-        throw new Error('Failed to validate user after sign up')
-      }
+      console.log('[Auth Action] Sign up is disabled')
+      toast.error('Sign up is disabled. Please contact an administrator for access.')
     } catch (error) {
       console.error('[Auth Error] Sign up error:', error)
       throw error
@@ -226,8 +213,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const resetPassword = async (email: string) => {
+    setIsLoading(true)
+    try {
+      console.log('[Auth Action] Attempting password reset')
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      })
+
+      if (error) throw error
+      
+      toast.success('Password reset email sent. Please check your inbox.')
+    } catch (error) {
+      console.error('[Auth Error] Password reset error:', error)
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut, resetPassword }}>
       {children}
     </AuthContext.Provider>
   )

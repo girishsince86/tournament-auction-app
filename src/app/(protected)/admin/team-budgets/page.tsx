@@ -444,7 +444,8 @@ export default function TeamBudgetsPage() {
                                                 budget={{
                                                     initial_budget: team.initial_budget,
                                                     remaining_budget: team.remaining_budget,
-                                                    allocated_budget: team.initial_budget - team.remaining_budget
+                                                    allocated_budget: team.initial_budget - team.remaining_budget,
+                                                    budget_utilization_percentage: ((team.initial_budget - team.remaining_budget) / team.initial_budget) * 100
                                                 }}
                                                 metrics={{
                                                     avg_player_cost: team.players_count ? team.total_spent / team.players_count : 0,

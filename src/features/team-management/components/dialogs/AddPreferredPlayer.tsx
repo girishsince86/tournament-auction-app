@@ -35,6 +35,7 @@ import InfoIcon from '@mui/icons-material/Info';
 import type { PlayerWithPreference } from '../../types/player';
 import type { SimulationState, ValidationResult } from '../../hooks/useTeamSimulation';
 import type { PositionConfig, SkillLevelConfig as SkillConfig, CategoryConfig } from '../../constants/index';
+import type { FilterState } from '../../types/filter';
 import { PlayerChip } from '../shared/PlayerChip';
 import { POSITIONS, SKILL_LEVELS, CATEGORY_LABELS } from '../../constants/index';
 import { FilterBar } from '../shared/FilterBar';
@@ -74,12 +75,12 @@ export function AddPreferredPlayer({
     // Add category to filter state
     useEffect(() => {
         if (selectedCategory) {
-            setFilterState(prev => ({
-                ...prev,
+            setFilterState({
+                ...filterState,
                 category: selectedCategory
-            }));
+            });
         }
-    }, [selectedCategory]);
+    }, [selectedCategory, filterState]);
 
     // Reset state when dialog closes
     useEffect(() => {
@@ -92,7 +93,7 @@ export function AddPreferredPlayer({
     }, [open]);
 
     // Get unique categories from available players
-    const categories = [...new Set(nonPreferredPlayers.map(player => player.category?.category_type))].filter(Boolean);
+    const categories = Array.from(new Set(nonPreferredPlayers.map(player => player.category?.category_type))).filter(Boolean);
 
     // Apply filters including category
     const filteredPlayers = sortPlayers(filterPlayers(nonPreferredPlayers.filter(player => 

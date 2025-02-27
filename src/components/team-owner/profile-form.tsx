@@ -77,9 +77,13 @@ export function TeamOwnerProfileForm() {
         sports_background: profile.sports_background,
         notable_achievements: profile.notable_achievements,
         team_role: profile.team_role,
-        phone_number: profile.phone_number,
-        social_media: profile.social_media,
-        profile_image_url: profile.profile_image_url,
+        phone_number: profile.phone_number || '',
+        social_media: profile.social_media || {
+          linkedin: undefined,
+          twitter: undefined,
+          instagram: undefined
+        },
+        profile_image_url: profile.profile_image_url || '',
       })
       setSelectedTeam(profile.team_id)
       setTeamName(profile.team_name || '')
@@ -108,7 +112,11 @@ export function TeamOwnerProfileForm() {
         team_role: profile.team_role || '',
         contact_email: profile.contact_email,
         phone_number: profile.phone_number || '',
-        social_media: profile.social_media || '',
+        social_media: profile.social_media || {
+          linkedin: undefined,
+          twitter: undefined,
+          instagram: undefined
+        },
         profile_image_url: profile.profile_image_url || '',
         bio: profile.bio,
       });
@@ -214,9 +222,18 @@ export function TeamOwnerProfileForm() {
       errors.contact_email = 'Please enter a valid email address'
     }
 
-    // Social media handle validation
-    if (formData.social_media && !/^[@]?\w+$/.test(formData.social_media)) {
-      errors.social_media = 'Please enter a valid social media handle'
+    // Social media URL validation
+    if (formData.social_media) {
+      const urlPattern = /^https?:\/\/[^\s/$.?#].[^\s]*$/i
+      if (formData.social_media.linkedin && !urlPattern.test(formData.social_media.linkedin)) {
+        errors.linkedin = 'Please enter a valid LinkedIn URL'
+      }
+      if (formData.social_media.twitter && !urlPattern.test(formData.social_media.twitter)) {
+        errors.twitter = 'Please enter a valid Twitter URL'
+      }
+      if (formData.social_media.instagram && !urlPattern.test(formData.social_media.instagram)) {
+        errors.instagram = 'Please enter a valid Instagram URL'
+      }
     }
 
     // Bio length validation
@@ -255,7 +272,11 @@ export function TeamOwnerProfileForm() {
       notable_achievements: [],
       team_role: '',
       phone_number: '',
-      social_media: '',
+      social_media: {
+        linkedin: undefined,
+        twitter: undefined,
+        instagram: undefined
+      },
       profile_image_url: ''
     })
     setSelectedFile(null)

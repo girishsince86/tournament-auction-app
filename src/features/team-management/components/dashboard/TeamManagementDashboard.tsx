@@ -33,7 +33,8 @@ import { useFiltersAndSort } from '../../hooks/useFiltersAndSort';
 import { useTeamSimulation } from '../../hooks/useTeamSimulation';
 import { DASHBOARD_TABS } from '../../constants';
 import type { PlayerWithPreference } from '../../types/player';
-import type { TeamBudgetDetails, TeamBudgetMetrics } from '../../types/team';
+import type { TeamData } from '../../types/team';
+import type { TeamBudgetDetails, TeamBudgetMetrics } from '../../types/budget';
 
 interface TeamManagementDashboardProps {
     teamId: string;
@@ -83,7 +84,16 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
     } = useTeamData(teamId);
 
     // Convert null to undefined for type compatibility
-    const budgetDetails = rawBudgetDetails || undefined;
+    const budgetDetails = useMemo(() => {
+        if (!rawBudgetDetails) return undefined;
+        
+        return {
+            ...rawBudgetDetails,
+            budget_utilization_percentage: rawBudgetDetails.budget_utilization_percentage ?? 
+                ((rawBudgetDetails.initial_budget - rawBudgetDetails.remaining_budget) / rawBudgetDetails.initial_budget) * 100
+        };
+    }, [rawBudgetDetails]);
+    
     const budgetMetrics = rawBudgetMetrics || undefined;
 
     const {
@@ -214,14 +224,16 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
         } as PlayerWithPreference & { final_bid_points?: number })) || [];
     }, [teamData?.players]);
 
+    // Create a memoized default budget object
+    const defaultBudget = useMemo<TeamBudgetDetails>(() => ({
+        initial_budget: 0,
+        remaining_budget: 0,
+        allocated_budget: 0,
+        budget_utilization_percentage: 0
+    }), []);
+
     // Update the simulation props with the mapped players
     const simulationProps = useMemo(() => {
-        const defaultBudget: TeamBudgetDetails = {
-            initial_budget: 0,
-            remaining_budget: 0,
-            allocated_budget: 0
-        };
-
         return {
             isPreAuction: true,
             allocatedPlayers: mappedSquadPlayers,
@@ -230,7 +242,7 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
             teamBudget: budgetDetails || defaultBudget,
             maxPlayers: teamData?.max_players || 0
         };
-    }, [teamData, budgetDetails, mappedSquadPlayers]);
+    }, [teamData, budgetDetails, mappedSquadPlayers, defaultBudget]);
 
     // Simulation state
     const {

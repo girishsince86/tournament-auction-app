@@ -56,7 +56,8 @@ export default async function TeamDetailsPage({ params }: { params: { teamId: st
                 budget={{
                     initial_budget: team.initial_budget,
                     remaining_budget: team.remaining_budget,
-                    allocated_budget: team.initial_budget - team.remaining_budget
+                    allocated_budget: team.initial_budget - team.remaining_budget,
+                    budget_utilization_percentage: ((team.initial_budget - team.remaining_budget) / team.initial_budget) * 100
                 }}
                 metrics={{
                     avg_player_cost: players?.length ? (team.initial_budget - team.remaining_budget) / players.length : 0,

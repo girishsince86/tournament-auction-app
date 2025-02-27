@@ -1,6 +1,7 @@
 import { useReducer, useEffect, useCallback, useRef } from 'react';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
-import type { TeamData, TeamBudgetDetails, TeamBudgetMetrics } from '../types/team';
+import type { TeamData } from '../types/team';
+import type { TeamBudgetDetails, TeamBudgetMetrics } from '../types/budget';
 
 // Create Supabase client outside component to ensure it's stable
 const supabase = createClientComponentClient();
@@ -168,6 +169,7 @@ export function useTeamData(teamId: string): UseTeamDataReturn {
                 players: [],
                 available_players: playersWithPreference,
                 max_players: rawTeam.max_players,
+                min_players: Math.ceil(rawTeam.max_players * 0.75),
                 categoryRequirements: []
             };
 

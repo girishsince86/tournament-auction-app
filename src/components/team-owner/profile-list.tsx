@@ -295,7 +295,12 @@ export function ProfileList() {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" className="text-gray-700">
-                      {profile.social_media || 'N/A'}
+                      {profile.social_media ? 
+                        Object.entries(profile.social_media)
+                          .filter(([_, value]) => value)
+                          .map(([platform, url]) => platform)
+                          .join(', ') || 'N/A'
+                        : 'N/A'}
                     </Typography>
                   </TableCell>
                   <TableCell>

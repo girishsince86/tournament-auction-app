@@ -10,7 +10,7 @@ import {
     Alert,
     InputAdornment
 } from '@mui/material';
-import type { PlayerWithPreference } from '../../types';
+import type { PlayerWithPreference } from '../../types/player';
 
 interface EditPreferenceDialogProps {
     open: boolean;

@@ -122,11 +122,11 @@ export function TeamBudget({
                             </Typography>
                             <LinearProgress 
                                 variant="determinate" 
-                                value={budget_utilization_percentage ?? 0}
-                                color={(budget_utilization_percentage ?? 0) > 90 ? "error" : "primary"}
+                                value={typeof budget_utilization_percentage === 'number' ? budget_utilization_percentage : 0}
+                                color={typeof budget_utilization_percentage === 'number' && budget_utilization_percentage > 90 ? "error" : "primary"}
                             />
                             <Typography variant="caption" color="textSecondary">
-                                {budget_utilization_percentage ?? 0}% Used
+                                {typeof budget_utilization_percentage === 'number' ? budget_utilization_percentage.toFixed(1) : '0'}% Used
                             </Typography>
                         </Box>
                     </Grid>

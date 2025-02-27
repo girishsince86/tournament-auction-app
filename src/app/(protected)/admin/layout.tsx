@@ -95,7 +95,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       href: '/admin/player-registrations',
       icon: <PlayerIcon />,
       description: 'Manage player registrations and load players'
-    },
+    }
   ];
 
   return (

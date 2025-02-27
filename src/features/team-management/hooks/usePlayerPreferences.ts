@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import type { PlayerWithPreference, SelectedPlayerData } from '../types';
+import type { PlayerWithPreference } from '../types/player';
+import type { SelectedPlayerData } from '../types/filter';
 
 interface UsePlayerPreferencesReturn {
     selectedPlayers: SelectedPlayerData[];
@@ -86,8 +87,11 @@ export function usePlayerPreferences(
     const handlePreferenceEdit = (player: PlayerWithPreference) => {
         setEditingPreference({
             ...player,
-            max_bid: player.preference?.max_bid || player.base_price,
-            notes: player.preference?.notes || ''
+            preference: {
+                ...player.preference,
+                max_bid: player.preference?.max_bid || player.base_price,
+                notes: player.preference?.notes || ''
+            }
         });
     };
 

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { PlayerWithPreference } from '../types/player';
-import type { CategoryRequirement } from '../types/team';
+import type { CategoryRequirement } from '../types/category';
 import type { PlayerPosition, SkillLevel } from '@/types/database';
 import { POSITIONS, SKILL_LEVELS } from '@/lib/constants';
 

@@ -3,14 +3,19 @@ import {
     TableBody,
     TableCell,
     TableContainer,
+    TableHead,
     TableRow,
     Paper,
-    IconButton
+    IconButton,
+    Typography,
+    Stack,
+    Avatar,
+    Chip
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import { ConfirmationDialog } from '../dialogs/ConfirmationDialog';
-import type { PlayerWithPreference } from '../../types';
+import type { PlayerWithPreference } from '../../types/player';
 
 export function PreferredPlayersTable({
     players,

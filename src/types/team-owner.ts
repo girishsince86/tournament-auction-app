@@ -10,7 +10,11 @@ export interface TeamOwnerProfile {
   team_role?: string;
   contact_email: string;
   phone_number?: string;
-  social_media?: string;
+  social_media?: {
+    linkedin?: string;
+    twitter?: string;
+    instagram?: string;
+  };
   profile_image_url?: string;
   bio: string;
   created_at: string;
@@ -26,7 +30,11 @@ export interface TeamOwnerUpdateRequest {
   team_role?: string;
   contact_email: string;
   phone_number?: string;
-  social_media?: string;
+  social_media?: {
+    linkedin?: string;
+    twitter?: string;
+    instagram?: string;
+  };
   profile_image_url?: string;
   bio: string;
 }
@@ -38,4 +46,8 @@ export interface TeamNameUpdateRequest {
 export interface ApiResponse<T> {
   data: T;
   error?: string;
+}
+
+export interface TeamOwnerProfileUpdateInput extends Partial<TeamOwnerUpdateRequest> {
+  profile_image_url?: string | undefined;
 } 

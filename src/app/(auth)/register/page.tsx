@@ -1,9 +1,11 @@
 'use client'
 
-import { Container, Paper, Typography, Box } from '@mui/material'
-import { RegisterForm } from '@/features/auth/components/register-form'
+import { Container, Paper, Typography, Box, Button, Alert } from '@mui/material'
+import { useRouter } from 'next/navigation'
 
 export default function RegisterPage() {
+  const router = useRouter()
+
   return (
     <Container component="main" maxWidth="xs">
       <Box
@@ -16,9 +18,20 @@ export default function RegisterPage() {
       >
         <Paper elevation={3} sx={{ p: 4, width: '100%' }}>
           <Typography component="h1" variant="h5" align="center" gutterBottom>
-            Create your account
+            Registration Disabled
           </Typography>
-          <RegisterForm />
+          
+          <Alert severity="info" sx={{ mb: 3 }}>
+            Registration is currently disabled. Please contact an administrator for access.
+          </Alert>
+          
+          <Button
+            fullWidth
+            variant="contained"
+            onClick={() => router.push('/login')}
+          >
+            Return to Login
+          </Button>
         </Paper>
       </Box>
     </Container>
