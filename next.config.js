@@ -1,39 +1,62 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
-  images: {
-    remotePatterns: [
-      {
-        protocol: 'https',
-        hostname: '**',
-      },
-    ],
-    unoptimized: true,
-  },
-  // Disable static generation completely
   output: 'standalone',
-  // Set all pages to be server-side rendered
+  
+  // Force dynamic rendering for all pages
   experimental: {
+    // Allow server actions from specific origins
     serverActions: {
-      allowedOrigins: ['localhost:3000', 'pbel-volleyball.vercel.app'],
+      allowedOrigins: [
+        'localhost:3000',
+        'localhost'
+      ],
     },
-    // Disable static optimization completely
-    isrMemoryCacheSize: 0,
-    serverComponentsExternalPackages: ['*'],
   },
-  // Force all pages to be server-side rendered
-  staticPageGenerationTimeout: 1,
-  // Add dynamic export to force dynamic rendering
+  
+  // Set environment variables
   env: {
     NEXT_DISABLE_STATIC_GENERATION: 'true',
   },
-  // Disable static optimization
+  
+  // Compiler options
   compiler: {
-    styledComponents: true,
+    removeConsole: process.env.NODE_ENV === 'production',
   },
-  // Disable static page generation
-  generateEtags: false,
+  
+  // Disable powered by header
   poweredByHeader: false,
+  
+  // Disable ETag generation
+  generateEtags: false,
+  
+  // Configure headers to disable caching for all pages
+  async headers() {
+    return [
+      {
+        source: '/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'no-store, max-age=0',
+          },
+        ],
+      },
+    ];
+  },
+  
+  // Force dynamic rendering for all pages
+  reactStrictMode: false,
+  staticPageGenerationTimeout: 1,
+  
+  // Use the correct property for dynamic rendering
+  images: {
+    unoptimized: true,
+  },
+  
+  // Disable static optimization
+  optimizeFonts: false,
+  
+  // Set dynamic rendering for all pages
   trailingSlash: false,
 }
 

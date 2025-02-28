@@ -25,6 +25,7 @@ import {
 } from '@mui/icons-material'
 import { TournamentRegistration } from '@/features/tournaments/types/registration'
 import toast from 'react-hot-toast'
+import { getOrigin } from '@/lib/utils/browser'
 
 export const dynamic = 'force-dynamic'
 
@@ -70,10 +71,8 @@ export default function VolleyballPlayersPage() {
       }
 
       const { token } = await response.json()
-      // Safely access window.location.origin with a fallback
-      const origin = typeof window !== 'undefined' 
-        ? window.location.origin 
-        : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+      // Safely access origin with our utility function
+      const origin = getOrigin();
       const profileUrl = `${origin}/profile/${token}`
       
       // Copy to clipboard

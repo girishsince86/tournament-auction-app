@@ -1,3 +1,5 @@
+import { getOrigin, getPathname, navigateTo } from '@/lib/utils/browser'
+
 const checkNavigation = (user: string | null, pathname: string) => {
   // Only run this function in the browser
   if (typeof window === 'undefined') return;
@@ -18,21 +20,17 @@ const checkNavigation = (user: string | null, pathname: string) => {
   // If user is not signed in and the route is protected, redirect to login
   if (!user && isProtectedRoute) {
     // Safely create URL with origin
-    const origin = typeof window !== 'undefined' 
-      ? window.location.origin 
-      : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const origin = getOrigin();
     const redirectUrl = new URL('/auth/login', origin)
     redirectUrl.searchParams.set('redirect', pathname)
     
-    if (typeof window !== 'undefined') {
-      window.location.href = redirectUrl.toString()
-    }
+    navigateTo(redirectUrl.toString())
     return
   }
 
   // If user is signed in and trying to access auth routes, redirect to dashboard
-  if (user && isAuthRoute && typeof window !== 'undefined') {
-    window.location.href = '/dashboard'
+  if (user && isAuthRoute) {
+    navigateTo('/dashboard')
     return
   }
 }

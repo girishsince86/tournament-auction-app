@@ -116,17 +116,21 @@ const isTeamOwner = (email?: string): boolean => {
   return email ? teamOwnerEmails.includes(email) : false;
 }
 
-// This middleware ensures all pages are dynamically rendered
+// This middleware runs on all routes
 export function middleware(request: NextRequest) {
+  // Create a response object from the incoming request
   const response = NextResponse.next()
   
-  // Add a header to force dynamic rendering
+  // Set headers to force dynamic rendering and prevent caching
   response.headers.set('x-middleware-cache', 'no-cache')
+  response.headers.set('Cache-Control', 'no-store, max-age=0')
+  response.headers.set('Pragma', 'no-cache')
+  response.headers.set('Expires', '0')
   
   return response
 }
 
-// Configure middleware to run on all routes
+// Configure the middleware to run on all routes except for static files and API routes
 export const config = {
   matcher: [
     /*

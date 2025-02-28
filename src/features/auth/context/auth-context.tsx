@@ -6,6 +6,7 @@ import { createBrowserClient } from '@supabase/ssr'
 import { Database } from '@/lib/supabase/types/supabase'
 import { toast } from 'react-hot-toast'
 import { SupabaseClient } from '@supabase/supabase-js'
+import { getPathname, getOrigin } from '@/lib/utils/browser'
 
 // Initialize Supabase client with environment variables
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
@@ -35,7 +36,6 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
-  resetPassword: (email: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -44,7 +44,6 @@ const AuthContext = createContext<AuthContextType>({
   signIn: async () => {},
   signUp: async () => {},
   signOut: async () => {},
-  resetPassword: async () => {},
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -99,93 +98,79 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  // Check for user session on mount and set up auth state listener
   useEffect(() => {
-    if (!supabase) return;
-    
     const getAuthenticatedUser = async () => {
+      if (!supabase) return;
+      
       try {
-        const validatedUser = await validateUser('initial mount')
-        setUser(validatedUser)
+        setIsLoading(true)
         
-        // Skip redirection for registration and profile pages
-        let isPublicPage = false
-        if (typeof window !== 'undefined') {
-          isPublicPage = window.location.pathname === '/tournaments/register' || 
-                         window.location.pathname.startsWith('/profile/')
+        // Get current session
+        const { data: { session }, error } = await supabase.auth.getSession()
+        
+        if (error) {
+          console.error('[Auth Error] Session error:', error)
+          setUser(null)
+          return
         }
         
-        if (!validatedUser && !(typeof window !== 'undefined' && window.location.pathname.startsWith('/login')) && !isPublicPage) {
-          router.push('/login')
+        if (session?.user) {
+          console.log('[Auth] User session found')
+          setUser(session.user)
+        } else {
+          console.log('[Auth] No user session found')
+          setUser(null)
+        }
+        
+        // Set up auth state change listener
+        const { data: { subscription } } = supabase.auth.onAuthStateChange(
+          async (event, session) => {
+            console.log('[Auth Event]', event, {
+              user: session?.user ? {
+                id: session.user.id,
+                email: session.user.email
+              } : null
+            })
+            
+            if (session?.user) {
+              setUser(session.user)
+            } else {
+              setUser(null)
+            }
+            
+            // Handle navigation based on auth state
+            if (typeof window !== 'undefined') {
+              const pathname = getPathname()
+              
+              if (event === 'SIGNED_IN') {
+                // If user signed in and on an auth page, redirect to dashboard
+                if (pathname.startsWith('/login') || pathname.startsWith('/register')) {
+                  router.push('/dashboard')
+                }
+              } else if (event === 'SIGNED_OUT') {
+                // If user signed out and on a protected page, redirect to login
+                if (!pathname.startsWith('/login') && !pathname.startsWith('/register') && pathname !== '/') {
+                  router.push('/login')
+                }
+              }
+            }
+          }
+        )
+        
+        return () => {
+          subscription.unsubscribe()
         }
       } catch (error) {
-        console.error('[Auth Error] Initial authentication error:', error)
+        console.error('[Auth Error] Authentication error:', error)
         setUser(null)
-        // Skip redirection for registration and profile pages
-        let isPublicPage = false
-        if (typeof window !== 'undefined') {
-          isPublicPage = window.location.pathname === '/tournaments/register' || 
-                         window.location.pathname.startsWith('/profile/')
-        }
-        
-        if (!(typeof window !== 'undefined' && window.location.pathname.startsWith('/login')) && !isPublicPage) {
-          router.push('/login')
-        }
       } finally {
         setIsLoading(false)
       }
     }
-
-    // Get authenticated user on mount
-    getAuthenticatedUser()
-
-    // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log(`[Auth Event] Auth state changed: ${event}`, { session })
-      
-      if (event === 'SIGNED_OUT' || !session) {
-        console.log('[Auth Event] User signed out or session ended')
-        setUser(null)
-        setIsLoading(false)
-        // Skip redirection for registration and profile pages
-        let isPublicPage = false
-        if (typeof window !== 'undefined') {
-          isPublicPage = window.location.pathname === '/tournaments/register' || 
-                         window.location.pathname.startsWith('/profile/')
-        }
-        
-        if (!(typeof window !== 'undefined' && window.location.pathname.startsWith('/login')) && !isPublicPage) {
-          router.push('/login')
-        }
-        return
-      }
-      
-      // For other events, verify the user
-      const validatedUser = await validateUser('auth state change')
-      setUser(validatedUser)
-      
-      if (event === 'SIGNED_IN' && validatedUser) {
-        if (typeof window !== 'undefined' && window.location.pathname.startsWith('/login')) {
-          router.push('/registration-summary')
-        }
-      } else if (!validatedUser) {
-        // Skip redirection for registration and profile pages
-        let isPublicPage = false
-        if (typeof window !== 'undefined') {
-          isPublicPage = window.location.pathname === '/tournaments/register' || 
-                         window.location.pathname.startsWith('/profile/')
-        }
-        
-        if (!(typeof window !== 'undefined' && window.location.pathname.startsWith('/login')) && !isPublicPage) {
-          router.push('/login')
-        }
-      }
-      
-      setIsLoading(false)
-    })
-
-    return () => {
-      console.log('[Auth Cleanup] Unsubscribing from auth state changes')
-      subscription.unsubscribe()
+    
+    if (supabase) {
+      getAuthenticatedUser()
     }
   }, [router, supabase])
 
@@ -203,10 +188,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (error) throw error
       
       // Validate user after sign in
-      const validatedUser = await validateUser('post sign in')
-      if (!validatedUser) {
-        throw new Error('Failed to validate user after sign in')
-      }
+      await validateUser('signIn')
+      
+      // Navigate to dashboard
+      router.push('/dashboard')
     } catch (error) {
       console.error('[Auth Error] Sign in error:', error)
       throw error
@@ -216,9 +201,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }
 
   const signUp = async (email: string, password: string) => {
+    if (!supabase) return;
+    
+    setIsLoading(true)
     try {
-      console.log('[Auth Action] Sign up is disabled')
-      toast.error('Sign up is disabled. Please contact an administrator for access.')
+      console.log('[Auth Action] Attempting sign up')
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+      })
+
+      if (error) throw error
     } catch (error) {
       console.error('[Auth Error] Sign up error:', error)
       throw error
@@ -251,35 +244,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const resetPassword = async (email: string) => {
-    if (!supabase) return;
-    
-    setIsLoading(true)
-    try {
-      console.log('[Auth Action] Attempting password reset')
-      
-      // Get the origin for the redirect URL, defaulting to a fallback if window is not available
-      const origin = typeof window !== 'undefined' 
-        ? window.location.origin 
-        : process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-      
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${origin}/reset-password`,
-      })
-
-      if (error) throw error
-      
-      toast.success('Password reset email sent. Please check your inbox.')
-    } catch (error) {
-      console.error('[Auth Error] Password reset error:', error)
-      throw error
-    } finally {
-      setIsLoading(false)
-    }
-  }
-
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut, resetPassword }}>
+    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   )
@@ -287,7 +253,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export const useAuth = () => {
   const context = useContext(AuthContext)
-  if (!context) {
+  if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider')
   }
   return context
