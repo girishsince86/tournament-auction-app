@@ -1,14 +1,19 @@
 'use client'
 
 import { useState } from 'react'
-import { Avatar, Menu, MenuItem, IconButton } from '@mui/material'
+import { Avatar, Menu, MenuItem, IconButton, Divider } from '@mui/material'
 import { useAuth } from '@/features/auth/context/auth-context'
 import toast from 'react-hot-toast'
+import { useRouter } from 'next/navigation'
+import LockIcon from '@mui/icons-material/Lock'
+import PersonIcon from '@mui/icons-material/Person'
+import LogoutIcon from '@mui/icons-material/Logout'
 
 export function UserMenu() {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null)
   const [isSigningOut, setIsSigningOut] = useState(false)
   const { user, signOut } = useAuth()
+  const router = useRouter()
   const open = Boolean(anchorEl)
 
   const handleClick = (event: React.MouseEvent<HTMLElement>) => {
@@ -30,6 +35,16 @@ export function UserMenu() {
     } finally {
       setIsSigningOut(false)
     }
+  }
+
+  const handleNavigateToProfile = () => {
+    handleClose()
+    router.push('/profile')
+  }
+
+  const handleNavigateToChangePassword = () => {
+    handleClose()
+    router.push('/profile/change-password')
   }
 
   return (
@@ -54,12 +69,20 @@ export function UserMenu() {
         transformOrigin={{ horizontal: 'right', vertical: 'top' }}
         anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
       >
-        <MenuItem onClick={handleClose} disabled={isSigningOut}>Profile</MenuItem>
-        <MenuItem onClick={handleClose} disabled={isSigningOut}>Settings</MenuItem>
+        <MenuItem onClick={handleNavigateToProfile} disabled={isSigningOut}>
+          <PersonIcon fontSize="small" sx={{ mr: 1 }} />
+          Profile
+        </MenuItem>
+        <MenuItem onClick={handleNavigateToChangePassword} disabled={isSigningOut}>
+          <LockIcon fontSize="small" sx={{ mr: 1 }} />
+          Change Password
+        </MenuItem>
+        <Divider />
         <MenuItem 
           onClick={handleSignOut}
           disabled={isSigningOut}
         >
+          <LogoutIcon fontSize="small" sx={{ mr: 1 }} />
           {isSigningOut ? 'Signing out...' : 'Sign Out'}
         </MenuItem>
       </Menu>

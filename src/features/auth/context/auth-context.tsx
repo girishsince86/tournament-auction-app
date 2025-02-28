@@ -36,6 +36,7 @@ interface AuthContextType {
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string) => Promise<void>
   signOut: () => Promise<void>
+  updatePassword: (currentPassword: string, newPassword: string) => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -44,6 +45,7 @@ const AuthContext = createContext<AuthContextType>({
   signIn: async () => {},
   signUp: async () => {},
   signOut: async () => {},
+  updatePassword: async () => {},
 })
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -244,8 +246,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
+  const updatePassword = async (currentPassword: string, newPassword: string) => {
+    if (!supabase || !user) return;
+    
+    setIsLoading(true)
+    try {
+      console.log('[Auth Action] Verifying current password')
+      // First verify the current password
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email!,
+        password: currentPassword,
+      });
+      
+      if (signInError) {
+        console.error('[Auth Error] Current password verification failed:', signInError)
+        throw new Error('Current password is incorrect')
+      }
+      
+      console.log('[Auth Action] Attempting password update')
+      // Then update to the new password
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      })
+
+      if (error) throw error
+      
+      toast.success('Password updated successfully')
+    } catch (error) {
+      console.error('[Auth Error] Password update error:', error)
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return (
-    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, isLoading, signIn, signUp, signOut, updatePassword }}>
       {children}
     </AuthContext.Provider>
   )
