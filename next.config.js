@@ -1,6 +1,7 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  // Change from 'standalone' to undefined to use the default output
+  // This will prevent the error with missing client-reference-manifest.js
   
   // Force dynamic rendering for all pages
   experimental: {
