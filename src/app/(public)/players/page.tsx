@@ -104,8 +104,11 @@ export default function PlayersPage() {
       setError(null);
       
       try {
+        // Add timestamp as cache-busting parameter
+        const timestamp = Date.now();
+        
         // Fetch players
-        const playersResponse = await fetch(`/api/public/players?tournamentId=${tournamentId}`);
+        const playersResponse = await fetch(`/api/public/players?tournamentId=${tournamentId}&_t=${timestamp}`);
         if (!playersResponse.ok) {
           throw new Error('Failed to fetch players');
         }
@@ -113,8 +116,8 @@ export default function PlayersPage() {
         const playersData = await playersResponse.json();
         setPlayers(playersData.players || []);
         
-        // Fetch categories
-        const categoriesResponse = await fetch(`/api/public/categories?tournamentId=${tournamentId}`);
+        // Fetch categories with the same timestamp
+        const categoriesResponse = await fetch(`/api/public/categories?tournamentId=${tournamentId}&_t=${timestamp}`);
         if (!categoriesResponse.ok) {
           throw new Error('Failed to fetch categories');
         }
