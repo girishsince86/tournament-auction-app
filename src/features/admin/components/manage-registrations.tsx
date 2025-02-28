@@ -20,6 +20,9 @@ import {
   Grid,
   Divider,
   Collapse,
+  FormControlLabel,
+  Checkbox,
+  CircularProgress,
 } from '@mui/material'
 import {
   DataGridPro,
@@ -46,6 +49,7 @@ import {
   Groups as GroupsIcon,
   BarChart as BarChartIcon,
   Add as AddIcon,
+  PersonAdd as PersonAddIcon,
 } from '@mui/icons-material'
 import { useAuth } from '@/features/auth/context/auth-context'
 import { RegistrationDetailModal } from './registration-detail-modal'
@@ -127,6 +131,21 @@ export function ManageRegistrations() {
     if (email === 'amit@pbel.in') return 'Amit Saxena'
     return ''
   }
+
+  // Add new state for the add to tournament players functionality
+  const [isAddToTournamentDialogOpen, setIsAddToTournamentDialogOpen] = useState(false)
+  const [addToTournamentLoading, setAddToTournamentLoading] = useState(false)
+  const [addToTournamentStats, setAddToTournamentStats] = useState<{
+    totalRegistrations: number;
+    newPlayersToAdd: number;
+    existingPlayers: number;
+  } | null>(null)
+  const [updateExistingPlayers, setUpdateExistingPlayers] = useState(false)
+  const [addToTournamentResult, setAddToTournamentResult] = useState<{
+    playersAdded: number;
+    playersUpdated: number;
+    playersSkipped: number;
+  } | null>(null)
 
   const fetchRegistrations = useCallback(async () => {
     try {
@@ -289,6 +308,123 @@ export function ManageRegistrations() {
       throw err
     }
   }
+
+  // Function to fetch statistics before adding to tournament
+  const fetchAddToTournamentStats = useCallback(async () => {
+    try {
+      setAddToTournamentLoading(true)
+      
+      // Get statistics from the API
+      const response = await fetch('/api/admin/players/load-from-registrations')
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to fetch statistics');
+      }
+      
+      const data = await response.json();
+      
+      // Check if data and statistics exist
+      if (!data || !data.statistics || !Array.isArray(data.statistics)) {
+        setAddToTournamentStats({
+          totalRegistrations: 0,
+          newPlayersToAdd: 0,
+          existingPlayers: 0,
+        });
+        setIsAddToTournamentDialogOpen(true);
+        return;
+      }
+      
+      // Find volleyball statistics
+      const volleyballStats = data.statistics.find(
+        (stat: any) => stat.category === 'VOLLEYBALL_OPEN_MEN'
+      );
+      
+      if (volleyballStats) {
+        setAddToTournamentStats({
+          totalRegistrations: volleyballStats.verified_registrations || 0,
+          newPlayersToAdd: (volleyballStats.verified_registrations || 0) - (volleyballStats.players_created || 0),
+          existingPlayers: volleyballStats.players_created || 0,
+        });
+      } else {
+        setAddToTournamentStats({
+          totalRegistrations: 0,
+          newPlayersToAdd: 0,
+          existingPlayers: 0,
+        });
+      }
+      
+      setIsAddToTournamentDialogOpen(true);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to fetch statistics';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setAddToTournamentLoading(false);
+    }
+  }, []);
+
+  // Function to handle adding volleyball players to tournament
+  const handleAddToTournament = async () => {
+    try {
+      setAddToTournamentLoading(true);
+      setError(null);
+      
+      // Call the API to add players
+      const response = await fetch('/api/admin/players/load-from-registrations', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          category: 'VOLLEYBALL_OPEN_MEN',
+          updateExisting: updateExistingPlayers,
+        }),
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || 'Failed to add players to tournament');
+      }
+      
+      const data = await response.json();
+      
+      // Check if data exists
+      if (!data || !data.data) {
+        setAddToTournamentResult({
+          playersAdded: 0,
+          playersUpdated: 0,
+          playersSkipped: 0,
+        });
+        setIsAddToTournamentDialogOpen(false);
+        toast.success('Process completed, but no data was returned');
+        return;
+      }
+      
+      // Set the result
+      setAddToTournamentResult({
+        playersAdded: data.data?.players_added || 0,
+        playersUpdated: data.data?.players_updated || 0,
+        playersSkipped: data.data?.players_skipped || 0,
+      });
+      
+      // Close the dialog
+      setIsAddToTournamentDialogOpen(false);
+      
+      // Show success message
+      toast.success(
+        `Successfully processed volleyball players: ${data.data?.players_added || 0} added, ${data.data?.players_updated || 0} updated, ${data.data?.players_skipped || 0} skipped`
+      );
+      
+      // Refresh data
+      fetchSummary();
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : 'Failed to add players to tournament';
+      setError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setAddToTournamentLoading(false);
+    }
+  };
 
   const columns: GridColDef<TournamentRegistration>[] = [
     {
@@ -796,6 +932,25 @@ export function ManageRegistrations() {
               >
                 Add Volleyball Registration
               </Button>
+              
+              {/* Add the new button for adding to tournament players */}
+              <Button
+                variant="outlined"
+                color="primary"
+                size="small"
+                startIcon={<PersonAddIcon />}
+                endIcon={<VolleyballIcon />}
+                onClick={fetchAddToTournamentStats}
+                disabled={addToTournamentLoading}
+                sx={{ 
+                  borderRadius: 2,
+                  textTransform: 'none',
+                  fontWeight: 500,
+                }}
+              >
+                {addToTournamentLoading ? 'Processing...' : 'Add to Tournament Players'}
+              </Button>
+              
               <Button
                 variant="outlined"
                 color="secondary"
@@ -1250,6 +1405,104 @@ export function ManageRegistrations() {
           />
         </>
       )}
+
+      {/* Add to Tournament Players Dialog */}
+      <Dialog
+        open={isAddToTournamentDialogOpen}
+        onClose={() => !addToTournamentLoading && setIsAddToTournamentDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ pb: 1 }}>
+          Add Volleyball Players to Tournament
+        </DialogTitle>
+        <DialogContent>
+          {addToTournamentLoading ? (
+            <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
+              <CircularProgress />
+            </Box>
+          ) : (
+            <>
+              <Typography variant="body1" sx={{ mb: 2 }}>
+                This will add verified volleyball player registrations to the tournament players list.
+              </Typography>
+              
+              {addToTournamentStats && (
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 2,
+                    mb: 3,
+                    border: `1px solid ${theme.palette.divider}`,
+                    borderRadius: 1,
+                    bgcolor: 'background.paper',
+                  }}
+                >
+                  <Typography variant="subtitle2" gutterBottom>
+                    Statistics:
+                  </Typography>
+                  <Stack spacing={1}>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Total verified volleyball registrations:
+                      </Typography>
+                      <Typography variant="body2" fontWeight={500}>
+                        {addToTournamentStats.totalRegistrations}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        New players to be added:
+                      </Typography>
+                      <Typography variant="body2" fontWeight={500} color="success.main">
+                        {addToTournamentStats.newPlayersToAdd}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+                      <Typography variant="body2" color="text.secondary">
+                        Players already in tournament:
+                      </Typography>
+                      <Typography variant="body2" fontWeight={500} color="info.main">
+                        {addToTournamentStats.existingPlayers}
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </Paper>
+              )}
+              
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={updateExistingPlayers}
+                    onChange={(e) => setUpdateExistingPlayers(e.target.checked)}
+                  />
+                }
+                label="Update existing players with latest registration data"
+              />
+              
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 2 }}>
+                Only players that don't already exist will be added unless you check the update option.
+              </Typography>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setIsAddToTournamentDialogOpen(false)}
+            disabled={addToTournamentLoading}
+          >
+            Cancel
+          </Button>
+          <Button
+            onClick={handleAddToTournament}
+            variant="contained"
+            color="primary"
+            disabled={addToTournamentLoading || (addToTournamentStats?.newPlayersToAdd === 0 && !updateExistingPlayers)}
+          >
+            {addToTournamentLoading ? 'Processing...' : 'Add Players'}
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Add Registration Modal */}
       <AddRegistrationModal

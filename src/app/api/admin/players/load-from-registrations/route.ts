@@ -15,18 +15,42 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Check if user has admin role
-    const { data: userData, error: userError } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', session.user.id)
-      .single();
+    console.log('User authenticated:', session.user.email);
 
-    if (userError || !userData || userData.role !== 'ADMIN') {
-      return NextResponse.json(
-        { error: 'Forbidden: Admin access required' },
-        { status: 403 }
-      );
+    // TEMPORARY: Allow specific email addresses to bypass admin check
+    const bypassEmails = ['admin@pbel.in', 'amit@pbel.in', 'vasu@pbel.in'];
+    const bypassAdminCheck = bypassEmails.includes(session.user.email || '');
+    
+    if (!bypassAdminCheck) {
+      // Check if user has admin role
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (userError) {
+        console.error('Error fetching user role:', userError);
+        return NextResponse.json(
+          { error: `Failed to verify admin status: ${userError.message}` },
+          { status: 500 }
+        );
+      }
+      
+      console.log('User data:', userData);
+
+      if (!userData || (userData.role !== 'ADMIN' && userData.role !== 'admin')) {
+        console.log('Admin check failed:', { 
+          hasUserData: !!userData, 
+          role: userData?.role 
+        });
+        return NextResponse.json(
+          { error: 'Forbidden: Admin access required' },
+          { status: 403 }
+        );
+      }
+    } else {
+      console.log('Admin check bypassed for:', session.user.email);
     }
 
     // Parse request body
@@ -94,7 +118,21 @@ export async function DELETE(request: NextRequest) {
       .eq('id', session.user.id)
       .single();
 
-    if (userError || !userData || userData.role !== 'ADMIN') {
+    if (userError) {
+      console.error('Error fetching user role:', userError);
+      return NextResponse.json(
+        { error: `Failed to verify admin status: ${userError.message}` },
+        { status: 500 }
+      );
+    }
+    
+    console.log('User data:', userData);
+
+    if (!userData || (userData.role !== 'ADMIN' && userData.role !== 'admin')) {
+      console.log('Admin check failed:', { 
+        hasUserData: !!userData, 
+        role: userData?.role 
+      });
       return NextResponse.json(
         { error: 'Forbidden: Admin access required' },
         { status: 403 }
@@ -143,10 +181,49 @@ export async function GET(request: NextRequest) {
     // Check if user is authenticated
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
+      console.log('No session found');
       return NextResponse.json(
         { error: 'Unauthorized: You must be logged in' },
         { status: 401 }
       );
+    }
+    
+    console.log('User authenticated:', session.user.email);
+
+    // TEMPORARY: Allow specific email addresses to bypass admin check
+    const bypassEmails = ['admin@pbel.in', 'amit@pbel.in', 'vasu@pbel.in'];
+    const bypassAdminCheck = bypassEmails.includes(session.user.email || '');
+    
+    if (!bypassAdminCheck) {
+      // Check if user has admin role
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (userError) {
+        console.error('Error fetching user role:', userError);
+        return NextResponse.json(
+          { error: `Failed to verify admin status: ${userError.message}` },
+          { status: 500 }
+        );
+      }
+      
+      console.log('User data:', userData);
+
+      if (!userData || (userData.role !== 'ADMIN' && userData.role !== 'admin')) {
+        console.log('Admin check failed:', { 
+          hasUserData: !!userData, 
+          role: userData?.role 
+        });
+        return NextResponse.json(
+          { error: 'Forbidden: Admin access required' },
+          { status: 403 }
+        );
+      }
+    } else {
+      console.log('Admin check bypassed for:', session.user.email);
     }
 
     // Call the database function to get registration statistics

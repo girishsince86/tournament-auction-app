@@ -37,30 +37,73 @@ export async function GET(request: NextRequest) {
     
     // Get query parameters
     const searchParams = request.nextUrl.searchParams
-    const category = searchParams.get('category')
-    const status = searchParams.get('status')
-    const search = searchParams.get('search')
+    const page = parseInt(searchParams.get('page') || '1', 10)
+    const pageSize = parseInt(searchParams.get('pageSize') || '25', 10)
+    const sortField = searchParams.get('sortField') || 'created_at'
+    const sortDirection = searchParams.get('sortDirection') || 'desc'
     
-    // Build the query
-    let query = supabase
+    // Get filter parameters
+    const filterParams: Record<string, string> = {}
+    Array.from(searchParams.entries()).forEach(([key, value]) => {
+      if (key.startsWith('filter_')) {
+        const field = key.replace('filter_', '')
+        filterParams[field] = value
+      }
+    })
+    
+    // Build the count query to get total number of records
+    let countQuery = supabase
+      .from('tournament_registrations')
+      .select('id', { count: 'exact', head: true })
+    
+    // Apply filters to count query
+    Object.entries(filterParams).forEach(([field, value]) => {
+      if (field && value) {
+        if (field === 'is_verified') {
+          countQuery = countQuery.eq(field, value === 'true')
+        } else {
+          countQuery = countQuery.eq(field, value)
+        }
+      }
+    })
+    
+    // Execute count query
+    const { count, error: countError } = await countQuery
+    
+    if (countError) {
+      console.error('Count error:', countError)
+      return NextResponse.json(
+        { error: 'Failed to count registrations' },
+        { status: 500 }
+      )
+    }
+    
+    // Build the data query
+    let dataQuery = supabase
       .from('tournament_registrations')
       .select('*')
-      .order('created_at', { ascending: false })
     
-    // Apply filters if provided
-    if (category) {
-      query = query.eq('registration_category', category)
-    }
+    // Apply sorting
+    dataQuery = dataQuery.order(sortField, { ascending: sortDirection === 'asc' })
     
-    if (status) {
-      query = query.eq('is_verified', status === 'VERIFIED')
-    }
+    // Apply filters to data query
+    Object.entries(filterParams).forEach(([field, value]) => {
+      if (field && value) {
+        if (field === 'is_verified') {
+          dataQuery = dataQuery.eq(field, value === 'true')
+        } else {
+          dataQuery = dataQuery.eq(field, value)
+        }
+      }
+    })
     
-    if (search) {
-      query = query.or(`first_name.ilike.%${search}%,last_name.ilike.%${search}%,email.ilike.%${search}%,phone.ilike.%${search}%,registration_number.ilike.%${search}%`)
-    }
+    // Apply pagination
+    const from = (page - 1) * pageSize
+    const to = from + pageSize - 1
+    dataQuery = dataQuery.range(from, to)
     
-    const { data, error } = await query
+    // Execute data query
+    const { data, error } = await dataQuery
     
     if (error) {
       console.error('Database error:', error)
@@ -70,7 +113,12 @@ export async function GET(request: NextRequest) {
       )
     }
     
-    return NextResponse.json({ registrations: data })
+    return NextResponse.json({ 
+      registrations: data,
+      total: count,
+      page,
+      pageSize
+    })
   } catch (error) {
     console.error('Unexpected error:', error)
     return NextResponse.json(
