@@ -8,7 +8,9 @@ const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
+// Force dynamic rendering and disable caching
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,12 +19,14 @@ export async function GET(request: NextRequest) {
     const position = searchParams.get('position');
     const skillLevel = searchParams.get('skillLevel');
     const categoryId = searchParams.get('categoryId');
+    const timestamp = searchParams.get('_t'); // Get the cache-busting parameter
     // Use hardcoded tournament ID instead of getting from search params
     const tournamentId = '11111111-1111-1111-1111-111111111111';
 
     console.log('API /public/players - Query parameters:', { 
-      status, position, skillLevel, categoryId, tournamentId 
+      status, position, skillLevel, categoryId, tournamentId, timestamp 
     });
+    console.log(`API /public/players - Request time: ${new Date().toISOString()}`);
 
     // Build the query
     let query = supabase
@@ -204,12 +208,23 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return NextResponse.json({ players: formattedPlayers });
+    // Create response with no-cache headers
+    const response = NextResponse.json({ players: formattedPlayers });
+    response.headers.set('Cache-Control', 'no-store, max-age=0');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    
+    return response;
   } catch (error) {
     console.error('Unexpected error:', error);
-    return NextResponse.json(
+    const errorResponse = NextResponse.json(
       { error: 'An unexpected error occurred' },
       { status: 500 }
     );
+    errorResponse.headers.set('Cache-Control', 'no-store, max-age=0');
+    errorResponse.headers.set('Pragma', 'no-cache');
+    errorResponse.headers.set('Expires', '0');
+    
+    return errorResponse;
   }
 } 

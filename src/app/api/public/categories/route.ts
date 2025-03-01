@@ -8,14 +8,19 @@ const supabase = createClient<Database>(
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 );
 
+// Force dynamic rendering and disable caching
 export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
     // Use hardcoded tournament ID
     const tournamentId = '11111111-1111-1111-1111-111111111111';
+    const searchParams = request.nextUrl.searchParams;
+    const timestamp = searchParams.get('_t'); // Get the cache-busting parameter
 
     console.log(`API /public/categories - Fetching categories for tournament ID: ${tournamentId}`);
+    console.log(`API /public/categories - Request time: ${new Date().toISOString()}, Cache-buster: ${timestamp}`);
 
     // Define default categories to ensure we always have a complete set
     const defaultCategories = [
@@ -76,7 +81,13 @@ export async function GET(request: NextRequest) {
 
     console.log(`API /public/categories - Returning ${allCategories.length} categories total`);
 
-    return NextResponse.json({ categories: allCategories });
+    // Create response with no-cache headers
+    const response = NextResponse.json({ categories: allCategories });
+    response.headers.set('Cache-Control', 'no-store, max-age=0');
+    response.headers.set('Pragma', 'no-cache');
+    response.headers.set('Expires', '0');
+    
+    return response;
   } catch (error) {
     console.error('Unexpected error:', error);
     // Return default categories even if there's an error
@@ -104,6 +115,12 @@ export async function GET(request: NextRequest) {
       }
     ];
     
-    return NextResponse.json({ categories: defaultCategories });
+    // Create error response with no-cache headers
+    const errorResponse = NextResponse.json({ categories: defaultCategories });
+    errorResponse.headers.set('Cache-Control', 'no-store, max-age=0');
+    errorResponse.headers.set('Pragma', 'no-cache');
+    errorResponse.headers.set('Expires', '0');
+    
+    return errorResponse;
   }
 } 
