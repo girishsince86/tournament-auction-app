@@ -212,24 +212,25 @@ export default function TestAuction() {
                     </div>
                 </div>
 
-                {/* Debug Panel */}
-                <div className="mt-8 bg-gray-800 rounded-lg p-4">
-                    <h2 className="text-xl font-semibold mb-4">Debug Panel</h2>
-                    <div className="grid grid-cols-2 gap-4">
-                        <div>
-                            <h3 className="font-medium mb-2">Timer Config</h3>
-                            <pre className="bg-gray-900 p-2 rounded overflow-auto">
-                                {JSON.stringify(config, null, 2)}
-                            </pre>
-                        </div>
-                        <div>
-                            <h3 className="font-medium mb-2">Queue Status</h3>
-                            <pre className="bg-gray-900 p-2 rounded overflow-auto">
-                                {JSON.stringify(queue, null, 2)}
-                            </pre>
+                {process.env.NODE_ENV === 'development' && (
+                    <div className="mt-8 bg-gray-800 rounded-lg p-4">
+                        <h2 className="text-xl font-semibold mb-4">Debug Panel</h2>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <h3 className="font-medium mb-2">Timer Config</h3>
+                                <pre className="bg-gray-900 p-2 rounded overflow-auto">
+                                    {JSON.stringify(config, null, 2)}
+                                </pre>
+                            </div>
+                            <div>
+                                <h3 className="font-medium mb-2">Queue Status</h3>
+                                <pre className="bg-gray-900 p-2 rounded overflow-auto">
+                                    {JSON.stringify(queue, null, 2)}
+                                </pre>
+                            </div>
                         </div>
                     </div>
-                </div>
+                )}
             </div>
         </main>
     );
