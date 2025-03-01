@@ -46,9 +46,16 @@ export function calculateTeamCompositionStatus(
         };
 
         players.forEach(player => {
-            const category = player.category?.category_type;
-            if (category && category in counts) {
-                counts[category as keyof typeof counts]++;
+            const categoryType = player.category?.category_type;
+            if (categoryType) {
+                // Map database category types to UI category types
+                if (categoryType === 'LEVEL_1') {
+                    counts.MARQUEE++;
+                } else if (categoryType === 'LEVEL_2') {
+                    counts.CAPPED++;
+                } else if (categoryType === 'LEVEL_3') {
+                    counts.UNCAPPED++;
+                }
             }
         });
 
@@ -113,40 +120,17 @@ export function calculateTeamCompositionStatus(
         currentValid
     });
 
-    // Calculate status with preferred players
-    // Combine current and preferred players, avoiding duplicates by ID
-    const allPlayers = [...currentPlayers];
-    
-    // Add preferred players that aren't already in the current squad
-    preferredPlayers.forEach(preferred => {
-        if (!allPlayers.some(current => current.id === preferred.id)) {
-            // Make sure we're passing the preference data
-            allPlayers.push({
-                ...preferred,
-                preference: preferred.preference
-            });
-        }
-    });
+    // Calculate status with preferred players only (not combining with current squad)
+    // This is for pre-auction simulation where we don't consider allocated players
+    const preferredCounts = countPlayersByCategory(preferredPlayers);
+    const preferredRequirements = createCategoryRequirements(preferredCounts);
+    const preferredTotal = preferredPlayers.length;
+    const preferredValid = checkValidity(preferredTotal, preferredRequirements);
 
-    console.log('Combined players:', {
-        totalCount: allPlayers.length,
-        players: allPlayers.map(p => ({
-            id: p.id,
-            name: p.name,
-            category: p.category?.category_type,
-            max_bid: p.preference?.max_bid
-        }))
-    });
-
-    const withPreferredCounts = countPlayersByCategory(allPlayers);
-    const withPreferredRequirements = createCategoryRequirements(withPreferredCounts);
-    const withPreferredTotal = allPlayers.length;
-    const withPreferredValid = checkValidity(withPreferredTotal, withPreferredRequirements);
-
-    console.log('With preferred status:', {
-        withPreferredCounts,
-        withPreferredTotal,
-        withPreferredValid
+    console.log('Preferred players only status:', {
+        preferredCounts,
+        preferredTotal,
+        preferredValid
     });
 
     return {
@@ -158,11 +142,11 @@ export function calculateTeamCompositionStatus(
             is_valid: currentValid
         },
         with_preferred: {
-            total_players: withPreferredTotal,
+            total_players: preferredTotal,
             min_players: minPlayers,
             max_players: maxPlayers,
-            category_requirements: withPreferredRequirements,
-            is_valid: withPreferredValid
+            category_requirements: preferredRequirements,
+            is_valid: preferredValid
         }
     };
 } 

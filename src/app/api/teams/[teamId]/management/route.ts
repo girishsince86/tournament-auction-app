@@ -146,6 +146,28 @@ export async function GET(request: NextRequest, { params }: { params: { teamId: 
         final_bid_points: p.final_points
       })) || [];
 
+    // Calculate player counts by category
+    let totalPlayers = players.length;
+    let marqueePlayers = 0;
+    let cappedPlayers = 0;
+    let uncappedPlayers = 0;
+
+    players.forEach((player: any) => {
+      if (player.category) {
+        switch (player.category.category_type) {
+          case 'LEVEL_1':
+            marqueePlayers++;
+            break;
+          case 'LEVEL_2':
+            cappedPlayers++;
+            break;
+          case 'LEVEL_3':
+            uncappedPlayers++;
+            break;
+        }
+      }
+    });
+
     // Get available players with preference status
     const { data: availablePlayers, error: playersError } = await supabase
       .from('players')
@@ -191,7 +213,13 @@ export async function GET(request: NextRequest, { params }: { params: { teamId: 
     return NextResponse.json({
       team: {
         ...team,
-        players
+        players,
+        player_counts: {
+          total: totalPlayers,
+          marquee: marqueePlayers,
+          capped: cappedPlayers,
+          uncapped: uncappedPlayers
+        }
       },
       categoryRequirements,
       available_players: availablePlayers.map(player => ({

@@ -9,12 +9,15 @@ import {
     AlertTitle,
     Snackbar,
     Typography,
-    Grid
+    Grid,
+    IconButton,
+    Tooltip
 } from '@mui/material';
 import GroupIcon from '@mui/icons-material/Group';
 import StarIcon from '@mui/icons-material/Star';
 import GroupsIcon from '@mui/icons-material/Groups';
 import StarOutlineIcon from '@mui/icons-material/StarOutline';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
 
 import { CurrentSquadTable } from './CurrentSquadTable';
@@ -226,19 +229,31 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
 
     // Map players for the current squad table and simulation
     const mappedSquadPlayers = useMemo(() => {
-        return teamData?.players.map(p => ({
-            id: p.player.id,
-            name: p.player.name,
-            player_position: p.player.player_position,
-            skill_level: p.player.skill_level,
-            base_price: p.player.base_price,
-            profile_image_url: p.player.profile_image_url || undefined,
-            status: p.player.status,
-            category: p.player.category,
-            is_preferred: false,
-            final_bid_points: p.final_points,
-            preference: undefined
-        } as PlayerWithPreference & { final_bid_points?: number })) || [];
+        // Use a Map to deduplicate players by ID
+        const playerMap = new Map();
+        
+        // Process each player and keep only the latest entry for each player ID
+        teamData?.players.forEach(p => {
+            // Skip if player data is missing
+            if (!p.player || !p.player.id) return;
+            
+            playerMap.set(p.player.id, {
+                id: p.player.id,
+                name: p.player.name,
+                player_position: p.player.player_position,
+                skill_level: p.player.skill_level,
+                base_price: p.player.base_price,
+                profile_image_url: p.player.profile_image_url || undefined,
+                status: p.player.status,
+                category: p.player.category,
+                is_preferred: false,
+                final_bid_points: p.final_points,
+                preference: undefined
+            });
+        });
+        
+        // Convert the Map values to an array
+        return Array.from(playerMap.values()) as (PlayerWithPreference & { final_bid_points?: number })[];
     }, [teamData?.players]);
 
     // Create a memoized default budget object
@@ -475,6 +490,23 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                         <Typography variant="h5" component="h1" sx={{ fontWeight: 600 }}>
                             {teamData.name || 'Team Management'}
                         </Typography>
+                        <Box sx={{ ml: 'auto' }}>
+                            <Tooltip title="Refresh team data">
+                                <IconButton 
+                                    onClick={refreshTeamData} 
+                                    color="inherit"
+                                    aria-label="refresh data"
+                                    sx={{ 
+                                        bgcolor: 'rgba(255, 255, 255, 0.15)',
+                                        '&:hover': {
+                                            bgcolor: 'rgba(255, 255, 255, 0.25)',
+                                        }
+                                    }}
+                                >
+                                    <RefreshIcon />
+                                </IconButton>
+                            </Tooltip>
+                        </Box>
                     </Paper>
                 </Grid>
 
@@ -510,7 +542,10 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                         }
                     }}>
                         {teamCompositionAnalysis && (
-                            <TeamCompositionStatus analysis={teamCompositionAnalysis} />
+                            <TeamCompositionStatus 
+                                analysis={teamCompositionAnalysis} 
+                                playerCounts={teamData?.player_counts}
+                            />
                         )}
                     </Box>
                 </Grid>
@@ -544,19 +579,37 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                             }}
                         >
                             <Tab 
-                                icon={<StarOutlineIcon />} 
-                                label="Preferred Players"
+                                icon={<GroupsIcon />} 
+                                label="Current Squad"
                                 sx={{ gap: 1 }}
                             />
                             <Tab 
-                                icon={<GroupsIcon />} 
-                                label="Current Squad"
+                                icon={<StarOutlineIcon />} 
+                                label="Preferred Players"
                                 sx={{ gap: 1 }}
                             />
                         </Tabs>
 
                         <Box sx={{ p: 4 }}>
                             {selectedTab === 0 && (
+                                <>
+                                    <FilterBar
+                                        filterState={filterState}
+                                        onFilterChange={setFilterState}
+                                        onClearFilters={handleClearFilters}
+                                        title="Filter Squad"
+                                        showCategoryFilter={true}
+                                    />
+                                    <Box sx={{ mt: 2 }}>
+                                        <CurrentSquadTable
+                                            players={sortPlayers(filterPlayers(mappedSquadPlayers))}
+                                            isLoading={loading}
+                                        />
+                                    </Box>
+                                </>
+                            )}
+
+                            {selectedTab === 1 && (
                                 <>
                                     {/* Simulation Summary */}
                                     <SimulationSummary
@@ -591,6 +644,7 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                                         onFilterChange={setFilterState}
                                         onClearFilters={handleClearFilters}
                                         title="Filter Preferred Players"
+                                        showCategoryFilter={true}
                                     />
                                     <Box sx={{ 
                                         mt: 3,
@@ -601,30 +655,13 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                                         }
                                     }}>
                                         <PreferredPlayersTable
-                                            players={preferredPlayers}
+                                            players={sortPlayers(filterPlayers(preferredPlayers))}
                                             onEdit={handlePreferenceEdit}
                                             onDeleteClick={handleDeleteClick}
                                             deleteConfirmation={deleteConfirmation}
                                             onDeleteCancel={handleDeleteCancel}
                                             onDeleteConfirm={handleDeleteConfirm}
                                             onAdd={() => setIsAddPlayerDialogOpen(true)}
-                                            isLoading={loading}
-                                        />
-                                    </Box>
-                                </>
-                            )}
-
-                            {selectedTab === 1 && (
-                                <>
-                                    <FilterBar
-                                        filterState={filterState}
-                                        onFilterChange={setFilterState}
-                                        onClearFilters={handleClearFilters}
-                                        title="Filter Squad"
-                                    />
-                                    <Box sx={{ mt: 2 }}>
-                                        <CurrentSquadTable
-                                            players={mappedSquadPlayers}
                                             isLoading={loading}
                                         />
                                     </Box>

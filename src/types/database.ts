@@ -1,7 +1,7 @@
 // Enums and Common Types
 export type UserRole = 'ADMIN' | 'CONDUCTOR' | 'TEAM_OWNER';
 export type PlayerPosition = 'P1_RIGHT_BACK' | 'P2_RIGHT_FRONT' | 'P3_MIDDLE_FRONT' | 'P4_LEFT_FRONT' | 'P5_LEFT_BACK' | 'P6_MIDDLE_BACK';
-export type PlayerStatus = 'AVAILABLE' | 'SOLD' | 'UNSOLD' | 'INACTIVE';
+export type PlayerStatus = 'AVAILABLE' | 'IN_AUCTION' | 'ALLOCATED' | 'UNALLOCATED';
 export type SkillLevel = 'RECREATIONAL_C' | 'INTERMEDIATE_B' | 'UPPER_INTERMEDIATE_BB' | 'COMPETITIVE_A';
 export type CategoryType = 'LEVEL_1' | 'LEVEL_2' | 'LEVEL_3';
 export type TshirtSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';

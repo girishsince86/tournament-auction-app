@@ -18,6 +18,10 @@ import { useState } from 'react';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
+import PeopleIcon from '@mui/icons-material/People';
+import StarIcon from '@mui/icons-material/Star';
+import VerifiedIcon from '@mui/icons-material/Verified';
+import PersonIcon from '@mui/icons-material/Person';
 import type { TeamBudgetDetails, TeamBudgetMetrics } from '../../types/index';
 import { formatPointsInCrores } from '@/lib/utils/format';
 
@@ -42,6 +46,9 @@ const defaultBudget: TeamBudgetDetails = {
 const defaultMetrics: TeamBudgetMetrics = {
     avg_player_cost: 0,
     total_players: 0,
+    marquee_players: 0,
+    capped_players: 0,
+    uncapped_players: 0,
     total_cost: 0,
     remaining_budget: 0,
     budget_utilization: 0
@@ -153,7 +160,7 @@ export function TeamBudget({
                             <Paper elevation={1} sx={{ p: 2 }}>
                                 <Typography variant="subtitle2">Average Player Cost</Typography>
                                 <Typography variant="h6">
-                                    {formatPointsInCrores(average_player_cost ?? 0)}
+                                    {formatPointsInCrores(metrics.avg_player_cost || average_player_cost || 0)}
                                 </Typography>
                             </Paper>
                             <Paper elevation={1} sx={{ p: 2 }}>
@@ -169,6 +176,49 @@ export function TeamBudget({
                                 />
                             </Paper>
                         </Stack>
+                    </Grid>
+
+                    {/* Player Breakdown */}
+                    <Grid item xs={12}>
+                        <Paper elevation={1} sx={{ p: 2, mt: 2 }}>
+                            <Typography variant="subtitle2" gutterBottom>
+                                Player Breakdown
+                            </Typography>
+                            <Grid container spacing={2} mt={1}>
+                                <Grid item xs={6} sm={3}>
+                                    <Stack direction="row" spacing={1} alignItems="center">
+                                        <PeopleIcon color="primary" />
+                                        <Typography variant="body2">
+                                            Total: <strong>{metrics.total_players}</strong>
+                                        </Typography>
+                                    </Stack>
+                                </Grid>
+                                <Grid item xs={6} sm={3}>
+                                    <Stack direction="row" spacing={1} alignItems="center">
+                                        <StarIcon color="error" />
+                                        <Typography variant="body2">
+                                            Marquee: <strong>{metrics.marquee_players}</strong>
+                                        </Typography>
+                                    </Stack>
+                                </Grid>
+                                <Grid item xs={6} sm={3}>
+                                    <Stack direction="row" spacing={1} alignItems="center">
+                                        <VerifiedIcon color="warning" />
+                                        <Typography variant="body2">
+                                            Capped: <strong>{metrics.capped_players}</strong>
+                                        </Typography>
+                                    </Stack>
+                                </Grid>
+                                <Grid item xs={6} sm={3}>
+                                    <Stack direction="row" spacing={1} alignItems="center">
+                                        <PersonIcon color="success" />
+                                        <Typography variant="body2">
+                                            Uncapped: <strong>{metrics.uncapped_players}</strong>
+                                        </Typography>
+                                    </Stack>
+                                </Grid>
+                            </Grid>
+                        </Paper>
                     </Grid>
 
                     {/* Alerts */}

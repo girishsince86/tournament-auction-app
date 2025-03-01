@@ -10,6 +10,9 @@ export interface TeamBudgetDetails {
 export interface TeamBudgetMetrics {
     avg_player_cost: number;
     total_players: number;
+    marquee_players?: number;
+    capped_players?: number;
+    uncapped_players?: number;
     total_cost: number;
     remaining_budget: number;
     budget_utilization: number;

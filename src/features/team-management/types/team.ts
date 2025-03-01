@@ -9,6 +9,16 @@ export interface TeamBudgetMetrics {
     total_cost: number;
     remaining_budget: number;
     budget_utilization: number;
+    marquee_players?: number;
+    capped_players?: number;
+    uncapped_players?: number;
+}
+
+export interface PlayerCounts {
+    total: number;
+    marquee: number;
+    capped: number;
+    uncapped: number;
 }
 
 export interface TeamData {
@@ -43,4 +53,5 @@ export interface TeamData {
     max_players: number;
     min_players: number;
     categoryRequirements: CategoryRequirement[];
+    player_counts?: PlayerCounts;
 } 

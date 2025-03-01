@@ -30,6 +30,8 @@ export async function GET(
                 player_position,
                 skill_level,
                 base_price,
+                profile_image_url,
+                category_id,
                 auction_rounds (
                     final_points,
                     created_at
@@ -46,18 +48,57 @@ export async function GET(
             );
         }
 
+        // Fetch categories for players with category_id
+        const categoryIds = players
+            .filter(player => player.category_id)
+            .map(player => player.category_id);
+
+        interface PlayerCategory {
+            id: string;
+            name: string;
+            category_type: string;
+            base_points: number;
+        }
+
+        let categories: PlayerCategory[] = [];
+        if (categoryIds.length > 0) {
+            const { data: categoryData, error: categoryError } = await supabase
+                .from('player_categories')
+                .select('id, name, category_type, base_points')
+                .in('id', categoryIds);
+
+            if (categoryError) {
+                console.error('Error fetching player categories:', categoryError);
+            } else {
+                categories = categoryData || [];
+            }
+        }
+
         // Format the response
-        const formattedPlayers = players.map(player => ({
-            id: player.id,
-            name: player.name,
-            player_position: player.player_position,
-            skill_level: player.skill_level,
-            base_price: player.base_price,
-            auction_details: player.auction_rounds?.[0] ? {
-                final_points: player.auction_rounds[0].final_points,
-                auction_date: player.auction_rounds[0].created_at
-            } : undefined
-        }));
+        const formattedPlayers = players.map(player => {
+            const playerCategory = player.category_id 
+                ? categories.find(cat => cat.id === player.category_id) 
+                : null;
+                
+            return {
+                id: player.id,
+                name: player.name,
+                player_position: player.player_position,
+                skill_level: player.skill_level,
+                base_price: player.base_price,
+                profile_image_url: player.profile_image_url,
+                category: playerCategory ? {
+                    id: playerCategory.id,
+                    name: playerCategory.name,
+                    category_type: playerCategory.category_type,
+                    base_points: playerCategory.base_points
+                } : null,
+                auction_details: player.auction_rounds?.[0] ? {
+                    final_points: player.auction_rounds[0].final_points,
+                    auction_date: player.auction_rounds[0].created_at
+                } : undefined
+            };
+        });
 
         return NextResponse.json({
             players: formattedPlayers

@@ -31,6 +31,7 @@ import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import AccountBalanceIcon from '@mui/icons-material/AccountBalance';
 import GroupIcon from '@mui/icons-material/Group';
 import { useTournaments } from '@/hooks/useTournaments';
+import { formatPointsInCrores } from '@/lib/utils/format';
 
 interface Team {
     id: string;
@@ -171,7 +172,7 @@ export default function AdminTeamsPage() {
                                         Total Budget Allocated
                                     </Typography>
                                     <Typography variant="h3">
-                                        {teams.reduce((sum, team) => sum + team.initial_budget, 0)}
+                                        {formatPointsInCrores(teams.reduce((sum, team) => sum + team.initial_budget, 0))}
                                     </Typography>
                                 </CardContent>
                             </Card>
@@ -206,14 +207,14 @@ export default function AdminTeamsPage() {
                                                 <TableCell align="right">
                                                     <Chip
                                                         icon={<AccountBalanceIcon />}
-                                                        label={team.initial_budget}
+                                                        label={formatPointsInCrores(team.initial_budget)}
                                                         size="small"
                                                     />
                                                 </TableCell>
                                                 <TableCell align="right">
                                                     <Chip
                                                         icon={<AccountBalanceIcon />}
-                                                        label={team.remaining_budget}
+                                                        label={formatPointsInCrores(team.remaining_budget)}
                                                         color={team.remaining_budget < team.initial_budget * 0.2 ? 'error' : 'default'}
                                                         size="small"
                                                     />

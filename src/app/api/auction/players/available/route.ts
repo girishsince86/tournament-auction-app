@@ -41,6 +41,21 @@ export async function GET(request: Request) {
         const queuePlayerIds = queueData?.map(item => item.player_id) || [];
         console.log('[API] Players in queue:', queuePlayerIds);
 
+        // First, get category IDs for this tournament
+        console.log('[API] Fetching category IDs for tournament');
+        const { data: categoryData, error: categoryError } = await supabase
+            .from('player_categories')
+            .select('id')
+            .eq('tournament_id', tournamentId);
+
+        if (categoryError) {
+            console.error('[API] Error fetching category IDs:', categoryError);
+            return NextResponse.json({ error: 'Failed to fetch category IDs' }, { status: 500 });
+        }
+
+        const categoryIds = categoryData?.map(cat => cat.id) || [];
+        console.log('[API] Category IDs for tournament:', categoryIds);
+
         // Get available players for this tournament
         console.log('[API] Fetching available players');
         const { data: players, error: playersError } = await supabase
@@ -53,33 +68,74 @@ export async function GET(request: Request) {
                 status,
                 player_position,
                 category_id,
-                profile_image_url,
-                player_categories!inner (
-                    tournament_id
-                )
+                profile_image_url
             `)
-            .eq('player_categories.tournament_id', tournamentId)
-            .in('status', ['AVAILABLE', 'UNALLOCATED'])
-            .not('id', 'in', `(${queuePlayerIds.join(',')})`)
-            .order('name');
+            .in('category_id', categoryIds)
+            .in('status', ['AVAILABLE', 'UNALLOCATED']);
 
         if (playersError) {
             console.error('[API] Error fetching players:', playersError);
             return NextResponse.json({ error: 'Failed to fetch players' }, { status: 500 });
         }
 
-        console.log('[API] Found players:', players?.length);
+        // DEBUG: Log status counts
+        const statusCounts = players?.reduce((acc, player) => {
+            const status = player.status || 'UNKNOWN';
+            acc[status] = (acc[status] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>) || {};
+        console.log('[API] Player status counts:', statusCounts);
+
+        // DEBUG: Log UNALLOCATED players
+        const unallocatedPlayers = players?.filter(player => player.status === 'UNALLOCATED') || [];
+        console.log('[API] UNALLOCATED players count:', unallocatedPlayers.length);
+        if (unallocatedPlayers.length > 0) {
+            console.log('[API] UNALLOCATED players:', unallocatedPlayers.map(p => ({ id: p.id, name: p.name })));
+        }
+
+        // Filter out players that are already in queue
+        const availablePlayers = players?.filter(player => 
+            !queuePlayerIds.includes(player.id)
+        ) || [];
+
+        // DEBUG: Log filtered UNALLOCATED players
+        const filteredUnallocatedPlayers = availablePlayers?.filter(player => player.status === 'UNALLOCATED') || [];
+        console.log('[API] Filtered UNALLOCATED players count:', filteredUnallocatedPlayers.length);
+        if (filteredUnallocatedPlayers.length > 0) {
+            console.log('[API] Filtered UNALLOCATED players:', filteredUnallocatedPlayers.map(p => ({ id: p.id, name: p.name })));
+        }
+
+        // Get categories for these players
+        const { data: categories, error: categoriesError } = await supabase
+            .from('player_categories')
+            .select('id, name')
+            .in('id', categoryIds);
+
+        if (categoriesError) {
+            console.error('[API] Error fetching categories:', categoriesError);
+            // Continue without categories
+        }
+
+        // Create a map of category IDs to names
+        const categoryMap = new Map();
+        categories?.forEach(category => {
+            categoryMap.set(category.id, category.name);
+        });
+
+        console.log('[API] Found players:', availablePlayers.length);
         
         // Clean up the response
-        const cleanedPlayers = players?.map(player => ({
+        const cleanedPlayers = availablePlayers.map(player => ({
             id: player.id,
-            name: player.name,
-            base_price: player.base_price,
-            skill_level: player.skill_level,
-            status: player.status,
-            position: player.player_position,
-            profile_image_url: player.profile_image_url
-        })) || [];
+            name: player.name || 'Unknown',
+            base_price: player.base_price || 0,
+            skill_level: player.skill_level || '',
+            status: player.status || 'UNKNOWN',
+            player_position: player.player_position || '',
+            category_id: player.category_id || '',
+            category_name: categoryMap.get(player.category_id) || 'Unknown',
+            profile_image_url: player.profile_image_url || ''
+        }));
 
         console.log('[API] Returning cleaned players data');
         return NextResponse.json({ players: cleanedPlayers });

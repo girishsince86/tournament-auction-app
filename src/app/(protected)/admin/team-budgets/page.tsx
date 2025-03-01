@@ -28,7 +28,8 @@ import {
     IconButton,
     Divider,
     ButtonGroup,
-    Button
+    Button,
+    Chip
 } from '@mui/material';
 import { useTournaments } from '@/hooks/useTournaments';
 import { TeamBudget } from '@/components/teams/TeamBudget';
@@ -36,6 +37,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import SortIcon from '@mui/icons-material/Sort';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import RefreshIcon from '@mui/icons-material/Refresh';
 import { formatPointsInCrores } from '@/lib/utils/format';
 
 interface Team {
@@ -44,7 +46,11 @@ interface Team {
     initial_budget: number;
     remaining_budget: number;
     total_spent: number;
+    avg_player_cost: number;
     players_count: number;
+    marquee_players: number;
+    capped_players: number;
+    uncapped_players: number;
 }
 
 interface TabPanelProps {
@@ -182,8 +188,11 @@ export default function TeamBudgetsPage() {
             initial: acc.initial + team.initial_budget,
             spent: acc.spent + (team.initial_budget - team.remaining_budget),
             remaining: acc.remaining + team.remaining_budget,
-            players: teams.length * 9 // Calculate total based on 9 players per team
-        }), { initial: 0, spent: 0, remaining: 0, players: 0 });
+            players: acc.players + team.players_count,
+            marquee: acc.marquee + team.marquee_players,
+            capped: acc.capped + team.capped_players,
+            uncapped: acc.uncapped + team.uncapped_players
+        }), { initial: 0, spent: 0, remaining: 0, players: 0, marquee: 0, capped: 0, uncapped: 0 });
 
         return total;
     };
@@ -203,7 +212,7 @@ export default function TeamBudgetsPage() {
                             )}
                         </Typography>
                     </Grid>
-                    <Grid item xs={12} md={6}>
+                    <Grid item xs={12} md={5}>
                         <FormControl fullWidth>
                             <InputLabel id="tournament-select-label">Select Tournament</InputLabel>
                             <Select
@@ -224,6 +233,23 @@ export default function TeamBudgetsPage() {
                                 ))}
                             </Select>
                         </FormControl>
+                    </Grid>
+                    <Grid item xs={12} md={1}>
+                        <Tooltip title="Refresh team data">
+                            <IconButton 
+                                color="primary" 
+                                onClick={fetchTeams}
+                                aria-label="refresh data"
+                                sx={{ 
+                                    bgcolor: 'rgba(25, 118, 210, 0.08)',
+                                    '&:hover': {
+                                        bgcolor: 'rgba(25, 118, 210, 0.15)',
+                                    }
+                                }}
+                            >
+                                <RefreshIcon />
+                            </IconButton>
+                        </Tooltip>
                     </Grid>
                 </Grid>
             </Box>
@@ -299,6 +325,26 @@ export default function TeamBudgetsPage() {
                                                     <Typography variant="h4">
                                                         {totals.players}
                                                     </Typography>
+                                                    <Box mt={1} display="flex" justifyContent="space-between">
+                                                        <Chip 
+                                                            label={`Marquee: ${totals.marquee}`} 
+                                                            color="error" 
+                                                            size="small"
+                                                            sx={{ fontWeight: 'bold' }}
+                                                        />
+                                                        <Chip 
+                                                            label={`Capped: ${totals.capped}`} 
+                                                            color="warning" 
+                                                            size="small"
+                                                            sx={{ fontWeight: 'bold' }}
+                                                        />
+                                                        <Chip 
+                                                            label={`Uncapped: ${totals.uncapped}`} 
+                                                            color="success" 
+                                                            size="small"
+                                                            sx={{ fontWeight: 'bold' }}
+                                                        />
+                                                    </Box>
                                                 </CardContent>
                                             </Card>
                                         </Grid>
@@ -367,7 +413,10 @@ export default function TeamBudgetsPage() {
                                                 <TableCell align="right">Initial Budget</TableCell>
                                                 <TableCell align="right">Spent</TableCell>
                                                 <TableCell align="right">Remaining</TableCell>
-                                                <TableCell align="right">Players</TableCell>
+                                                <TableCell align="center">Players</TableCell>
+                                                <TableCell align="center">Marquee</TableCell>
+                                                <TableCell align="center">Capped</TableCell>
+                                                <TableCell align="center">Uncapped</TableCell>
                                                 <TableCell>Budget Usage</TableCell>
                                             </TableRow>
                                         </TableHead>
@@ -390,7 +439,38 @@ export default function TeamBudgetsPage() {
                                                         <TableCell align="right">{formatPointsInCrores(team.initial_budget)}</TableCell>
                                                         <TableCell align="right">{formatPointsInCrores(team.total_spent)}</TableCell>
                                                         <TableCell align="right">{formatPointsInCrores(team.remaining_budget)}</TableCell>
-                                                        <TableCell align="right">{team.players_count}</TableCell>
+                                                        <TableCell align="center">
+                                                            <Chip 
+                                                                label={team.players_count} 
+                                                                color="primary" 
+                                                                size="small"
+                                                                sx={{ fontWeight: 'bold' }}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell align="center">
+                                                            <Chip 
+                                                                label={team.marquee_players} 
+                                                                color="error" 
+                                                                size="small"
+                                                                sx={{ fontWeight: 'bold' }}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell align="center">
+                                                            <Chip 
+                                                                label={team.capped_players} 
+                                                                color="warning" 
+                                                                size="small"
+                                                                sx={{ fontWeight: 'bold' }}
+                                                            />
+                                                        </TableCell>
+                                                        <TableCell align="center">
+                                                            <Chip 
+                                                                label={team.uncapped_players} 
+                                                                color="success" 
+                                                                size="small"
+                                                                sx={{ fontWeight: 'bold' }}
+                                                            />
+                                                        </TableCell>
                                                         <TableCell>
                                                             <Tooltip title={`${percentageUsed.toFixed(1)}% used`}>
                                                                 <Box sx={{ width: '100%', mr: 1 }}>
@@ -446,11 +526,15 @@ export default function TeamBudgetsPage() {
                                                     initial_budget: team.initial_budget,
                                                     remaining_budget: team.remaining_budget,
                                                     allocated_budget: team.initial_budget - team.remaining_budget,
+                                                    average_player_cost: team.avg_player_cost,
                                                     budget_utilization_percentage: ((team.initial_budget - team.remaining_budget) / team.initial_budget) * 100
                                                 }}
                                                 metrics={{
-                                                    avg_player_cost: team.players_count ? team.total_spent / team.players_count : 0,
+                                                    avg_player_cost: team.avg_player_cost,
                                                     total_players: team.players_count,
+                                                    marquee_players: team.marquee_players,
+                                                    capped_players: team.capped_players,
+                                                    uncapped_players: team.uncapped_players,
                                                     total_cost: team.total_spent,
                                                     remaining_budget: team.remaining_budget,
                                                     budget_utilization: ((team.initial_budget - team.remaining_budget) / team.initial_budget) * 100

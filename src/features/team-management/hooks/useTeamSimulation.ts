@@ -83,8 +83,12 @@ export function useTeamSimulation({
     });
 
     useEffect(() => {
+        // For pre-auction mode, only consider preferred players
+        // For post-auction mode, consider both allocated and preferred players
+        const effectiveAllocatedPlayers = isPreAuction ? [] : allocatedPlayers;
+        
         // Calculate total points and players
-        const totalPoints = allocatedPlayers.reduce(
+        const totalPoints = effectiveAllocatedPlayers.reduce(
             (sum, player) => sum + (player.base_price || 0),
             0
         ) + preferredPlayers.reduce(
@@ -96,7 +100,7 @@ export function useTeamSimulation({
         const positionCounts: SimulationState['positionCounts'] = {};
         POSITIONS.forEach(pos => {
             positionCounts[pos.value] = {
-                current: allocatedPlayers.filter(p => p.player_position === pos.value).length,
+                current: effectiveAllocatedPlayers.filter(p => p.player_position === pos.value).length,
                 simulated: preferredPlayers.filter(p => p.player_position === pos.value).length,
                 required: 0 // Requirements will be set based on tournament rules
             };
@@ -106,7 +110,7 @@ export function useTeamSimulation({
         const skillLevelCounts: SimulationState['skillLevelCounts'] = {};
         SKILL_LEVELS.forEach(skill => {
             skillLevelCounts[skill.value] = {
-                current: allocatedPlayers.filter(p => p.skill_level === skill.value).length,
+                current: effectiveAllocatedPlayers.filter(p => p.skill_level === skill.value).length,
                 simulated: preferredPlayers.filter(p => p.skill_level === skill.value).length,
                 required: 0 // Requirements will be set based on tournament rules
             };
@@ -118,7 +122,7 @@ export function useTeamSimulation({
         // Initialize categories from requirements
         categoryRequirements.forEach(req => {
             categoryDistribution[req.category_type] = {
-                current: allocatedPlayers.filter(p => p.category?.category_type === req.category_type).length,
+                current: effectiveAllocatedPlayers.filter(p => p.category?.category_type === req.category_type).length,
                 simulated: preferredPlayers.filter(p => p.category?.category_type === req.category_type).length,
                 required: req.min_players
             };
@@ -129,11 +133,14 @@ export function useTeamSimulation({
             0
         );
 
-        const currentPlayers = allocatedPlayers.length;
+        const currentPlayers = effectiveAllocatedPlayers.length;
         const totalPlayers = currentPlayers + preferredPlayers.length;
 
+        // Calculate remaining budget as initial - simulated
+        const remainingBudget = teamBudget.initial_budget - simulatedBudget;
+
         // Validate requirements
-        const budgetValid = totalPoints <= teamBudget.initial_budget;
+        const budgetValid = simulatedBudget <= teamBudget.initial_budget;
         const playerCountValid = totalPlayers <= maxPlayers;
         const categoryRequirementsValid = Object.values(categoryDistribution)
             .every(({ current, simulated, required }) => (current + simulated) >= required);
@@ -143,11 +150,11 @@ export function useTeamSimulation({
             .every(({ current, simulated, required }) => (current + simulated) >= required);
 
         setSimulationState({
-            allocatedPlayers,
+            allocatedPlayers: effectiveAllocatedPlayers,
             preferredPlayers,
             totalPlayers,
             totalPoints,
-            remainingBudget: teamBudget.remaining_budget,
+            remainingBudget,
             initialBudget: teamBudget.initial_budget,
             simulatedBudget,
             currentPlayers,
@@ -161,7 +168,7 @@ export function useTeamSimulation({
             categoryRequirementsValid,
             playerCountValid
         });
-    }, [allocatedPlayers, preferredPlayers, categoryRequirements, teamBudget, maxPlayers]);
+    }, [isPreAuction, allocatedPlayers, preferredPlayers, categoryRequirements, teamBudget, maxPlayers]);
 
     const validateSimulation = (): ValidationResult => {
         const errors: string[] = [];

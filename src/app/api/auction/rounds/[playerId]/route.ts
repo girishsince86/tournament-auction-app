@@ -49,6 +49,22 @@ export async function POST(
             email: user.email,
         });
 
+        // Check if an auction round already exists for this player in this tournament
+        const { data: existingRound, error: roundCheckError } = await supabase
+            .from('auction_rounds')
+            .select('id, status, winning_team_id')
+            .eq('player_id', playerId)
+            .eq('tournament_id', tournamentId)
+            .maybeSingle();
+
+        if (roundCheckError) {
+            console.error('Error checking existing round:', roundCheckError);
+            return NextResponse.json(
+                { error: 'Failed to check existing auction round' },
+                { status: 500 }
+            );
+        }
+
         // Check if player is already allocated
         const { data: playerData, error: playerError } = await supabase
             .from('players')
@@ -64,22 +80,6 @@ export async function POST(
         }
 
         if (playerData.status === 'ALLOCATED') {
-            // Get existing allocation
-            const { data: existingAllocation, error: allocationError } = await supabase
-                .from('auction_rounds')
-                .select('id, status, winning_team_id')
-                .eq('player_id', playerId)
-                .eq('tournament_id', tournamentId)
-                .single();
-
-            if (allocationError) {
-                console.error('Error checking existing allocation:', allocationError);
-                return NextResponse.json(
-                    { error: 'Failed to check existing allocation' },
-                    { status: 500 }
-                );
-            }
-
             // Update player status to AVAILABLE
             const { error: updateError } = await supabase
                 .from('players')
@@ -122,20 +122,52 @@ export async function POST(
             );
         }
 
-        // Create auction round
-        const { data: roundData, error: roundError } = await supabase
-            .rpc('process_auction_allocation', {
-                p_player_id: playerId,
-                p_team_id: winningTeamId,
-                p_queue_item_id: null // This will be updated when queue integration is added
-            });
+        let roundData;
+        
+        // If an auction round already exists, update it instead of creating a new one
+        if (existingRound) {
+            console.log('Updating existing auction round:', existingRound.id);
+            const { data: updatedRound, error: updateError } = await supabase
+                .from('auction_rounds')
+                .update({
+                    winning_team_id: winningTeamId,
+                    final_points: finalPoints,
+                    status: status,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', existingRound.id)
+                .select()
+                .single();
+                
+            if (updateError) {
+                console.error('Error updating auction round:', updateError);
+                return NextResponse.json(
+                    { error: 'Failed to update auction round' },
+                    { status: 500 }
+                );
+            }
+            
+            roundData = updatedRound;
+        } else {
+            // Create a new auction round
+            console.log('Creating new auction round for player:', playerId);
+            // Process auction allocation
+            const { data: allocationResult, error: roundError } = await supabase
+                .rpc('process_auction_allocation', {
+                    p_player_id: playerId,
+                    p_team_id: winningTeamId,
+                    p_queue_item_id: null // This will be updated when queue integration is added
+                });
 
-        if (roundError) {
-            console.error('Error creating auction round:', roundError);
-            return NextResponse.json(
-                { error: 'Failed to create auction round' },
-                { status: 500 }
-            );
+            if (roundError) {
+                console.error('Error creating auction round:', roundError);
+                return NextResponse.json(
+                    { error: 'Failed to create auction round' },
+                    { status: 500 }
+                );
+            }
+            
+            roundData = allocationResult;
         }
 
         return NextResponse.json({ success: true, data: roundData });

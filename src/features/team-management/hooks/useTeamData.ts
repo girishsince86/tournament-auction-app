@@ -87,98 +87,79 @@ export function useTeamData(teamId: string): UseTeamDataReturn {
         dispatch({ type: 'FETCH_START' });
 
         try {
-            const { data: team, error: teamError } = await supabase
-                .from('teams')
-                .select(`
-                    id,
-                    name,
-                    initial_budget,
-                    remaining_budget,
-                    max_players,
-                    tournament_id
-                `)
-                .eq('id', teamId)
-                .single();
-
-            if (teamError) throw new Error(teamError.message);
-            if (!team) throw new Error('Team not found');
-
-            const rawTeam = team as RawTeamData;
-
-            // Fetch available players from the API
-            const playersResponse = await fetch(`/api/players?tournamentId=${rawTeam.tournament_id}&status=AVAILABLE`);
+            // Fetch team data from the management API
+            const teamManagementResponse = await fetch(`/api/teams/${teamId}/management`);
             
-            if (!playersResponse.ok) {
-                console.error('Failed to fetch available players:', playersResponse.statusText);
-                throw new Error('Failed to fetch available players');
+            if (!teamManagementResponse.ok) {
+                console.error('Failed to fetch team management data:', teamManagementResponse.statusText);
+                throw new Error('Failed to fetch team management data');
             }
             
-            const playersData = await playersResponse.json();
-            const availablePlayers = playersData.players || [];
+            const teamManagementData = await teamManagementResponse.json();
+            const teamData = teamManagementData.team;
+            const availablePlayers = teamManagementData.available_players || [];
+            const categoryRequirements = teamManagementData.categoryRequirements || [];
             
-            console.log(`Fetched ${availablePlayers.length} available players for tournament ${rawTeam.tournament_id}`);
+            console.log('Team management data:', teamManagementData);
+            console.log(`Fetched ${availablePlayers.length} available players for team ${teamId}`);
+            console.log(`Fetched ${teamData.players.length} current players for team ${teamId}`);
+            console.log('Player counts:', teamData.player_counts);
 
-            // Fetch preferred players for this team
-            const { data: preferredPlayers, error: preferredError } = await supabase
-                .from('preferred_players')
-                .select(`
-                    player_id,
-                    max_bid,
-                    notes
-                `)
-                .eq('team_id', teamId);
-
-            if (preferredError) {
-                console.error('Error fetching preferred players:', preferredError);
-                console.log('Attempting to continue without preferred players data');
-            }
-
-            // Mark preferred players
-            const preferredPlayerIds = new Set((preferredPlayers || []).map(p => p.player_id));
-            console.log(`Found ${preferredPlayerIds.size} preferred player IDs`);
-            
-            const playersWithPreference = availablePlayers.map((player: any) => {
-                const isPreferred = preferredPlayerIds.has(player.id);
-                if (isPreferred) {
-                    console.log(`Marking player ${player.name} (${player.id}) as preferred`);
+            // Transform current players to match the expected format
+            const formattedCurrentPlayers = teamData.players.map((player: any) => ({
+                id: player.id,
+                final_points: player.final_bid_points || player.base_price,
+                player: {
+                    id: player.id,
+                    name: player.name,
+                    player_position: player.player_position,
+                    skill_level: player.skill_level,
+                    base_price: player.base_price,
+                    profile_image_url: player.profile_image_url || null,
+                    status: 'ALLOCATED',
+                    category: player.category
                 }
-                return {
-                    ...player,
-                    is_preferred: isPreferred,
-                    preference: preferredPlayers?.find(p => p.player_id === player.id) || null
-                };
-            });
-            
-            console.log(`Marked ${playersWithPreference.filter((p: any) => p.is_preferred).length} players as preferred`);
+            }));
 
             const transformedTeam: TeamData = {
-                id: rawTeam.id,
-                name: rawTeam.name,
-                owner_name: 'Unknown Owner',
-                tournament_id: rawTeam.tournament_id,
+                id: teamData.id,
+                name: teamData.name,
+                owner_name: teamData.team_owners?.[0]?.name || 'Unknown Owner',
+                tournament_id: teamData.tournament_id,
                 tournament: {
-                    id: rawTeam.tournament_id,
-                    name: 'Unknown Tournament'
+                    id: teamData.tournament_id,
+                    name: teamData.tournaments?.name || 'Unknown Tournament'
                 },
                 budget: {
-                    initial_budget: rawTeam.initial_budget,
-                    remaining_budget: rawTeam.remaining_budget,
-                    allocated_budget: rawTeam.initial_budget - rawTeam.remaining_budget,
-                    budget_utilization_percentage: ((rawTeam.initial_budget - rawTeam.remaining_budget) / rawTeam.initial_budget) * 100
+                    initial_budget: teamData.initial_budget,
+                    remaining_budget: teamData.remaining_budget,
+                    allocated_budget: teamData.initial_budget - teamData.remaining_budget,
+                    budget_utilization_percentage: ((teamData.initial_budget - teamData.remaining_budget) / teamData.initial_budget) * 100
                 },
-                players: [],
-                available_players: playersWithPreference,
-                max_players: rawTeam.max_players,
-                min_players: Math.ceil(rawTeam.max_players * 0.75),
-                categoryRequirements: []
+                players: formattedCurrentPlayers,
+                available_players: availablePlayers,
+                max_players: teamData.max_players,
+                min_players: teamData.min_players || Math.ceil(teamData.max_players * 0.75),
+                categoryRequirements: categoryRequirements,
+                player_counts: teamData.player_counts || {
+                    total: formattedCurrentPlayers.length,
+                    marquee: 0,
+                    capped: 0,
+                    uncapped: 0
+                }
             };
 
             const metrics: TeamBudgetMetrics = {
-                avg_player_cost: 0,
-                total_players: 0,
-                total_cost: 0,
-                remaining_budget: rawTeam.remaining_budget,
-                budget_utilization: ((rawTeam.initial_budget - rawTeam.remaining_budget) / rawTeam.initial_budget) * 100
+                avg_player_cost: formattedCurrentPlayers.length > 0 
+                    ? formattedCurrentPlayers.reduce((sum: number, p: { final_points: number }) => sum + p.final_points, 0) / formattedCurrentPlayers.length 
+                    : 0,
+                total_players: formattedCurrentPlayers.length,
+                marquee_players: teamData.player_counts?.marquee || 0,
+                capped_players: teamData.player_counts?.capped || 0,
+                uncapped_players: teamData.player_counts?.uncapped || 0,
+                total_cost: formattedCurrentPlayers.reduce((sum: number, p: { final_points: number }) => sum + p.final_points, 0),
+                remaining_budget: teamData.remaining_budget,
+                budget_utilization: ((teamData.initial_budget - teamData.remaining_budget) / teamData.initial_budget) * 100
             };
 
             if (isMounted.current) {

@@ -1,7 +1,8 @@
-import { Box, Card, CardContent, Typography, LinearProgress, Alert, Stack, Chip, Tabs, Tab, Grid } from '@mui/material';
+import { Box, Card, CardContent, Typography, LinearProgress, Alert, Stack, Chip, Tabs, Tab, Grid, Tooltip } from '@mui/material';
 import { useState } from 'react';
 import type { TeamCompositionStatus, PlayerCategoryRequirement } from '@/types/team-management';
 import type { TeamCompositionAnalysis } from '../../utils/team-composition';
+import type { PlayerCounts } from '../../types/team';
 import GroupsIcon from '@mui/icons-material/Groups';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import InfoOutlinedIcon from '@mui/icons-material/InfoOutlined';
@@ -10,65 +11,89 @@ import PeopleOutlineIcon from '@mui/icons-material/PeopleOutline';
 
 interface TeamCompositionStatusProps {
     analysis: TeamCompositionAnalysis;
+    playerCounts?: PlayerCounts;
 }
 
-const RequirementsChips = () => (
-    <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap', gap: 1 }}>
-        <Chip
-            icon={<PeopleOutlineIcon />}
-            label="8-10 Players"
-            size="small"
-            sx={{ 
-                bgcolor: 'grey.100',
-                '& .MuiChip-icon': { fontSize: 16 }
-            }}
-        />
-        <Chip
-            icon={<StarOutlineIcon />}
-            label="1+ Marquee"
-            size="small"
-            sx={{ 
-                bgcolor: 'grey.100',
-                '& .MuiChip-icon': { fontSize: 16 }
-            }}
-        />
-        <Chip
-            icon={<GroupsIcon />}
-            label="2+ Capped"
-            size="small"
-            sx={{ 
-                bgcolor: 'grey.100',
-                '& .MuiChip-icon': { fontSize: 16 }
-            }}
-        />
-        <Chip
-            icon={<GroupsIcon />}
-            label="3+ Uncapped"
-            size="small"
-            sx={{ 
-                bgcolor: 'grey.100',
-                '& .MuiChip-icon': { fontSize: 16 }
-            }}
-        />
-    </Stack>
-);
+const RequirementsChips = ({ playerCounts }: { playerCounts?: PlayerCounts }) => {
+    // Use player counts from API if available, otherwise use default values
+    const totalPlayers = playerCounts?.total || 0;
+    const marqueePlayers = playerCounts?.marquee || 0;
+    const cappedPlayers = playerCounts?.capped || 0;
+    const uncappedPlayers = playerCounts?.uncapped || 0;
 
-const CategoryRequirementCard = ({ requirement }: { requirement: PlayerCategoryRequirement }) => {
-    const progress = requirement.max_players 
-        ? (requirement.current_count / requirement.max_players) * 100
-        : (requirement.current_count / requirement.min_players) * 100;
+    return (
+        <Stack direction="row" spacing={1} sx={{ mt: 1, flexWrap: 'wrap', gap: 1 }}>
+            <Chip
+                icon={<PeopleOutlineIcon />}
+                label={`${totalPlayers}/8-10 Players`}
+                size="small"
+                sx={{ 
+                    bgcolor: 'grey.100',
+                    '& .MuiChip-icon': { fontSize: 16 }
+                }}
+            />
+            <Chip
+                icon={<StarOutlineIcon />}
+                label={`${marqueePlayers}/1+ Marquee`}
+                size="small"
+                sx={{ 
+                    bgcolor: 'grey.100',
+                    '& .MuiChip-icon': { fontSize: 16 }
+                }}
+            />
+            <Chip
+                icon={<GroupsIcon />}
+                label={`${cappedPlayers}/2+ Capped`}
+                size="small"
+                sx={{ 
+                    bgcolor: 'grey.100',
+                    '& .MuiChip-icon': { fontSize: 16 }
+                }}
+            />
+            <Chip
+                icon={<GroupsIcon />}
+                label={`${uncappedPlayers}/3+ Uncapped`}
+                size="small"
+                sx={{ 
+                    bgcolor: 'grey.100',
+                    '& .MuiChip-icon': { fontSize: 16 }
+                }}
+            />
+        </Stack>
+    );
+};
+
+const CategoryRequirementCard = ({ requirement, playerCounts }: { requirement: PlayerCategoryRequirement, playerCounts?: PlayerCounts }) => {
+    // Get the actual count from API data if available
+    let actualCount = requirement.current_count;
     
-    const isValid = requirement.current_count >= requirement.min_players && 
-        (!requirement.max_players || requirement.current_count <= requirement.max_players);
+    if (playerCounts) {
+        if (requirement.category_type === 'MARQUEE') {
+            actualCount = playerCounts.marquee;
+        } else if (requirement.category_type === 'CAPPED') {
+            actualCount = playerCounts.capped;
+        } else if (requirement.category_type === 'UNCAPPED') {
+            actualCount = playerCounts.uncapped;
+        }
+    }
+    
+    const progress = requirement.max_players 
+        ? (actualCount / requirement.max_players) * 100
+        : (actualCount / requirement.min_players) * 100;
+    
+    const isValid = actualCount >= requirement.min_players && 
+        (!requirement.max_players || actualCount <= requirement.max_players);
 
     // Add logging to help diagnose the issue
     console.log('CategoryRequirementCard:', {
         category_type: requirement.category_type,
         current_count: requirement.current_count,
+        actual_count: actualCount,
         min_players: requirement.min_players,
         max_players: requirement.max_players,
         isValid,
-        progress
+        progress,
+        playerCounts
     });
 
     return (
@@ -79,7 +104,7 @@ const CategoryRequirementCard = ({ requirement }: { requirement: PlayerCategoryR
                 </Typography>
                 <Stack direction="row" spacing={1} alignItems="center">
                     <Typography variant="body2" color="text.secondary">
-                        {requirement.current_count} / {requirement.min_players}
+                        {actualCount} / {requirement.min_players}
                         {requirement.max_players ? `-${requirement.max_players}` : '+'} 
                     </Typography>
                     {isValid ? (
@@ -103,15 +128,18 @@ const CategoryRequirementCard = ({ requirement }: { requirement: PlayerCategoryR
     );
 };
 
-const CompositionStatusContent = ({ status }: { status: TeamCompositionStatus }) => {
-    const totalProgress = (status.total_players / status.max_players) * 100;
-    const isTotalValid = status.total_players >= status.min_players && status.total_players <= status.max_players;
+const CompositionStatusContent = ({ status, playerCounts }: { status: TeamCompositionStatus, playerCounts?: PlayerCounts }) => {
+    // Use total players from API if available
+    const totalPlayers = playerCounts?.total || status.total_players;
+    const totalProgress = (totalPlayers / status.max_players) * 100;
+    const isTotalValid = totalPlayers >= status.min_players && totalPlayers <= status.max_players;
 
     // Add logging to help diagnose the issue
     console.log('CompositionStatusContent:', {
         status,
         totalProgress,
         isTotalValid,
+        playerCounts,
         category_requirements: status.category_requirements.map(req => ({
             category_type: req.category_type,
             current_count: req.current_count,
@@ -129,7 +157,7 @@ const CompositionStatusContent = ({ status }: { status: TeamCompositionStatus })
                     </Typography>
                     <Stack direction="row" spacing={1} alignItems="center">
                         <Typography variant="body2" color="text.secondary">
-                            {status.total_players} / {status.min_players}-{status.max_players}
+                            {totalPlayers} / {status.min_players}-{status.max_players}
                         </Typography>
                         {isTotalValid ? (
                             <CheckCircleOutlineIcon sx={{ color: 'success.light', fontSize: 16 }} />
@@ -150,18 +178,22 @@ const CompositionStatusContent = ({ status }: { status: TeamCompositionStatus })
                 />
             </Box>
 
-            <RequirementsChips />
+            <RequirementsChips playerCounts={playerCounts} />
 
             <Box sx={{ mt: 1 }}>
                 {status.category_requirements.map((requirement, index) => (
-                    <CategoryRequirementCard key={index} requirement={requirement} />
+                    <CategoryRequirementCard 
+                        key={index} 
+                        requirement={requirement} 
+                        playerCounts={playerCounts}
+                    />
                 ))}
             </Box>
         </Stack>
     );
 };
 
-export function TeamCompositionStatus({ analysis }: TeamCompositionStatusProps) {
+export function TeamCompositionStatus({ analysis, playerCounts }: TeamCompositionStatusProps) {
     const [selectedTab, setSelectedTab] = useState(0);
 
     const currentStatus = analysis.current_squad;
@@ -172,6 +204,7 @@ export function TeamCompositionStatus({ analysis }: TeamCompositionStatusProps) 
         analysis,
         currentStatus,
         simulatedStatus,
+        playerCounts,
         selectedTab
     });
 
@@ -216,22 +249,31 @@ export function TeamCompositionStatus({ analysis }: TeamCompositionStatusProps) 
                         sx={{ borderBottom: 1, borderColor: 'divider' }}
                     >
                         <Tab 
-                            icon={<StarOutlineIcon />} 
-                            label="With Preferred" 
-                        />
-                        <Tab 
                             icon={<GroupsIcon />} 
                             label="Current Squad" 
                         />
+                        <Tooltip title="Pre-auction simulation with only preferred players">
+                            <Tab 
+                                icon={<StarOutlineIcon />} 
+                                label="Preferred Only" 
+                            />
+                        </Tooltip>
                     </Tabs>
 
                     <Box>
                         {selectedTab === 0 ? (
-                            <CompositionStatusContent status={simulatedStatus} />
+                            <CompositionStatusContent status={currentStatus} playerCounts={playerCounts} />
                         ) : (
-                            <CompositionStatusContent status={currentStatus} />
+                            <CompositionStatusContent status={simulatedStatus} playerCounts={undefined} />
                         )}
                     </Box>
+
+                    {selectedTab === 1 && (
+                        <Alert severity="info" sx={{ mt: 2 }}>
+                            This is a pre-auction simulation showing only your preferred players. 
+                            Current squad players are not included in this view.
+                        </Alert>
+                    )}
                 </Stack>
             </CardContent>
         </Card>

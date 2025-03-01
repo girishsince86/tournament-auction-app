@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { 
     Box, 
     Grid, 
@@ -31,7 +31,14 @@ import {
     Avatar,
     Divider,
     Collapse,
-    Fade
+    Fade,
+    TableContainer,
+    Table,
+    TableHead,
+    TableBody,
+    TableRow,
+    TableCell,
+    Tooltip
 } from '@mui/material';
 import {
     DndContext,
@@ -61,6 +68,8 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import ShuffleIcon from '@mui/icons-material/Shuffle';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { Timer, TimerHandle } from '@/components/auction/Timer';
 import SportsTennisIcon from '@mui/icons-material/SportsTennis';
 import EmojiEventsIcon from '@mui/icons-material/EmojiEvents';
@@ -73,7 +82,12 @@ import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
 import GroupsIcon from '@mui/icons-material/Groups';
 import ScoreboardIcon from '@mui/icons-material/Scoreboard';
 import LeaderboardIcon from '@mui/icons-material/Leaderboard';
-import { formatPointsInCrores } from '@/lib/utils/format';
+import { formatPointsInCrores, convertCroresToPoints } from '@/lib/utils/format';
+import DeleteSweepIcon from '@mui/icons-material/DeleteSweep';
+import { useToast, ToastProvider } from '@/components/providers/toast-provider';
+import InfoIcon from '@mui/icons-material/Info';
+import UndoIcon from '@mui/icons-material/Undo';
+import RefreshIcon from '@mui/icons-material/Refresh';
 
 interface AuctionControlProps {
     params: {
@@ -188,10 +202,11 @@ interface QueueItemWithPosition {
 }
 
 // Add SortableQueueItem component
-function SortableQueueItem({ item, currentPlayer, onSelectPlayer }: { 
+function SortableQueueItem({ item, currentPlayer, onSelectPlayer, onRemoveFromQueue }: { 
     item: QueueItemWithPlayer; 
     currentPlayer: PlayerProfile | null;
     onSelectPlayer: (player: PlayerProfile) => void;
+    onRemoveFromQueue: (queueItemId: string) => void;
 }) {
     const {
         attributes,
@@ -246,10 +261,20 @@ function SortableQueueItem({ item, currentPlayer, onSelectPlayer }: {
                 }
             />
             <ListItemSecondaryAction>
+                <Stack direction="row" spacing={1}>
+                    <IconButton 
+                        edge="end" 
+                        color="error"
+                        onClick={() => onRemoveFromQueue(item.id)}
+                        title="Remove from queue"
+                    >
+                        <DeleteIcon />
+                    </IconButton>
                 <IconButton 
                     edge="end" 
                     onClick={() => onSelectPlayer(item.player)}
                     disabled={currentPlayer?.id === item.player.id}
+                        title="Select player"
                 >
                     {currentPlayer?.id === item.player.id ? (
                         <PersonIcon color="primary" />
@@ -257,6 +282,7 @@ function SortableQueueItem({ item, currentPlayer, onSelectPlayer }: {
                         <ArrowForwardIcon />
                     )}
                 </IconButton>
+                </Stack>
             </ListItemSecondaryAction>
         </ListItem>
     );
@@ -281,22 +307,30 @@ const LAST_PLAYED_OPTIONS = [
   { value: 'NOT_PLAYED_IN_FEW_YEARS', label: 'Not played in few years' }
 ];
 
-export default function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
+// Add this helper function after the getBasePointsStyling function
+const getTeamRemainingBalance = (team: any): number => {
+    // Handle both property names (remaining_points from interface, remaining_budget from API)
+    return team.remaining_points !== undefined ? team.remaining_points : 
+           team.remaining_budget !== undefined ? team.remaining_budget : 0;
+};
+
+function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
     // State management
     const [finalBid, setFinalBid] = useState<number>(0);
     const [selectedTeam, setSelectedTeam] = useState<string>('');
     const [error, setError] = useState<string>('');
     const [currentPlayer, setCurrentPlayer] = useState<PlayerProfile | null>(null);
+    const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
     
     // Queue management state
     const [isAddPlayerOpen, setIsAddPlayerOpen] = useState(false);
     const [positionFilter, setPositionFilter] = useState<string>('');
     const [skillFilter, setSkillFilter] = useState<string>('');
     const [searchQuery, setSearchQuery] = useState('');
-    const [selectedTab, setSelectedTab] = useState(0);
 
     // Add state for selected players in bulk selection
     const [selectedPlayers, setSelectedPlayers] = useState<Set<string>>(new Set());
+    const [isAddingPlayers, setIsAddingPlayers] = useState(false);
     
     // Add sensors for drag and drop
     const sensors = useSensors(
@@ -309,21 +343,28 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
     // Add timer ref
     const timerRef = useRef<TimerHandle>(null);
 
+    // Add state for category filter
+    const [categoryFilter, setCategoryFilter] = useState<string>('');
+
     // Fetch teams and queue data
-    const { teams, isLoading: teamsLoading, error: teamsError } = useTeams({ tournamentId });
+    const { teams, isLoading: teamsLoading, error: teamsError, fetchTeams } = useTeams({ tournamentId });
     const { 
         queue, 
         isLoading: queueLoading, 
         error: queueError,
         markAsProcessed,
         fetchQueue,
-        addToQueue
+        addToQueue,
+        removeFromQueue
     } = useAuctionQueue({ tournamentId, enablePolling: false });
     const {
         players: availablePlayers,
         isLoading: playersLoading,
-        error: playersError
+        error: playersError,
+        fetchPlayers
     } = useAvailablePlayers({ tournamentId });
+
+    const { showToast } = useToast();
 
     // Add timer handlers
     const handlePhaseChange = (phase: string) => {
@@ -344,8 +385,12 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
             return 'Invalid team selected';
         }
 
-        if (amount > team.remaining_points) {
-            return `Bid exceeds team's remaining points (${team.remaining_points})`;
+        // Convert amount from crores to points for comparison
+        const amountInPoints = convertCroresToPoints(amount);
+        const remainingBalance = getTeamRemainingBalance(team);
+        
+        if (amountInPoints > remainingBalance) {
+            return `Bid exceeds team's remaining balance (${formatPointsInCrores(remainingBalance)})`;
         }
 
         if (team.current_players >= team.max_players) {
@@ -368,6 +413,19 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
         }
 
         try {
+            setError(''); // Clear any previous errors
+            setIsSubmitting(true); // Add loading state
+            
+            // Convert finalBid from crores to actual points value
+            const bidAmountInPoints = convertCroresToPoints(finalBid);
+            
+            console.log('Recording bid:', {
+                tournamentId,
+                playerId: currentPlayer.id,
+                teamId: selectedTeam,
+                amount: bidAmountInPoints
+            });
+            
             const response = await fetch('/api/auction/bid', {
                 method: 'POST',
                 headers: {
@@ -377,23 +435,56 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                     tournamentId,
                     playerId: currentPlayer.id,
                     teamId: selectedTeam,
-                    amount: finalBid,
+                    amount: bidAmountInPoints, // Send the converted amount
                 }),
             });
+
+            // Handle authentication errors
+            if (response.status === 401) {
+                console.error('Authentication error: User not authenticated');
+                setError('You are not authenticated. Please log in again.');
+                // Redirect to login page after a short delay
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+                return;
+            }
 
             const data = await response.json();
 
             if (!response.ok) {
-                setError(data.error || 'Failed to record bid');
+                console.error('Bid recording error:', data);
+                
+                // Handle specific error cases
+                if (data.error?.includes('null value in column')) {
+                    setError('Database constraint error. Please check that all required fields have values.');
+                } else if (data.error === 'Insufficient points') {
+                    setError('The team does not have enough points for this bid.');
+                } else if (data.error === 'Team has reached maximum player limit') {
+                    setError('The team has reached its maximum player limit.');
+                } else {
+                    setError(data.error || 'Failed to record bid. Please try again.');
+                }
                 return;
             }
 
+            console.log('Bid recorded successfully:', data);
+            
+            // Show success message
+            showToast({
+                message: `${currentPlayer.name} has been successfully allocated to ${teams.find(t => t.id === selectedTeam)?.name} for ${finalBid} Cr`,
+                type: 'success'
+            });
+            
             // Mark current queue item as processed
             const queueItem = queue.find(item => item.player.id === currentPlayer.id);
             if (queueItem) {
                 await markAsProcessed(queueItem.id);
                 await fetchQueue(); // Refresh queue
             }
+
+            // Refresh teams data to update remaining points
+            await fetchTeams();
 
             // Reset form after successful recording
             setFinalBid(0);
@@ -402,7 +493,131 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
             setCurrentPlayer(null); // Clear current player
         } catch (error) {
             console.error('Error recording bid:', error);
-            setError('Failed to record bid');
+            setError('Failed to record bid. Please check your connection and try again.');
+        } finally {
+            setIsSubmitting(false); // Reset loading state
+        }
+    };
+
+    const handleUndoBid = async (playerId: string) => {
+        try {
+            const response = await fetch('/api/auction/undo-bid', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    playerId,
+                }),
+            });
+
+            // Handle authentication errors
+            if (response.status === 401) {
+                console.error('Authentication error: User not authenticated');
+                setError('You are not authenticated. Please log in again.');
+                // Redirect to login page after a short delay
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+                return;
+            }
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                setError(data.error || 'Failed to undo player allocation');
+                return;
+            }
+
+            // Show success message
+            showToast({
+                message: `${data.player} has been removed from ${data.team}. ${formatPointsInCrores(data.points_restored)} points restored.`,
+                type: 'success'
+            });
+
+            // Refresh data
+            await fetchQueue();
+            await fetchPlayers();
+            
+            // Clear current player if it's the one we just undid
+            if (currentPlayer?.id === playerId) {
+                setCurrentPlayer(null);
+            }
+        } catch (error) {
+            console.error('Error undoing bid:', error);
+            setError('Failed to undo player allocation');
+        }
+    };
+
+    const handleMarkUnallocated = async () => {
+        if (!currentPlayer) {
+            setError('No player selected');
+            return;
+        }
+
+        try {
+            setError(''); // Clear any previous errors
+            setIsSubmitting(true); // Add loading state
+            
+            console.log('Marking player as UNALLOCATED:', {
+                playerId: currentPlayer.id
+            });
+            
+            const response = await fetch('/api/auction/mark-unallocated', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    playerId: currentPlayer.id,
+                }),
+            });
+
+            // Handle authentication errors
+            if (response.status === 401) {
+                console.error('Authentication error: User not authenticated');
+                setError('You are not authenticated. Please log in again.');
+                // Redirect to login page after a short delay
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+                return;
+            }
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                console.error('Error marking player as UNALLOCATED:', data);
+                setError(data.error || 'Failed to mark player as UNALLOCATED. Please try again.');
+                return;
+            }
+
+            console.log('Player marked as UNALLOCATED successfully:', data);
+            
+            // Show success message
+            showToast({
+                message: `${currentPlayer.name} has been marked as UNALLOCATED`,
+                type: 'success'
+            });
+            
+            // Mark current queue item as processed
+            const queueItem = queue.find(item => item.player.id === currentPlayer.id);
+            if (queueItem) {
+                await markAsProcessed(queueItem.id);
+                await fetchQueue(); // Refresh queue
+            }
+
+            // Refresh players data
+            await fetchPlayers();
+
+            // Reset form after successful operation
+            setError('');
+            setCurrentPlayer(null); // Clear current player
+        } catch (error) {
+            console.error('Error marking player as UNALLOCATED:', error);
+            setError('Failed to mark player as UNALLOCATED. Please check your connection and try again.');
+        } finally {
+            setIsSubmitting(false); // Reset loading state
         }
     };
 
@@ -411,30 +626,127 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
         setFinalBid(0);
         setSelectedTeam('');
         setError('');
+        
+        // Add detailed debug logging
+        console.log('Selected player:', player);
+        console.log('Selected player height:', player.height);
+        console.log('Selected player registration_data:', player.registration_data);
+        
+        // Check if registration_data exists
+        if (player.registration_data) {
+            console.log('Registration data keys:', Object.keys(player.registration_data));
+            
+            // Try to access different possible field names for last played date
+            console.log('last_played_date:', player.registration_data.last_played_date);
+            console.log('last_played:', player.registration_data.last_played);
+            console.log('lastPlayed:', player.registration_data.lastPlayed);
+            console.log('playing_status:', player.registration_data.playing_status);
+            
+            // Check if registration_data might be a string that needs parsing
+            if (typeof player.registration_data === 'string') {
+                console.log('Registration data is a string, attempting to parse...');
+                try {
+                    const parsedData = JSON.parse(player.registration_data);
+                    console.log('Successfully parsed registration_data:', parsedData);
+                    console.log('Parsed data keys:', Object.keys(parsedData));
+                } catch (e) {
+                    console.log('Failed to parse registration_data as JSON:', e);
+                }
+            }
+            
+            // Log the raw registration_data as a string to see its structure
+            console.log('Raw registration_data:', JSON.stringify(player.registration_data, null, 2));
+        } else {
+            console.log('No registration_data available for this player');
+            console.log('Using default "Playing Actively" for Last Played status');
+        }
     };
 
     const handleAddToQueue = async (player: PlayerProfile) => {
         try {
-            await addToQueue(player.id);
+            // Set loading state to true
+            setIsAddingPlayers(true);
+            
+            await addToQueue(player.id, queue.length + 1);
             setIsAddPlayerOpen(false);
         } catch (error) {
             console.error('Error adding player to queue:', error);
             setError('Failed to add player to queue');
+        } finally {
+            // Reset loading state
+            setIsAddingPlayers(false);
         }
     };
 
+    // Fetch player categories from the API
+    const [categories, setCategories] = useState<Array<{id: string, name: string}>>([]);
+    
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await fetch(`/api/tournaments/${tournamentId}/categories`);
+                if (response.ok) {
+                    const data = await response.json();
+                    setCategories(data.categories || []);
+                }
+            } catch (error) {
+                console.error('Error fetching categories:', error);
+            }
+        };
+        
+        fetchCategories();
+    }, [tournamentId]);
+
+    // Restore the filteredQueue definition
     const filteredQueue = queue
         .filter(item => !item.is_processed)
         .filter(item => !positionFilter || item.player.player_position === positionFilter)
         .filter(item => !skillFilter || item.player.skill_level === skillFilter);
 
+    // Modify the filteredAvailablePlayers to include category filter and both AVAILABLE and UNALLOCATED statuses
     const filteredAvailablePlayers = availablePlayers
         .filter(player => !queue.some(item => item.player_id === player.id))
         .filter(player => !positionFilter || player.player_position === positionFilter)
         .filter(player => !skillFilter || player.skill_level === skillFilter)
+        .filter(player => !categoryFilter || player.category_id === categoryFilter)
         .filter(player => 
             !searchQuery || 
             player.name.toLowerCase().includes(searchQuery.toLowerCase())
+        )
+        .filter(player => player.status === 'AVAILABLE' || player.status === 'UNALLOCATED');
+
+    // DEBUG: Log status counts in available players
+    useEffect(() => {
+        if (availablePlayers.length > 0) {
+            const statusCounts = availablePlayers.reduce((acc, player) => {
+                const status = player.status || 'UNKNOWN';
+                acc[status] = (acc[status] || 0) + 1;
+                return acc;
+            }, {} as Record<string, number>);
+            
+            console.log('[DEBUG] Available players status counts:', statusCounts);
+            
+            // Log UNALLOCATED players
+            const unallocatedPlayers = availablePlayers.filter(player => player.status === 'UNALLOCATED');
+            console.log('[DEBUG] UNALLOCATED players count:', unallocatedPlayers.length);
+            
+            // Log filtered UNALLOCATED players
+            const filteredUnallocated = filteredAvailablePlayers.filter(player => player.status === 'UNALLOCATED');
+            console.log('[DEBUG] Filtered UNALLOCATED players count:', filteredUnallocated.length);
+        }
+    }, [availablePlayers, filteredAvailablePlayers]);
+
+    // Use the fetched categories or fallback to available player category IDs
+    const playerCategories = categories.length > 0 
+        ? categories 
+        : availablePlayers
+            .filter(player => player.category_id)
+            .map(player => ({
+                id: player.category_id,
+                name: `Category ${player.category_id}` // Fallback name
+            }))
+            .filter((category, index, self) => 
+                index === self.findIndex(c => c.id === category.id)
         );
 
     // Add handler for drag end
@@ -476,17 +788,99 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
     // Add handler for bulk selection
     const handleBulkAddToQueue = async () => {
         try {
+            // Set loading state to true
+            setIsAddingPlayers(true);
+            
             const playerIds = Array.from(selectedPlayers);
-            await Promise.all(playerIds.map(id => addToQueue(id)));
+            console.log(`Adding ${playerIds.length} players to queue`);
+            
+            // Add all players in a single batch, only refreshing the UI once at the end
+            const promises = playerIds.map((playerId, index) => 
+                // Let the API handle position calculation - only refresh on the last item
+                addToQueue(playerId, undefined, index === playerIds.length - 1)
+            );
+            
+            await Promise.allSettled(promises);
+            
+            // Reset selection state
             setSelectedPlayers(new Set());
+            
+            // Close the dialog only after everything is complete
             setIsAddPlayerOpen(false);
         } catch (error) {
             console.error('Error adding players to queue:', error);
-            setError('Failed to add players to queue');
+            setError('Failed to add some players to queue. Please try again.');
+        } finally {
+            // Reset loading state
+            setIsAddingPlayers(false);
+        }
+    };
+
+    // Add handler for removing player from queue
+    const handleRemoveFromQueue = async (queueItemId: string) => {
+        try {
+            await removeFromQueue(queueItemId, async () => {
+                // Refresh the available players list after removing a player from the queue
+                await fetchPlayers();
+            });
+            
+            // Refresh the queue
+            await fetchQueue();
+        } catch (error) {
+            console.error('Error removing player from queue:', error);
+            setError('Failed to remove player from queue');
+        }
+    };
+
+    // Replace the randomize queue handler with clear queue handler
+    const handleClearQueue = async () => {
+        try {
+            const response = await fetch('/api/auction/queue/clear', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    tournamentId,
+                }),
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                throw new Error(data.error || 'Failed to clear queue');
+            }
+
+            const result = await response.json();
+            showToast({
+                message: result.message || 'Queue cleared successfully',
+                type: 'success'
+            });
+
+            // Refresh queue and available players after clearing
+            await fetchQueue();
+            await fetchPlayers();
+        } catch (error) {
+            console.error('Error clearing queue:', error);
+            setError('Failed to clear queue');
+            showToast({
+                message: 'Failed to clear queue',
+                type: 'error'
+            });
         }
     };
 
     const [isQueueExpanded, setIsQueueExpanded] = useState(true);
+
+    // Add a function to handle refresh
+    const handleRefresh = () => {
+        fetchTeams();
+        fetchQueue();
+        fetchPlayers();
+        showToast({
+            message: 'Data refreshed successfully',
+            type: 'success'
+        });
+    };
 
     if (teamsLoading || queueLoading || playersLoading) {
         return (
@@ -542,6 +936,24 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                 >
                     Volleyball Auction Management
                 </Typography>
+                
+                <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center' }}>
+                    <Tooltip title="Refresh data">
+                        <IconButton 
+                            color="primary" 
+                            onClick={handleRefresh} 
+                            aria-label="refresh data"
+                            sx={{ 
+                                bgcolor: 'rgba(25, 118, 210, 0.08)',
+                                '&:hover': {
+                                    bgcolor: 'rgba(25, 118, 210, 0.15)',
+                                }
+                            }}
+                        >
+                            <RefreshIcon />
+                        </IconButton>
+                    </Tooltip>
+                </Box>
             </Box>
 
             {(teamsError || queueError || playersError) && (
@@ -609,7 +1021,12 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                             bgcolor: 'background.default',
                                             borderRadius: 2,
                                             border: '1px solid',
-                                            borderColor: 'divider'
+                                            borderColor: 'divider',
+                                            boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
+                                            transition: 'all 0.3s ease',
+                                            '&:hover': {
+                                                boxShadow: '0 6px 16px rgba(0,0,0,0.1)'
+                                            }
                                         }}
                                     >
                                         {/* Left side - Image and Basic Info */}
@@ -619,24 +1036,44 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                                 flexDirection: 'column',
                                                 alignItems: 'center',
                                                 gap: 2,
-                                                minWidth: { md: '200px' }
+                                                minWidth: { md: '220px' }
                                             }}
                                         >
                                             <Avatar
                                                 src={currentPlayer.profile_image_url}
                                                 alt={currentPlayer.name}
                                                 sx={{ 
-                                                    width: 180,
-                                                    height: 180,
+                                                    width: 200,
+                                                    height: 200,
                                                     border: '4px solid',
                                                     borderColor: 'primary.main',
                                                     boxShadow: '0 4px 14px rgba(0,0,0,0.12)',
                                                     transition: 'transform 0.3s ease',
-                                                    '&:hover': {
-                                                        transform: 'scale(1.05)'
-                                                    }
                                                 }}
                                             />
+                                            
+                                            {/* Add Undo Bid button if player is allocated to a team */}
+                                            {currentPlayer.current_team_id && (
+                                                <Button
+                                                    variant="outlined"
+                                                    color="error"
+                                                    startIcon={<UndoIcon />}
+                                                    onClick={() => handleUndoBid(currentPlayer.id)}
+                                                    sx={{
+                                                        mt: 1,
+                                                        width: '100%',
+                                                        borderRadius: 2,
+                                                        fontWeight: 600,
+                                                        '&:hover': {
+                                                            backgroundColor: 'error.light',
+                                                            color: 'error.contrastText',
+                                                        }
+                                                    }}
+                                                >
+                                                    Undo Allocation
+                                                </Button>
+                                            )}
+
                                             <Stack spacing={1} alignItems="center">
                                                 <Typography 
                                                     variant="h4" 
@@ -648,6 +1085,16 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                                 >
                                                     {currentPlayer.name}
                                                 </Typography>
+                                                <Stack direction="row" spacing={1} alignItems="center">
+                                                    <Chip 
+                                                        label={`Base Points: ${formatPointsInCrores(currentPlayer.base_price)}`}
+                                                        icon={<LeaderboardIcon />}
+                                                        sx={{
+                                                            ...getBasePointsStyling(),
+                                                            fontWeight: 600
+                                                        }}
+                                                    />
+                                                </Stack>
                                                 {currentPlayer.created_at && (
                                                     <Typography 
                                                         variant="caption" 
@@ -662,65 +1109,167 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
 
                                         {/* Right side - Detailed Info */}
                                         <Box sx={{ flex: 1 }}>
-                                            <Grid container spacing={2}>
-                                                {/* Points and Position Row */}
+                                            <Grid container spacing={2.5}>
+                                                {/* Player Attributes Row */}
                                                 <Grid item xs={12}>
-                                                    <Stack direction="row" spacing={1.5} flexWrap="wrap" gap={1}>
-                                                        <Chip 
-                                                            label={`Base Points: ${formatPointsInCrores(currentPlayer.base_price)}`}
-                                                            icon={<LeaderboardIcon />}
-                                                            sx={getBasePointsStyling()}
-                                                        />
+                                                    <Paper
+                                                        elevation={0}
+                                                        sx={{
+                                                            p: 2,
+                                                            bgcolor: 'background.paper',
+                                                            borderRadius: 2,
+                                                            border: '1px solid',
+                                                            borderColor: 'divider'
+                                                        }}
+                                                    >
+                                                        <Typography 
+                                                            variant="subtitle1" 
+                                                            color="primary"
+                                                            sx={{ 
+                                                                mb: 1.5, 
+                                                                fontWeight: 600,
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 1
+                                                            }}
+                                                        >
+                                                            <PersonIcon fontSize="small" />
+                                                            Player Attributes
+                                                        </Typography>
+                                                        
+                                                        <Grid container spacing={2}>
+                                                            <Grid item xs={12} sm={6} md={4}>
+                                                                <Stack spacing={0.5}>
+                                                                    <Typography variant="body2" color="text.secondary">
+                                                                        Position
+                                                                    </Typography>
                                                         <Chip 
                                                             label={POSITIONS.find(pos => pos.value === currentPlayer.player_position)?.label || 'Unknown'}
                                                             icon={<SportsVolleyballIcon />}
+                                                                        size="small"
                                                             sx={getPositionStyling()}
                                                         />
+                                                                </Stack>
+                                                            </Grid>
+                                                            
+                                                            <Grid item xs={12} sm={6} md={4}>
+                                                                <Stack spacing={0.5}>
+                                                                    <Typography variant="body2" color="text.secondary">
+                                                                        Skill Level
+                                                                    </Typography>
                                                         <Chip 
                                                             label={SKILL_LEVELS.find(level => level.value === currentPlayer.skill_level)?.label || 'Unknown'}
                                                             icon={<StarIcon />}
+                                                                        size="small"
                                                             sx={{ 
-                                                                height: 32,
-                                                                fontWeight: 600,
                                                                 ...getSkillLevelStyling(currentPlayer.skill_level)
                                                             }}
                                                         />
                                                     </Stack>
                                                 </Grid>
 
-                                                {/* Personal Details */}
-                                                <Grid item xs={12} sm={6}>
-                                                    <Paper 
-                                                        sx={{ 
-                                                            p: 2,
-                                                            height: '100%',
-                                                            bgcolor: 'background.paper',
-                                                            borderRadius: 2,
-                                                            border: '1px solid',
-                                                            borderColor: 'divider'
-                                                        }}
-                                                    >
-                                                        <Typography 
-                                                            variant="subtitle2" 
-                                                            color="primary"
-                                                            sx={{ mb: 1, fontWeight: 600 }}
-                                                        >
-                                                            Personal Details
-                                                        </Typography>
-                                                        <Stack spacing={1}>
-                                                            <Typography variant="body2">
-                                                                Height: <strong>{currentPlayer.height || 'N/A'}</strong> {currentPlayer.height ? 'cm' : ''}
-                                                            </Typography>
-                                                            <Typography variant="body2">
-                                                                Last Played: <strong>{LAST_PLAYED_OPTIONS.find(opt => opt.value === currentPlayer.registration_data?.last_played_date)?.label || 'N/A'}</strong>
-                                                            </Typography>
-                                                        </Stack>
+                                                            <Grid item xs={12} sm={6} md={4}>
+                                                                <Stack spacing={0.5}>
+                                                                    <Typography variant="body2" color="text.secondary">
+                                                                        Height
+                                                                    </Typography>
+                                                                    <Typography variant="body1" fontWeight="medium">
+                                                                        {currentPlayer.height ? `${currentPlayer.height} m` : 'N/A'}
+                                                                    </Typography>
+                                                                </Stack>
+                                                            </Grid>
+                                                            
+                                                            <Grid item xs={12} sm={6} md={4}>
+                                                                <Stack spacing={0.5}>
+                                                                    <Typography variant="body2" color="text.secondary">
+                                                                        Last Played
+                                                                    </Typography>
+                                                                    <Typography variant="body1" fontWeight="medium">
+                                                                        {(() => {
+                                                                            // Default to "Playing Actively" if no registration data is available
+                                                                            if (!currentPlayer.registration_data) {
+                                                                                console.log('No registration_data, using default value');
+                                                                                return LAST_PLAYED_OPTIONS.find(opt => 
+                                                                                    opt.value === 'PLAYING_ACTIVELY'
+                                                                                )?.label || 'Playing Actively';
+                                                                            }
+                                                                            
+                                                                            // Try multiple approaches to get the last played date
+                                                                            const regData = currentPlayer.registration_data;
+                                                                            
+                                                                            // Try direct access to known field names
+                                                                            const lastPlayedValue = 
+                                                                                regData.last_played_date || 
+                                                                                regData.last_played ||
+                                                                                regData.lastPlayed ||
+                                                                                regData.playing_status;
+                                                                                
+                                                                            // If we found a value, look up its label
+                                                                            if (lastPlayedValue) {
+                                                                                const option = LAST_PLAYED_OPTIONS.find(opt => 
+                                                                                    opt.value === lastPlayedValue
+                                                                                );
+                                                                                if (option) return option.label;
+                                                                                
+                                                                                // If the value doesn't match our options but is a string, return it directly
+                                                                                if (typeof lastPlayedValue === 'string') return lastPlayedValue;
+                                                                            }
+                                                                            
+                                                                            // Default to "Playing Actively" if no value is found
+                                                                            return LAST_PLAYED_OPTIONS.find(opt => 
+                                                                                opt.value === 'PLAYING_ACTIVELY'
+                                                                            )?.label || 'Playing Actively';
+                                                                        })()}
+                                                                    </Typography>
+                                                                </Stack>
+                                                            </Grid>
+                                                            
+                                                            {currentPlayer.jersey_number && (
+                                                                <Grid item xs={12} sm={6} md={4}>
+                                                                    <Stack spacing={0.5}>
+                                                                        <Typography variant="body2" color="text.secondary">
+                                                                            Jersey Number
+                                                                        </Typography>
+                                                                        <Typography variant="body1" fontWeight="medium">
+                                                                            {currentPlayer.jersey_number}
+                                                                        </Typography>
+                                                                    </Stack>
+                                                                </Grid>
+                                                            )}
+                                                            
+                                                            {currentPlayer.experience && (
+                                                                <Grid item xs={12} sm={6} md={4}>
+                                                                    <Stack spacing={0.5}>
+                                                                        <Typography variant="body2" color="text.secondary">
+                                                                            Experience
+                                                                        </Typography>
+                                                                        <Typography variant="body1" fontWeight="medium">
+                                                                            {currentPlayer.experience} years
+                                                                        </Typography>
+                                                                    </Stack>
+                                                                </Grid>
+                                                            )}
+                                                            
+                                                            {currentPlayer.tshirt_size && (
+                                                                <Grid item xs={12} sm={6} md={4}>
+                                                                    <Stack spacing={0.5}>
+                                                                        <Typography variant="body2" color="text.secondary">
+                                                                            T-Shirt Size
+                                                                        </Typography>
+                                                                        <Typography variant="body1" fontWeight="medium">
+                                                                            {currentPlayer.tshirt_size}
+                                                                        </Typography>
+                                                                    </Stack>
+                                                                </Grid>
+                                                            )}
+                                                        </Grid>
                                                     </Paper>
                                                 </Grid>
 
                                                 {/* Tournament History */}
-                                                <Grid item xs={12} sm={6}>
+                                                <Grid item xs={12} md={6}>
                                                     <Paper 
+                                                        elevation={0}
                                                         sx={{ 
                                                             p: 2,
                                                             height: '100%',
@@ -731,10 +1280,10 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                                         }}
                                                     >
                                                         <Typography 
-                                                            variant="subtitle2" 
+                                                            variant="subtitle1" 
                                                             color="primary"
                                                             sx={{ 
-                                                                mb: 1,
+                                                                mb: 1.5,
                                                                 fontWeight: 600,
                                                                 display: 'flex',
                                                                 alignItems: 'center',
@@ -745,7 +1294,7 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                                             Tournament History
                                                         </Typography>
                                                         {currentPlayer.tournament_history && currentPlayer.tournament_history.length > 0 ? (
-                                                            <Stack spacing={2}>
+                                                            <Stack spacing={2} sx={{ maxHeight: '200px', overflowY: 'auto', pr: 1 }}>
                                                                 {currentPlayer.tournament_history.map((history, index) => (
                                                                     <Box 
                                                                         key={index}
@@ -753,6 +1302,13 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                                                             p: 1.5,
                                                                             bgcolor: 'action.hover',
                                                                             borderRadius: 1,
+                                                                            border: '1px solid',
+                                                                            borderColor: 'divider',
+                                                                            transition: 'all 0.2s ease',
+                                                                            '&:hover': {
+                                                                                bgcolor: 'action.selected',
+                                                                                transform: 'translateY(-2px)'
+                                                                            }
                                                                         }}
                                                                     >
                                                                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -765,26 +1321,43 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                                                 ))}
                                                             </Stack>
                                                         ) : (
+                                                            <Box
+                                                                sx={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    height: '100px',
+                                                                    bgcolor: 'action.hover',
+                                                                    borderRadius: 1,
+                                                                    border: '1px dashed',
+                                                                    borderColor: 'divider'
+                                                                }}
+                                                            >
                                                             <Typography 
                                                                 variant="body2" 
                                                                 color="text.secondary"
                                                                 sx={{ 
                                                                     textAlign: 'center',
-                                                                    py: 2
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 1
                                                                 }}
                                                             >
+                                                                    <InfoIcon fontSize="small" />
                                                                 No tournament history available
                                                             </Typography>
+                                                            </Box>
                                                         )}
                                                     </Paper>
                                                 </Grid>
 
                                                 {/* Achievements Section */}
-                                                {currentPlayer.achievements && currentPlayer.achievements.length > 0 && (
-                                                    <Grid item xs={12}>
+                                                <Grid item xs={12} md={6}>
                                                         <Paper 
+                                                        elevation={0}
                                                             sx={{ 
                                                                 p: 2,
+                                                            height: '100%',
                                                                 bgcolor: 'background.paper',
                                                                 borderRadius: 2,
                                                                 border: '1px solid',
@@ -792,20 +1365,35 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                                             }}
                                                         >
                                                             <Typography 
-                                                                variant="subtitle2" 
+                                                            variant="subtitle1" 
                                                                 color="primary"
-                                                                sx={{ mb: 1, fontWeight: 600 }}
-                                                            >
+                                                            sx={{ 
+                                                                mb: 1.5, 
+                                                                fontWeight: 600,
+                                                                display: 'flex',
+                                                                alignItems: 'center',
+                                                                gap: 1
+                                                            }}
+                                                        >
+                                                            <EmojiEventsIcon fontSize="small" />
                                                                 Achievements
                                                             </Typography>
-                                                            <Stack spacing={1}>
+                                                        {currentPlayer.achievements && currentPlayer.achievements.length > 0 ? (
+                                                            <Stack spacing={2} sx={{ maxHeight: '200px', overflowY: 'auto', pr: 1 }}>
                                                                 {currentPlayer.achievements.map((achievement, index) => (
                                                                     <Box 
                                                                         key={index}
                                                                         sx={{
                                                                             p: 1.5,
                                                                             bgcolor: 'action.hover',
-                                                                            borderRadius: 1
+                                                                            borderRadius: 1,
+                                                                            border: '1px solid',
+                                                                            borderColor: 'divider',
+                                                                            transition: 'all 0.2s ease',
+                                                                            '&:hover': {
+                                                                                bgcolor: 'action.selected',
+                                                                                transform: 'translateY(-2px)'
+                                                                            }
                                                                         }}
                                                                     >
                                                                         <Typography variant="body2" sx={{ fontWeight: 600 }}>
@@ -817,9 +1405,36 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                                                     </Box>
                                                                 ))}
                                                             </Stack>
+                                                        ) : (
+                                                            <Box
+                                                                sx={{
+                                                                    display: 'flex',
+                                                                    alignItems: 'center',
+                                                                    justifyContent: 'center',
+                                                                    height: '100px',
+                                                                    bgcolor: 'action.hover',
+                                                                    borderRadius: 1,
+                                                                    border: '1px dashed',
+                                                                    borderColor: 'divider'
+                                                                }}
+                                                            >
+                                                                <Typography 
+                                                                    variant="body2" 
+                                                                    color="text.secondary"
+                                                                    sx={{ 
+                                                                        textAlign: 'center',
+                                                                        display: 'flex',
+                                                                        alignItems: 'center',
+                                                                        gap: 1
+                                                                    }}
+                                                                >
+                                                                    <InfoIcon fontSize="small" />
+                                                                    No achievements available
+                                                                </Typography>
+                                                            </Box>
+                                                        )}
                                                         </Paper>
                                                     </Grid>
-                                                )}
                                             </Grid>
                                         </Box>
                                     </Box>
@@ -887,6 +1502,45 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                                         py: 1.5
                                                     }
                                                 }}
+                                                MenuProps={{
+                                                    PaperProps: {
+                                                        sx: {
+                                                            maxHeight: 400,
+                                                            '& .MuiMenuItem-root': {
+                                                                py: 1.5
+                                                            }
+                                                        }
+                                                    }
+                                                }}
+                                                renderValue={(selected) => {
+                                                    const team = teams.find(t => t.id === selected);
+                                                    if (!team) return "Select Team";
+                                                    
+                                                    return (
+                                                        <Stack direction="row" spacing={1} alignItems="center" width="100%">
+                                                            <GroupsIcon fontSize="small" />
+                                                            <Stack sx={{ flex: 1 }}>
+                                                                <Typography variant="body1" fontWeight="medium">
+                                                                    {team.name}
+                                                                </Typography>
+                                                                <Typography variant="caption" color="text.secondary">
+                                                                    Owner: {team.owner_name} • Players: {team.current_players || 0}
+                                                                </Typography>
+                                                            </Stack>
+                                                            <Chip 
+                                                                label={`${formatPointsInCrores(getTeamRemainingBalance(team))} points`}
+                                                                size="small"
+                                                                color="primary"
+                                                                sx={{
+                                                                    fontWeight: 'bold',
+                                                                    bgcolor: 'primary.main',
+                                                                    color: 'white'
+                                                                }}
+                                                                icon={<ScoreboardIcon fontSize="small" sx={{ color: 'white !important' }} />}
+                                                            />
+                                                        </Stack>
+                                                    );
+                                                }}
                                             >
                                                 {teams.map((team) => (
                                                     <MenuItem 
@@ -894,17 +1548,26 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                                         value={team.id}
                                                         disabled={team.current_players >= team.max_players}
                                                     >
-                                                        <Stack direction="row" spacing={1} alignItems="center">
+                                                        <Stack direction="row" spacing={1} alignItems="center" width="100%">
                                                             <GroupsIcon fontSize="small" />
-                                                            <Typography>
-                                                                {team.name}
-                                                            </Typography>
+                                                            <Stack sx={{ flex: 1 }}>
+                                                                <Typography variant="body1" fontWeight="medium">
+                                                                    {team.name}
+                                                                </Typography>
+                                                                <Typography variant="caption" color="text.secondary">
+                                                                    Owner: {team.owner_name} • Players: {team.current_players || 0}
+                                                                </Typography>
+                                                            </Stack>
                                                             <Chip 
-                                                                label={`${team.remaining_points} points`}
+                                                                label={`${formatPointsInCrores(getTeamRemainingBalance(team))} points`}
                                                                 size="small"
                                                                 color="primary"
-                                                                variant="outlined"
-                                                                icon={<ScoreboardIcon fontSize="small" />}
+                                                                sx={{
+                                                                    fontWeight: 'bold',
+                                                                    bgcolor: 'primary.main',
+                                                                    color: 'white'
+                                                                }}
+                                                                icon={<ScoreboardIcon fontSize="small" sx={{ color: 'white !important' }} />}
                                                             />
                                                         </Stack>
                                                     </MenuItem>
@@ -912,60 +1575,58 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                             </Select>
                                         </FormControl>
 
-                                        {selectedTeam && (
-                                            <Box 
-                                                mb={3}
-                                                p={2}
-                                                bgcolor="action.hover"
-                                                borderRadius={1}
-                                            >
-                                                {teams.find(t => t.id === selectedTeam) && (
-                                                    <Stack direction="row" spacing={1} alignItems="center">
-                                                        <GroupsIcon fontSize="small" color="action" />
-                                                        <Typography color="text.secondary">
-                                                            Team Capacity: <strong>{teams.find(t => t.id === selectedTeam)?.current_players}/{teams.find(t => t.id === selectedTeam)?.max_players}</strong> players
-                                                        </Typography>
-                                                    </Stack>
-                                                )}
-                                            </Box>
-                                        )}
-
-                                        <TextField
-                                            fullWidth
-                                            label="Final Points"
-                                            type="number"
-                                            value={finalBid}
-                                            onChange={(e) => setFinalBid(Number(e.target.value))}
-                                            sx={{ 
-                                                mb: 3,
-                                                '& .MuiOutlinedInput-root': {
-                                                    transition: 'all 0.2s ease',
-                                                    '&:hover': {
-                                                        '& fieldset': {
-                                                            borderColor: 'primary.main',
-                                                            borderWidth: 2
-                                                        }
-                                                    },
-                                                    '&.Mui-focused': {
-                                                        '& fieldset': {
-                                                            borderColor: 'primary.main',
-                                                            borderWidth: 2,
-                                                            boxShadow: '0 0 0 4px rgba(25, 118, 210, 0.1)'
+                                        <FormControl fullWidth sx={{ mb: 3 }}>
+                                            <InputLabel>Final Points (in Crores)</InputLabel>
+                                            <Select
+                                                value={finalBid}
+                                                label="Final Points (in Crores)"
+                                                onChange={(e) => setFinalBid(Number(e.target.value))}
+                                                sx={{ 
+                                                    '& .MuiOutlinedInput-root': {
+                                                        transition: 'all 0.2s ease',
+                                                        '&:hover': {
+                                                            '& fieldset': {
+                                                                borderColor: 'primary.main',
+                                                                borderWidth: 2
+                                                            }
+                                                        },
+                                                        '&.Mui-focused': {
+                                                            '& fieldset': {
+                                                                borderColor: 'primary.main',
+                                                                borderWidth: 2,
+                                                                boxShadow: '0 0 0 4px rgba(25, 118, 210, 0.1)'
+                                                            }
                                                         }
                                                     }
-                                                }
-                                            }}
-                                            InputProps={{
-                                                startAdornment: <ScoreboardIcon color="action" sx={{ mr: 1 }} />
-                                            }}
-                                        />
+                                                }}
+                                                MenuProps={{
+                                                    PaperProps: {
+                                                        style: {
+                                                            maxHeight: 300,
+                                                        },
+                                                    },
+                                                }}
+                                                renderValue={(value) => (
+                                                    <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                                                        <ScoreboardIcon color="action" sx={{ mr: 1 }} />
+                                                        <Typography>{value} Cr</Typography>
+                                                    </Box>
+                                                )}
+                                            >
+                                                {[...Array(100)].map((_, index) => (
+                                                    <MenuItem key={index + 1} value={index + 1}>
+                                                        {index + 1} Cr
+                                                    </MenuItem>
+                                                ))}
+                                            </Select>
+                                        </FormControl>
 
                                         <Button
                                             fullWidth
                                             variant="contained"
                                             color="primary"
                                             onClick={handleRecordBid}
-                                            disabled={!selectedTeam || finalBid <= 0}
+                                            disabled={!selectedTeam || finalBid <= 0 || isSubmitting}
                                             sx={{ 
                                                 py: 1.5,
                                                 px: 4,
@@ -984,7 +1645,50 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                                 }
                                             }}
                                         >
-                                            Record Final Points
+                                            {isSubmitting ? (
+                                                <>
+                                                    <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
+                                                    Recording...
+                                                </>
+                                            ) : (
+                                                'Record Final Points'
+                                            )}
+                                        </Button>
+
+                                        <Button
+                                            fullWidth
+                                            variant="outlined"
+                                            color="warning"
+                                            onClick={handleMarkUnallocated}
+                                            disabled={!currentPlayer || isSubmitting}
+                                            sx={{ 
+                                                mt: 2,
+                                                py: 1.5,
+                                                px: 4,
+                                                fontSize: '1.1rem',
+                                                fontWeight: 600,
+                                                borderRadius: 2,
+                                                transition: 'all 0.2s ease',
+                                                '&:hover': {
+                                                    backgroundColor: 'warning.light',
+                                                    borderColor: 'warning.main',
+                                                    color: 'warning.contrastText',
+                                                    transform: 'translateY(-2px)',
+                                                    boxShadow: '0 6px 20px rgba(0,0,0,0.15)'
+                                                },
+                                                '&:active': {
+                                                    transform: 'translateY(1px)'
+                                                }
+                                            }}
+                                        >
+                                            {isSubmitting ? (
+                                                <>
+                                                    <CircularProgress size={24} color="inherit" sx={{ mr: 1 }} />
+                                                    Processing...
+                                                </>
+                                            ) : (
+                                                'Mark as UNALLOCATED (No Bids)'
+                                            )}
                                         </Button>
 
                                         {error && (
@@ -1100,15 +1804,19 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                     </Box>
                                     <Stack direction="row" spacing={1}>
                                         <Button
-                                            startIcon={<AddIcon />}
+                                            variant="outlined"
+                                            color="error"
+                                            startIcon={<DeleteSweepIcon />}
+                                            onClick={handleClearQueue}
+                                            sx={{ mr: 1 }}
+                                        >
+                                            Clear Queue
+                                        </Button>
+                                        <Button
                                             variant="contained"
+                                            color="primary"
+                                            startIcon={<AddIcon />}
                                             onClick={() => setIsAddPlayerOpen(true)}
-                                            sx={{ 
-                                                bgcolor: 'primary.main',
-                                                '&:hover': {
-                                                    bgcolor: 'primary.dark'
-                                                }
-                                            }}
                                         >
                                             Add Players
                                         </Button>
@@ -1187,6 +1895,7 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                                         item={item}
                                                         currentPlayer={currentPlayer}
                                                         onSelectPlayer={handleSelectPlayer}
+                                                        onRemoveFromQueue={handleRemoveFromQueue}
                                                     />
                                                 ))}
                                             </List>
@@ -1203,8 +1912,10 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
             <Dialog 
                 open={isAddPlayerOpen} 
                 onClose={() => {
+                    if (!isAddingPlayers) {
                     setIsAddPlayerOpen(false);
                     setSelectedPlayers(new Set());
+                    }
                 }}
                 maxWidth="md"
                 fullWidth
@@ -1225,25 +1936,37 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                     Add Players to Queue
                 </DialogTitle>
                 <DialogContent>
-                    <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 2 }}>
-                        <Tabs 
-                            value={selectedTab} 
-                            onChange={(_, newValue) => setSelectedTab(newValue)}
-                        >
-                            <Tab label="All Players" />
-                            {POSITIONS.map((pos, index) => (
-                                <Tab key={pos.value} label={pos.label} />
-                            ))}
-                        </Tabs>
+                    {isAddingPlayers ? (
+                        <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" py={4}>
+                            <CircularProgress size={40} />
+                            <Typography variant="body1" mt={2}>
+                                Adding {selectedPlayers.size} player{selectedPlayers.size > 1 ? 's' : ''} to queue...
+                            </Typography>
                     </Box>
-
-                    <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                    ) : (
+                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} mt={2}>
                         <TextField
                             label="Search Players"
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
                             sx={{ flexGrow: 1, mr: 2 }}
                         />
+                            <FormControl sx={{ minWidth: 200, mr: 2 }}>
+                                <InputLabel id="category-filter-label">Category</InputLabel>
+                                <Select
+                                    labelId="category-filter-label"
+                                    value={categoryFilter}
+                                    label="Category"
+                                    onChange={(e) => setCategoryFilter(e.target.value)}
+                                >
+                                    <MenuItem value="">All Categories</MenuItem>
+                                    {playerCategories.map((category) => (
+                                        <MenuItem key={category.id} value={category.id}>
+                                            {category.name}
+                                        </MenuItem>
+                                    ))}
+                                </Select>
+                            </FormControl>
                         <Button
                             variant="contained"
                             onClick={handleBulkAddToQueue}
@@ -1252,22 +1975,77 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                             Add Selected ({selectedPlayers.size})
                         </Button>
                     </Box>
+                    )}
 
-                    <List>
-                        {filteredAvailablePlayers
-                            .filter(player => selectedTab === 0 || player.player_position === POSITIONS[selectedTab - 1].value)
-                            .map((player) => (
-                                <ListItem
+                    <TableContainer component={Paper} sx={{ maxHeight: 400, overflow: 'auto' }}>
+                        <Table stickyHeader size="small">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell padding="checkbox">
+                                        <Checkbox 
+                                            onChange={(e) => {
+                                                if (e.target.checked) {
+                                                    // Select all filtered players
+                                                    const newSelected = new Set(selectedPlayers);
+                                                    filteredAvailablePlayers.forEach(player => {
+                                                        newSelected.add(player.id);
+                                                    });
+                                                    setSelectedPlayers(newSelected);
+                                                } else {
+                                                    // Deselect all filtered players
+                                                    const newSelected = new Set(selectedPlayers);
+                                                    filteredAvailablePlayers.forEach(player => {
+                                                        newSelected.delete(player.id);
+                                                    });
+                                                    setSelectedPlayers(newSelected);
+                                                }
+                                            }}
+                                            indeterminate={
+                                                selectedPlayers.size > 0 && 
+                                                selectedPlayers.size < filteredAvailablePlayers.length
+                                            }
+                                            checked={
+                                                filteredAvailablePlayers.length > 0 &&
+                                                filteredAvailablePlayers.every(player => 
+                                                    selectedPlayers.has(player.id)
+                                                )
+                                            }
+                                        />
+                                    </TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Name</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Category</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Base Points</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Position</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Skill Level</TableCell>
+                                    <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {filteredAvailablePlayers.map((player) => (
+                                    <TableRow 
                                     key={player.id}
+                                        hover
+                                        onClick={() => {
+                                            const newSelected = new Set(selectedPlayers);
+                                            if (selectedPlayers.has(player.id)) {
+                                                newSelected.delete(player.id);
+                                            } else {
+                                                newSelected.add(player.id);
+                                            }
+                                            setSelectedPlayers(newSelected);
+                                        }}
                                     sx={{
-                                        mb: 1,
-                                        border: '1px solid',
-                                        borderColor: 'divider',
-                                        borderRadius: 1,
-                                    }}
-                                >
+                                            cursor: 'pointer',
+                                            '&.Mui-selected': {
+                                                backgroundColor: 'action.selected'
+                                            }
+                                        }}
+                                        selected={selectedPlayers.has(player.id)}
+                                    >
+                                        <TableCell padding="checkbox">
                                     <Checkbox
                                         checked={selectedPlayers.has(player.id)}
+                                                onClick={(e) => e.stopPropagation()}
                                         onChange={(e) => {
                                             const newSelected = new Set(selectedPlayers);
                                             if (e.target.checked) {
@@ -1278,45 +2056,71 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                             setSelectedPlayers(newSelected);
                                         }}
                                     />
-                                    <ListItemText
-                                        primary={
-                                            <Stack direction="row" spacing={1} alignItems="center">
-                                                <Typography>{player.name}</Typography>
+                                        </TableCell>
+                                        <TableCell>
+                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                <Avatar 
+                                                    src={player.profile_image_url} 
+                                                    alt={player.name || 'Unknown'}
+                                                    sx={{ width: 32, height: 32 }}
+                                                >
+                                                    {player.name ? player.name.charAt(0) : '?'}
+                                                </Avatar>
+                                                <Typography variant="body2">{player.name || 'Unknown'}</Typography>
+                                            </Box>
+                                        </TableCell>
+                                        <TableCell>
+                                            {playerCategories.find(cat => cat.id === player.category_id)?.name || 'N/A'}
+                                        </TableCell>
+                                        <TableCell>{formatPointsInCrores(player.base_price)}</TableCell>
+                                        <TableCell>
+                                            {POSITIONS.find(pos => pos.value === player.player_position)?.label || 'Unknown'}
+                                        </TableCell>
+                                        <TableCell>
                                                 <Chip 
-                                                    label={POSITIONS.find(pos => pos.value === player.player_position)?.label || 'Unknown'}
+                                                label={SKILL_LEVELS.find(level => level.value === player.skill_level)?.label || 'Unknown'}
                                                     size="small"
-                                                    icon={<SportsVolleyballIcon fontSize="small" />}
-                                                    sx={getPositionStyling('small')}
-                                                />
-                                            </Stack>
-                                        }
-                                        secondary={
-                                            <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
+                                                sx={getSkillLevelStyling(player.skill_level)}
+                                            />
+                                        </TableCell>
+                                        <TableCell>
                                                 <Chip 
-                                                    label={`Base Points: ${formatPointsInCrores(player.base_price)}`}
+                                                label={player.status}
                                                     size="small"
-                                                    icon={<LeaderboardIcon fontSize="small" />}
-                                                    sx={getBasePointsStyling('small')}
-                                                />
-                                                <Chip 
-                                                    label={SKILL_LEVELS.find(level => level.value === player.skill_level)?.label || 'Unknown'}
-                                                    size="small"
-                                                    icon={<StarIcon fontSize="small" />}
-                                                    sx={getSkillLevelStyling(player.skill_level)}
-                                                />
-                                            </Stack>
-                                        }
-                                    />
-                                </ListItem>
-                            ))}
-                    </List>
+                                                color={player.status === 'AVAILABLE' || player.status === 'UNALLOCATED' ? 'success' : 'default'}
+                                            />
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                                {filteredAvailablePlayers.length === 0 && (
+                                    <TableRow>
+                                        <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                                            <Typography color="text.secondary">
+                                                No players found matching the filters
+                                            </Typography>
+                                        </TableCell>
+                                    </TableRow>
+                                )}
+                            </TableBody>
+                        </Table>
+                    </TableContainer>
                 </DialogContent>
                 <DialogActions>
-                    <Button onClick={() => {
+                    <Button 
+                        onClick={() => {
                         setIsAddPlayerOpen(false);
                         setSelectedPlayers(new Set());
-                    }}>
-                        Close
+                        }}
+                        disabled={isAddingPlayers}
+                    >
+                        Cancel
+                    </Button>
+                    <Button 
+                        onClick={handleBulkAddToQueue}
+                        variant="contained"
+                        disabled={selectedPlayers.size === 0 || isAddingPlayers}
+                    >
+                        {isAddingPlayers ? 'Adding...' : `Add Selected (${selectedPlayers.size})`}
                     </Button>
                 </DialogActions>
             </Dialog>
@@ -1329,5 +2133,14 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                 }
             `}</style>
         </Box>
+    );
+}
+
+// Wrap the default export with ToastProvider
+export default function AuctionControlWrapper({ params }: AuctionControlProps) {
+    return (
+        <ToastProvider>
+            <AuctionControl params={params} />
+        </ToastProvider>
     );
 } 

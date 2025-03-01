@@ -34,3 +34,26 @@ export function formatPointsInCrores(points: number | null | undefined): string 
     // Ensure there's a space between the number and "Cr"
     return `${formattedCrores} Cr`;
 } 
+
+/**
+ * Converts a value in crores to actual points
+ * @param crores The value in crores to convert
+ * @returns The equivalent points value (1 crore = 10 million points)
+ */
+export function convertCroresToPoints(crores: number | null | undefined): number {
+    // Handle null/undefined
+    if (crores === null || crores === undefined) {
+        return 0;
+    }
+    
+    // Ensure we're working with a number
+    const numCrores = Number(crores);
+    
+    // Handle NaN
+    if (isNaN(numCrores)) {
+        return 0;
+    }
+    
+    // Convert from crores to points (1 crore = 10 million)
+    return numCrores * 10000000;
+} 

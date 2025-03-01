@@ -39,7 +39,11 @@ export function SimulationSummary({ simulation, isPreAuction }: SimulationSummar
     const hasPositionRequirements = Object.values(positionCounts || {}).some(count => count?.required > 0);
     const hasSkillRequirements = Object.values(skillLevelCounts || {}).some(count => count?.required > 0);
 
-    const budgetUtilization = ((initialBudget - remainingBudget + simulatedBudget) / initialBudget) * 100;
+    // Calculate remaining budget as initial - max bid
+    const calculatedRemainingBudget = initialBudget - simulatedBudget;
+    
+    // Calculate budget utilization based on max bid total
+    const budgetUtilization = (simulatedBudget / initialBudget) * 100;
 
     return (
         <Paper sx={{ p: 3 }}>
@@ -47,13 +51,21 @@ export function SimulationSummary({ simulation, isPreAuction }: SimulationSummar
                 Team Simulation Summary
             </Typography>
 
+            {isPreAuction && (
+                <Alert severity="info" sx={{ mb: 3 }}>
+                    <AlertTitle>Pre-Auction Simulation</AlertTitle>
+                    This is a pre-auction simulation showing only your preferred players. 
+                    Current squad players are not included in these calculations.
+                </Alert>
+            )}
+
             {/* Validation Alerts */}
             <Stack spacing={2} sx={{ mb: 3 }}>
                 {!budgetValid && (
                     <Alert severity="error">
                         <AlertTitle>Budget Exceeded</AlertTitle>
-                        Simulated preferences exceed available budget by 
-                        {formatPointsInCrores(simulatedBudget - remainingBudget)}
+                        Simulated preferences exceed available budget by{' '}
+                        {formatPointsInCrores(simulatedBudget - initialBudget)}
                     </Alert>
                 )}
                 {!playerCountValid && (
@@ -115,7 +127,7 @@ export function SimulationSummary({ simulation, isPreAuction }: SimulationSummar
                             Remaining After Max Bids
                         </Typography>
                         <Typography variant="h6" color={budgetValid ? "inherit" : "error.main"}>
-                            {formatPointsInCrores(remainingBudget - simulatedBudget)}
+                            {formatPointsInCrores(calculatedRemainingBudget)}
                         </Typography>
                     </Grid>
                 </Grid>
@@ -148,13 +160,15 @@ export function SimulationSummary({ simulation, isPreAuction }: SimulationSummar
                                             />
                                         </Stack>
                                         <Stack direction="row" spacing={1}>
-                                            <Chip 
-                                                size="small" 
-                                                label={`Current: ${counts.current}`}
-                                            />
+                                            {!isPreAuction && (
+                                                <Chip 
+                                                    size="small" 
+                                                    label={`Current: ${counts.current}`}
+                                                />
+                                            )}
                                             <Chip 
                                                 size="small"
-                                                label={`Simulated: +${counts.simulated}`}
+                                                label={isPreAuction ? `Total: ${counts.simulated}` : `Simulated: +${counts.simulated}`}
                                                 variant="outlined"
                                             />
                                         </Stack>
@@ -168,7 +182,7 @@ export function SimulationSummary({ simulation, isPreAuction }: SimulationSummar
 
             {/* Skill Level Requirements - Only show if requirements exist */}
             {hasSkillRequirements && (
-                <Box sx={{ mb: 4 }}>
+                <Box>
                     <Typography variant="subtitle1" gutterBottom>
                         Skill Level Distribution
                     </Typography>
@@ -193,13 +207,15 @@ export function SimulationSummary({ simulation, isPreAuction }: SimulationSummar
                                             />
                                         </Stack>
                                         <Stack direction="row" spacing={1}>
-                                            <Chip 
-                                                size="small" 
-                                                label={`Current: ${counts.current}`}
-                                            />
+                                            {!isPreAuction && (
+                                                <Chip 
+                                                    size="small" 
+                                                    label={`Current: ${counts.current}`}
+                                                />
+                                            )}
                                             <Chip 
                                                 size="small"
-                                                label={`Simulated: +${counts.simulated}`}
+                                                label={isPreAuction ? `Total: ${counts.simulated}` : `Simulated: +${counts.simulated}`}
                                                 variant="outlined"
                                             />
                                         </Stack>
@@ -210,45 +226,6 @@ export function SimulationSummary({ simulation, isPreAuction }: SimulationSummar
                     </Grid>
                 </Box>
             )}
-
-            {/* Category Distribution - Always show */}
-            <Box>
-                <Typography variant="subtitle1" gutterBottom>
-                    Category Distribution
-                </Typography>
-                <Grid container spacing={2}>
-                    {Object.entries(categoryDistribution).map(([category, counts]) => {
-                        const total = counts.current + counts.simulated;
-                        const isValid = total >= counts.required;
-
-                        return (
-                            <Grid item xs={12} sm={6} md={4} key={category}>
-                                <Paper variant="outlined" sx={{ p: 2 }}>
-                                    <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 1 }}>
-                                        <Typography variant="subtitle2">{category}</Typography>
-                                        <Chip 
-                                            size="small"
-                                            label={`${total}${counts.required > 0 ? `/${counts.required} required` : ' total'}`}
-                                            color={isValid ? "success" : "error"}
-                                        />
-                                    </Stack>
-                                    <Stack direction="row" spacing={1}>
-                                        <Chip 
-                                            size="small" 
-                                            label={`Current: ${counts.current}`}
-                                        />
-                                        <Chip 
-                                            size="small"
-                                            label={`Simulated: +${counts.simulated}`}
-                                            variant="outlined"
-                                        />
-                                    </Stack>
-                                </Paper>
-                            </Grid>
-                        );
-                    })}
-                </Grid>
-            </Box>
         </Paper>
     );
-} 
+}
