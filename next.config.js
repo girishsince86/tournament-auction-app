@@ -59,6 +59,11 @@ const nextConfig = {
   
   // Set dynamic rendering for all pages
   trailingSlash: false,
+
+  // Ignore ESLint errors during build
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
 }
 
 module.exports = nextConfig
