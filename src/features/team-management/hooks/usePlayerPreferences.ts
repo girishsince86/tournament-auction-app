@@ -41,7 +41,7 @@ export function usePlayerPreferences(
     });
 
     const handlePlayerSelection = (player: PlayerWithPreference) => {
-        if (player.status === 'SOLD') return;
+        if ((player.status as string) === 'SOLD') return;
         
         setSelectedPlayers(prev => {
             const isSelected = prev.some(p => p.player_id === player.id);

@@ -37,6 +37,9 @@ const ROUTES = {
     },
     registrationSummary: '/registration-summary' as const,
     dashboard: '/dashboard' as const,
+    teamOwner: {
+      profile: '/team-owner/profile' as const,
+    },
   },
   public: {
     home: '/' as const,
@@ -83,7 +86,9 @@ const PROTECTED_ROUTES = [
   '/dashboard',
   '/admin',
   '/teams',
-  '/team-management'
+  '/team-management',
+  '/team-owner/profile',
+  '/auction'
 ]
 
 // Helper function to check if a user is a full admin
@@ -116,18 +121,77 @@ const isTeamOwner = (email?: string): boolean => {
   return email ? teamOwnerEmails.includes(email) : false;
 }
 
+// Helper function to check if a user can access team owner features
+const canAccessTeamOwnerFeatures = (email?: string): boolean => {
+  return isFullAdmin(email) || isTeamOwner(email);
+}
+
 // This middleware runs on all routes
-export function middleware(request: NextRequest) {
+export async function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  
+  // Skip middleware for static files and API routes
+  if (
+    pathname.startsWith('/_next') ||
+    pathname.startsWith('/static') ||
+    pathname.includes('.') ||
+    pathname.startsWith('/api')
+  ) {
+    return NextResponse.next();
+  }
+  
+  // Create a Supabase client for the middleware
+  const supabase = createMiddlewareClient<Database>({ req: request, res: NextResponse.next() });
+  
+  // Check if the user is authenticated
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  
+  // If the user is not authenticated and trying to access a protected route
+  const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname.startsWith(route));
+  
+  if (!session && isProtectedRoute) {
+    // Redirect to login page with a return URL
+    const redirectUrl = new URL(ROUTES.auth.login, request.url);
+    redirectUrl.searchParams.set('returnUrl', pathname);
+    return NextResponse.redirect(redirectUrl);
+  }
+  
+  // If the user is authenticated and trying to access an auth page
+  if (session && isAuthPath(pathname)) {
+    // Redirect to the default page after login
+    return NextResponse.redirect(new URL(ROUTES.defaultRedirect, request.url));
+  }
+  
+  // For admin routes, check if the user has admin privileges
+  if (pathname.startsWith('/admin') && session) {
+    const userEmail = session.user?.email;
+    if (!isFullAdmin(userEmail)) {
+      // Redirect non-admin users to the dashboard
+      return NextResponse.redirect(new URL(ROUTES.defaultRedirect, request.url));
+    }
+  }
+  
+  // For team owner routes, check if the user has team owner or admin privileges
+  if (pathname.startsWith('/team-owner') && session) {
+    const userEmail = session.user?.email;
+    if (!canAccessTeamOwnerFeatures(userEmail)) {
+      // Redirect users without team owner access to the dashboard
+      return NextResponse.redirect(new URL(ROUTES.defaultRedirect, request.url));
+    }
+  }
+  
   // Create a response object from the incoming request
-  const response = NextResponse.next()
+  const response = NextResponse.next();
   
   // Set headers to force dynamic rendering and prevent caching
-  response.headers.set('x-middleware-cache', 'no-cache')
-  response.headers.set('Cache-Control', 'no-store, max-age=0')
-  response.headers.set('Pragma', 'no-cache')
-  response.headers.set('Expires', '0')
+  response.headers.set('x-middleware-cache', 'no-cache');
+  response.headers.set('Cache-Control', 'no-store, max-age=0');
+  response.headers.set('Pragma', 'no-cache');
+  response.headers.set('Expires', '0');
   
-  return response
+  return response;
 }
 
 // Configure the middleware to run on all routes except for static files and API routes

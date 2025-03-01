@@ -134,7 +134,7 @@ export function QueueManager({ tournamentId }: QueueManagerProps) {
                     // Get names of failed players if available
                     const failedPlayerNames = result.failedItems ? 
                         availablePlayers
-                            .filter(player => result.failedItems.includes(player.id))
+                            .filter(player => (result.failedItems as string[]).includes(player.id))
                             .map(player => player.name)
                             .join(', ') : 
                         '';

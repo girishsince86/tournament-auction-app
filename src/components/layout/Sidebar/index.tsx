@@ -113,6 +113,11 @@ const getNavigationItems = async (supabase: any, userEmail: string | undefined, 
         href: '/admin/player-categories'
       },
       {
+        text: 'Team Owner Profiles',
+        icon: <PersonIcon />,
+        href: '/team-owner/profile'
+      },
+      {
         text: 'Auction Control',
         icon: <GavelIcon />,
         href: currentTournament ? `/auction/${currentTournament.id}/control` : '/admin/auction'
