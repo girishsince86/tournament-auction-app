@@ -17,6 +17,7 @@ import type { PlayerWithPreference } from '../../types/player';
 import type { PositionConfig, SkillLevelConfig as SkillConfig, CategoryConfig } from '../../constants/index';
 import { PlayerChip } from '../shared/PlayerChip';
 import { POSITIONS, SKILL_LEVELS, CATEGORY_LABELS } from '../../constants/index';
+import { formatPointsInCrores } from '@/lib/utils/format';
 
 interface CurrentSquadTableProps {
     players?: (PlayerWithPreference & { final_bid_points?: number })[];
@@ -95,10 +96,10 @@ export function CurrentSquadTable({ players = [], isLoading }: CurrentSquadTable
                                 ) : '-'}
                             </TableCell>
                             <TableCell align="right">
-                                {player.base_price.toLocaleString()} points
+                                {formatPointsInCrores(player.base_price)} points
                             </TableCell>
                             <TableCell align="right">
-                                {(player.final_bid_points || player.base_price).toLocaleString()} points
+                                {formatPointsInCrores(player.final_bid_points || player.base_price)} points
                             </TableCell>
                         </TableRow>
                     ))}

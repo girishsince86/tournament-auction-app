@@ -27,6 +27,7 @@ import {
     DialogTitle,
     DialogContent,
     DialogActions,
+    InputAdornment,
 } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
@@ -35,6 +36,7 @@ import FilterListIcon from '@mui/icons-material/FilterList';
 import SportsVolleyballIcon from '@mui/icons-material/SportsVolleyball';
 import { PlayerProfile } from '@/types/auction';
 import { PlayerPosition, SkillLevel } from '@/types/database';
+import { formatPointsInCrores } from '@/lib/utils/format';
 
 // Update positions to match registration form
 const POSITIONS = [
@@ -261,7 +263,7 @@ export default function TournamentPlayers({ params: { tournamentId } }: Tourname
                                             }
                                         />
                                     </TableCell>
-                                    <TableCell>{player.base_price}</TableCell>
+                                    <TableCell>{formatPointsInCrores(player.base_price)}</TableCell>
                                     <TableCell>{player.height || 'N/A'}</TableCell>
                                     <TableCell>{player.registration_data?.last_played_date || 'N/A'}</TableCell>
                                     <TableCell align="right">
@@ -350,6 +352,9 @@ export default function TournamentPlayers({ params: { tournamentId } }: Tourname
                                     base_price: parseInt(e.target.value)
                                 })}
                                 fullWidth
+                                InputProps={{
+                                    startAdornment: <InputAdornment position="start">{formatPointsInCrores(selectedPlayer.base_price)}</InputAdornment>,
+                                }}
                             />
                             <TextField
                                 label="Height (cm)"

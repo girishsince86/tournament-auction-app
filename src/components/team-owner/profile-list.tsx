@@ -154,6 +154,7 @@ export function ProfileList() {
           <Table>
             <TableHead>
               <TableRow className="bg-primary-50">
+                <TableCell className="font-semibold text-primary-700">Actions</TableCell>
                 <TableCell className="font-semibold text-primary-700">Profile</TableCell>
                 <TableCell className="font-semibold text-primary-700">Name</TableCell>
                 <TableCell className="font-semibold text-primary-700">Team</TableCell>
@@ -162,8 +163,6 @@ export function ProfileList() {
                 <TableCell className="font-semibold text-primary-700">Phone</TableCell>
                 <TableCell className="font-semibold text-primary-700">Background</TableCell>
                 <TableCell className="font-semibold text-primary-700">Achievements</TableCell>
-                <TableCell className="font-semibold text-primary-700">Social Media</TableCell>
-                <TableCell className="font-semibold text-primary-700">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -173,6 +172,17 @@ export function ProfileList() {
                   className="hover:bg-gray-50 transition-all duration-300 animate-slideInFromBottom"
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
+                  <TableCell>
+                    <Tooltip title="Edit Profile" className="animate-fadeIn">
+                      <IconButton
+                        onClick={() => handleEdit(profile)}
+                        size="small"
+                        className="text-primary-600 hover:text-primary-700 hover:bg-primary-50 transition-all duration-300"
+                      >
+                        <EditIcon />
+                      </IconButton>
+                    </Tooltip>
+                  </TableCell>
                   <TableCell>
                     <Avatar
                       src={profile.profile_image_url || undefined}
@@ -292,27 +302,6 @@ export function ProfileList() {
                     ) : (
                       <Typography variant="body2" className="text-gray-500">N/A</Typography>
                     )}
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" className="text-gray-700">
-                      {profile.social_media ? 
-                        Object.entries(profile.social_media)
-                          .filter(([_, value]) => value)
-                          .map(([platform, url]) => platform)
-                          .join(', ') || 'N/A'
-                        : 'N/A'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Tooltip title="Edit Profile" className="animate-fadeIn">
-                      <IconButton
-                        onClick={() => handleEdit(profile)}
-                        size="small"
-                        className="text-primary-600 hover:text-primary-700 hover:bg-primary-50 transition-all duration-300"
-                      >
-                        <EditIcon />
-                      </IconButton>
-                    </Tooltip>
                   </TableCell>
                 </TableRow>
               ))}

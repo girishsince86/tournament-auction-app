@@ -29,6 +29,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { useAuctionQueue } from '@/hooks/useAuctionQueue';
 import { useAvailablePlayers } from '@/hooks/useAvailablePlayers';
 import { PlayerProfile, QueueItemWithPlayer } from '@/types/auction';
+import { formatPointsInCrores } from '@/lib/utils/format';
 
 interface QueueManagerProps {
     tournamentId: string;
@@ -223,7 +224,7 @@ export function QueueManager({ tournamentId }: QueueManagerProps) {
                                                     {item.queue_position}. {item.player?.name}
                                                 </Typography>
                                                 <Typography variant="body2" color="text.secondary">
-                                                    Base Price: {item.player?.base_price} | 
+                                                    Base Price: {item.player ? formatPointsInCrores(item.player.base_price) : 'N/A'} | 
                                                     Skill Level: {item.player?.skill_level}
                                                 </Typography>
                                             </Box>
@@ -302,9 +303,9 @@ export function QueueManager({ tournamentId }: QueueManagerProps) {
                                     </Typography>
                                     <Box display="flex" gap={1} mt={0.5}>
                                         <Chip 
-                                            label={`${player.base_price} pts`}
+                                            label={`${formatPointsInCrores(player.base_price)}`}
                                             size="small"
-                                            color="primary"
+                                            color="default"
                                         />
                                         <Chip 
                                             label={player.skill_level}

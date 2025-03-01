@@ -18,6 +18,8 @@ import {
 import { Person as PersonIcon } from '@mui/icons-material';
 import { PlayerProfileModal } from './PlayerProfileModal';
 import type { PlayerCardProps } from './PlayerCard';
+import { POSITIONS, SKILL_LEVELS } from '@/lib/constants';
+import { formatPointsInCrores } from '@/lib/utils/format';
 
 // Define the skill level display mapping
 const SKILL_LEVEL_MAP = {
@@ -120,7 +122,7 @@ export function PlayerListView({ players }: PlayerListViewProps) {
                   </TableCell>
                   <TableCell>{positionDisplay}</TableCell>
                   <TableCell>{skillLevelDisplay}</TableCell>
-                  <TableCell align="right">{player.base_price}</TableCell>
+                  <TableCell align="right">{formatPointsInCrores(player.base_price)}</TableCell>
                   <TableCell align="center">
                     <Button 
                       variant="outlined" 

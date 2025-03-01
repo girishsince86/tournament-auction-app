@@ -1,7 +1,13 @@
 import type { TeamCompositionStatus, PlayerCategoryRequirement } from '@/types/team-management';
 import type { DatabaseTeam } from '@/features/team-management/types/database';
 
-type PlayerWithCategory = DatabaseTeam['players'][0]['player'];
+// Update the PlayerWithCategory type to include preference
+type PlayerWithCategory = DatabaseTeam['players'][0]['player'] & {
+    preference?: {
+        max_bid: number;
+        notes?: string;
+    };
+};
 
 export interface TeamCompositionAnalysis {
     current_squad: TeamCompositionStatus;
@@ -24,7 +30,8 @@ export function calculateTeamCompositionStatus(
         preferredPlayers: preferredPlayers.map(p => ({
             id: p.id,
             name: p.name,
-            category: p.category?.category_type
+            category: p.category?.category_type,
+            max_bid: p.preference?.max_bid
         })),
         minPlayers,
         maxPlayers
@@ -109,9 +116,15 @@ export function calculateTeamCompositionStatus(
     // Calculate status with preferred players
     // Combine current and preferred players, avoiding duplicates by ID
     const allPlayers = [...currentPlayers];
+    
+    // Add preferred players that aren't already in the current squad
     preferredPlayers.forEach(preferred => {
         if (!allPlayers.some(current => current.id === preferred.id)) {
-            allPlayers.push(preferred);
+            // Make sure we're passing the preference data
+            allPlayers.push({
+                ...preferred,
+                preference: preferred.preference
+            });
         }
     });
 
@@ -120,7 +133,8 @@ export function calculateTeamCompositionStatus(
         players: allPlayers.map(p => ({
             id: p.id,
             name: p.name,
-            category: p.category?.category_type
+            category: p.category?.category_type,
+            max_bid: p.preference?.max_bid
         }))
     });
 

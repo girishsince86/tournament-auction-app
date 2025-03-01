@@ -90,7 +90,7 @@ FOR SELECT
 TO authenticated
 USING (
     auth_user_id = auth.uid() OR 
-    auth.jwt() ->> 'email' = 'girish@pbel.in'
+    auth.jwt() ->> 'email' = 'gk@pbel.in'
 );
 
 CREATE POLICY "Team owners can update their own record"
@@ -99,11 +99,11 @@ FOR UPDATE
 TO authenticated
 USING (
     auth_user_id = auth.uid() OR 
-    auth.jwt() ->> 'email' = 'girish@pbel.in'
+    auth.jwt() ->> 'email' = 'gk@pbel.in'
 )
 WITH CHECK (
     auth_user_id = auth.uid() OR 
-    auth.jwt() ->> 'email' = 'girish@pbel.in'
+    auth.jwt() ->> 'email' = 'gk@pbel.in'
 );
 
 -- Create RLS policies for team access
@@ -115,7 +115,7 @@ USING (
     id IN (
         SELECT team_id FROM team_owners WHERE auth_user_id = auth.uid()
     ) OR 
-    auth.jwt() ->> 'email' = 'girish@pbel.in'
+    auth.jwt() ->> 'email' = 'gk@pbel.in'
 );
 
 CREATE POLICY "Team owners can update their own team"
@@ -126,13 +126,13 @@ USING (
     id IN (
         SELECT team_id FROM team_owners WHERE auth_user_id = auth.uid()
     ) OR 
-    auth.jwt() ->> 'email' = 'girish@pbel.in'
+    auth.jwt() ->> 'email' = 'gk@pbel.in'
 )
 WITH CHECK (
     id IN (
         SELECT team_id FROM team_owners WHERE auth_user_id = auth.uid()
     ) OR 
-    auth.jwt() ->> 'email' = 'girish@pbel.in'
+    auth.jwt() ->> 'email' = 'gk@pbel.in'
 );
 
 -- Create new auction rounds policy using team_owners
@@ -146,7 +146,7 @@ USING (
         FROM team_owners 
         WHERE auth_user_id = auth.uid()
     ) OR 
-    auth.jwt() ->> 'email' = 'girish@pbel.in'
+    auth.jwt() ->> 'email' = 'gk@pbel.in'
 );
 
 -- Create function to link auth user to team owner
@@ -232,7 +232,7 @@ BEGIN
         FROM team_owners 
         WHERE auth_user_id = auth.uid() 
         AND team_id = p_team_id
-    ) AND auth.jwt() ->> 'email' != 'girish@pbel.in' THEN
+    ) AND auth.jwt() ->> 'email' != 'gk@pbel.in' THEN
         RAISE EXCEPTION 'You do not have permission to update this team name';
     END IF;
 

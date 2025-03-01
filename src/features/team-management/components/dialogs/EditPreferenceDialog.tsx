@@ -11,6 +11,7 @@ import {
     InputAdornment
 } from '@mui/material';
 import type { PlayerWithPreference } from '../../types/player';
+import { formatPointsInCrores } from '@/lib/utils/format';
 
 interface EditPreferenceDialogProps {
     open: boolean;
@@ -45,7 +46,7 @@ export function EditPreferenceDialog({
             setIsSaving(true);
 
             if (maxBid < player.base_price) {
-                setError(`Max bid must be at least ${player.base_price.toLocaleString()} points`);
+                setError(`Max bid must be at least ${formatPointsInCrores(player.base_price)} points`);
                 return;
             }
 
@@ -64,7 +65,7 @@ export function EditPreferenceDialog({
         // Round to nearest 10 lakhs
         const roundedValue = Math.round(value / 1000000) * 1000000;
         if (roundedValue < basePrice) {
-            setError(`Max bid must be at least ${basePrice.toLocaleString()} points`);
+            setError(`Max bid must be at least ${formatPointsInCrores(basePrice)} points`);
         } else {
             setError(null);
         }
@@ -101,7 +102,7 @@ export function EditPreferenceDialog({
                                 disabled
                                 size="small"
                                 label="Base Points"
-                                value={`${player.base_price.toLocaleString()} points`}
+                                value={`${formatPointsInCrores(player.base_price)} points`}
                             />
                             <TextField
                                 label="Maximum Bid"

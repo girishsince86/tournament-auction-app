@@ -47,9 +47,13 @@ import {
   Save as SaveIcon,
   Category as CategoryIcon,
   BuildCircle as BuildCircleIcon,
+  Refresh as RefreshIcon,
+  AddCircle as AddCircleIcon,
+  Search as SearchIcon,
 } from '@mui/icons-material';
 import { useTournaments } from '@/hooks/useTournaments';
 import toast from 'react-hot-toast';
+import { formatPointsInCrores } from '@/lib/utils/format';
 
 // Define types
 interface PlayerCategory {
@@ -101,8 +105,17 @@ export default function PlayerCategoriesPage() {
   const [openBulkUpdateDialog, setOpenBulkUpdateDialog] = useState(false);
   const [selectedCategoryForBulk, setSelectedCategoryForBulk] = useState<string>('');
   const [isBulkUpdating, setIsBulkUpdating] = useState(false);
-  const [isFixingNullValues, setIsFixingNullValues] = useState(false);
   const [categorySortOrder, setCategorySortOrder] = useState<'count' | 'name'>('count');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [zeroBasePointsInfo, setZeroBasePointsInfo] = useState<{
+    zeroCount: number;
+    nullCount: number;
+    totalIssues: number;
+    zeroBasePointsCategories: any[];
+    nullBasePointsCategories: any[];
+  } | null>(null);
+  
+  const [isCheckingZeroBasePoints, setIsCheckingZeroBasePoints] = useState(false);
 
   // Set the selected tournament when currentTournament changes
   useEffect(() => {
@@ -125,6 +138,7 @@ export default function PlayerCategoriesPage() {
     try {
       setLoadingCategories(true);
       setError(null);
+      setIsRefreshing(true);
       
       const response = await fetch(`/api/admin/players/categories?tournamentId=${selectedTournament}`);
       if (!response.ok) {
@@ -132,13 +146,29 @@ export default function PlayerCategoriesPage() {
       }
       
       const data = await response.json();
-      setCategories(data.categories || []);
+      
+      // Process the categories to ensure base_points is a number
+      const processedCategories = (data.categories || []).map((category: any) => ({
+        ...category,
+        base_points: category.base_points === null || category.base_points === undefined ? 0 : Number(category.base_points),
+        min_points: category.min_points === null || category.min_points === undefined ? 0 : Number(category.min_points),
+        max_points: category.max_points === null ? null : Number(category.max_points),
+      }));
+      
+      // Check if any categories have base_points = 0
+      const zeroBasePointsCategories = processedCategories.filter(
+        (cat: any) => cat.base_points === 0
+      );
+      
+      // Set categories with processed values
+      setCategories(processedCategories);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to fetch categories';
       setError(errorMessage);
       toast.error(errorMessage);
     } finally {
       setLoadingCategories(false);
+      setIsRefreshing(false);
     }
   }, [selectedTournament]);
 
@@ -168,6 +198,14 @@ export default function PlayerCategoriesPage() {
   const handleCreateCategory = async () => {
     if (!currentCategory || !selectedTournament) return;
     
+    // Ensure base_points has a reasonable default value (1 Cr = 10,000,000)
+    const categoryToCreate = {
+      ...currentCategory,
+      base_points: currentCategory.base_points || 10000000, // Default to 1 Cr if not provided
+      min_points: currentCategory.min_points || 0,
+      max_points: currentCategory.max_points || null
+    };
+    
     try {
       const response = await fetch('/api/admin/players/categories', {
         method: 'POST',
@@ -175,7 +213,7 @@ export default function PlayerCategoriesPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          ...currentCategory,
+          ...categoryToCreate,
           tournament_id: selectedTournament,
         }),
       });
@@ -197,9 +235,10 @@ export default function PlayerCategoriesPage() {
   const handleUpdateCategory = async () => {
     if (!currentCategory || !currentCategory.id) return;
     
-    // Ensure min_points is not null
+    // Ensure base_points and min_points are not null or zero
     const updatedCategory = {
       ...currentCategory,
+      base_points: currentCategory.base_points || 10000000, // Default to 1 Cr if not provided
       min_points: currentCategory.min_points || 0,
       max_points: currentCategory.max_points || null
     };
@@ -298,9 +337,9 @@ export default function PlayerCategoriesPage() {
     setCurrentCategory({
       name: '',
       category_type: 'LEVEL_1',
-      base_points: 200,
-      min_points: 100,
-      max_points: 400,
+      base_points: 10000000, // Default to 1 Cr (Uncapped)
+      min_points: 5000000,   // 0.5 Cr
+      max_points: 20000000,  // 2 Cr
       description: '',
       skill_level: 'COMPETITIVE_A',
     });
@@ -324,32 +363,6 @@ export default function PlayerCategoriesPage() {
       return;
     }
     setOpenBulkUpdateDialog(true);
-  };
-
-  const handleFixNullValues = async () => {
-    try {
-      setIsFixingNullValues(true);
-      
-      const response = await fetch('/api/admin/players/categories/fix-null-values', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to fix null values');
-      }
-      
-      const result = await response.json();
-      toast.success(result.message || 'Fixed categories with null values');
-      fetchCategories();
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Failed to fix null values';
-      toast.error(errorMessage);
-    } finally {
-      setIsFixingNullValues(false);
-    }
   };
 
   const categoryColumns: GridColDef[] = [
@@ -593,14 +606,14 @@ export default function PlayerCategoriesPage() {
 
         {tabValue === 0 && (
           <>
-            <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end', gap: 2 }}>
+            <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
               <Button
                 variant="outlined"
-                startIcon={isFixingNullValues ? <CircularProgress size={20} /> : <BuildCircleIcon />}
-                onClick={handleFixNullValues}
-                disabled={isFixingNullValues}
+                startIcon={isRefreshing ? <CircularProgress size={20} /> : <RefreshIcon />}
+                onClick={() => fetchCategories()}
+                disabled={isRefreshing}
               >
-                {isFixingNullValues ? 'Fixing...' : 'Fix Null Values'}
+                {isRefreshing ? 'Refreshing...' : 'Refresh Data'}
               </Button>
               <Button
                 variant="contained"
@@ -610,6 +623,7 @@ export default function PlayerCategoriesPage() {
                 Add Category
               </Button>
             </Box>
+            
             <DataGridPro
               rows={categories}
               columns={categoryColumns}
@@ -881,8 +895,35 @@ export default function PlayerCategoriesPage() {
                 label="Base Points"
                 type="number"
                 fullWidth
-                value={currentCategory?.base_points || 0}
-                onChange={(e) => setCurrentCategory({ ...currentCategory, base_points: parseInt(e.target.value) })}
+                value={currentCategory?.base_points || 10000000}
+                onChange={(e) => setCurrentCategory({ ...currentCategory, base_points: Number(e.target.value) })}
+                helperText="Value in points (1 Cr = 10,000,000 points)"
+                InputProps={{
+                  endAdornment: (
+                    <FormControl variant="standard" sx={{ minWidth: 80 }}>
+                      <Select
+                        value=""
+                        displayEmpty
+                        onChange={(e) => {
+                          if (e.target.value) {
+                            setCurrentCategory({ 
+                              ...currentCategory, 
+                              base_points: Number(e.target.value) 
+                            });
+                          }
+                        }}
+                        sx={{ border: 'none' }}
+                      >
+                        <MenuItem value="" disabled>
+                          <em>Presets</em>
+                        </MenuItem>
+                        <MenuItem value={10000000}>1 Cr</MenuItem>
+                        <MenuItem value={30000000}>3 Cr</MenuItem>
+                        <MenuItem value={50000000}>5 Cr</MenuItem>
+                      </Select>
+                    </FormControl>
+                  ),
+                }}
               />
             </Grid>
             <Grid item xs={12} sm={4}>
@@ -892,6 +933,7 @@ export default function PlayerCategoriesPage() {
                 fullWidth
                 value={currentCategory?.min_points || 0}
                 onChange={(e) => setCurrentCategory({ ...currentCategory, min_points: parseInt(e.target.value) })}
+                helperText="Minimum bid value in points"
               />
             </Grid>
             <Grid item xs={12} sm={4}>
@@ -901,6 +943,7 @@ export default function PlayerCategoriesPage() {
                 fullWidth
                 value={currentCategory?.max_points || 0}
                 onChange={(e) => setCurrentCategory({ ...currentCategory, max_points: parseInt(e.target.value) })}
+                helperText="Maximum bid value in points"
               />
             </Grid>
             <Grid item xs={12}>

@@ -136,7 +136,7 @@ export async function GET(request: NextRequest) {
         id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
         name: 'UnCapped',
         category_type: 'LEVEL_3',
-        base_points: 20000000,
+        base_points: 10000000,
         tournament_id: tournamentId
       }
     };
@@ -196,7 +196,7 @@ export async function GET(request: NextRequest) {
         name: player.name,
         player_position: player.player_position,
         skill_level: player.skill_level,
-        base_price: player.base_price,
+        base_price: category ? category.base_points : player.base_price,
         status: player.status,
         profile_image_url: player.profile_image_url,
         category_id: categoryId,

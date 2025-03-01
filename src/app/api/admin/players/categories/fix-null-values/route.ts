@@ -56,13 +56,31 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Get all categories with base_points = 0
+    const { data: categoriesWithZeroBase, error: fetchErrorZeroBase } = await supabase
+      .from('player_categories')
+      .select('*')
+      .eq('base_points', 0);
+
+    if (fetchErrorZeroBase) {
+      console.error('Error fetching categories with zero base_points:', fetchErrorZeroBase);
+      return NextResponse.json(
+        { error: 'Failed to fetch categories with zero base_points' },
+        { status: 500 }
+      );
+    }
+
     // Combine and deduplicate categories
-    const allCategories = [...(categoriesWithNullMin || []), ...(categoriesWithNullBase || [])];
+    const allCategories = [
+      ...(categoriesWithNullMin || []), 
+      ...(categoriesWithNullBase || []),
+      ...(categoriesWithZeroBase || [])
+    ];
     const uniqueCategories = Array.from(new Map(allCategories.map(cat => [cat.id, cat])).values());
 
     if (uniqueCategories.length === 0) {
       return NextResponse.json({
-        message: 'No categories with null values found',
+        message: 'No categories with null or zero values found',
         fixedCount: 0
       });
     }
@@ -75,8 +93,9 @@ export async function POST(request: NextRequest) {
         updateData.min_points = 0;
       }
       
-      if (category.base_points === null) {
-        updateData.base_points = 0;
+      if (category.base_points === null || category.base_points === 0) {
+        // Set a reasonable default value (1 Cr = 10,000,000)
+        updateData.base_points = 10000000;
       }
       
       // Only update if there are fields to update

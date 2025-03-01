@@ -10,18 +10,16 @@ import {
     Chip,
     Stack,
     Paper,
-    Skeleton
+    Skeleton,
+    Divider,
+    Tooltip
 } from '@mui/material';
+import { useState } from 'react';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
 import AccountBalanceWalletIcon from '@mui/icons-material/AccountBalanceWallet';
 import type { TeamBudgetDetails, TeamBudgetMetrics } from '../../types/index';
-
-// Utility function to format points in crores
-function formatPointsInCrores(points: number): string {
-    const crores = points / 10000000; // 1 crore = 10 million
-    return `${crores.toLocaleString()} Cr points`;
-}
+import { formatPointsInCrores } from '@/lib/utils/format';
 
 interface TeamBudgetProps {
     teamId: string;

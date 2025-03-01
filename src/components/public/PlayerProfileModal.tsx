@@ -11,7 +11,9 @@ import {
   Chip, 
   Stack,
   Divider,
-  useTheme
+  useTheme,
+  Avatar,
+  Paper
 } from '@mui/material';
 import { 
   Close as CloseIcon,
@@ -19,6 +21,8 @@ import {
 } from '@mui/icons-material';
 import Image from 'next/image';
 import { PlayerCardProps } from './PlayerCard';
+import { POSITIONS, SKILL_LEVELS } from '@/lib/constants';
+import { formatPointsInCrores } from '@/lib/utils/format';
 
 // Define the skill level display mapping
 const SKILL_LEVEL_MAP = {
@@ -159,7 +163,7 @@ export function PlayerProfileModal({ player, open, onClose }: PlayerProfileModal
                     />
                   )}
                   <Chip 
-                    label={`${player.base_price} points`} 
+                    label={`${formatPointsInCrores(player.base_price)} points`} 
                     variant="outlined" 
                   />
                 </Box>
@@ -208,7 +212,7 @@ export function PlayerProfileModal({ player, open, onClose }: PlayerProfileModal
                         Points
                       </Typography>
                       <Typography variant="body1" fontWeight="medium">
-                        {player.base_price}
+                        {formatPointsInCrores(player.base_price)}
                       </Typography>
                     </Stack>
                   </Grid>
@@ -278,7 +282,7 @@ export function PlayerProfileModal({ player, open, onClose }: PlayerProfileModal
                             Base Points
                           </Typography>
                           <Typography variant="body1" fontWeight="medium">
-                            {player.category.base_points} points
+                            {formatPointsInCrores(player.category.base_points)} points
                           </Typography>
                         </Stack>
                       </Grid>

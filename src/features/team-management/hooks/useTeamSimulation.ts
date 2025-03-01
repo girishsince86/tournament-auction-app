@@ -84,8 +84,11 @@ export function useTeamSimulation({
 
     useEffect(() => {
         // Calculate total points and players
-        const totalPoints = [...allocatedPlayers, ...preferredPlayers].reduce(
+        const totalPoints = allocatedPlayers.reduce(
             (sum, player) => sum + (player.base_price || 0),
+            0
+        ) + preferredPlayers.reduce(
+            (sum, player) => sum + (player.preference?.max_bid || player.base_price || 0),
             0
         );
 
@@ -122,7 +125,7 @@ export function useTeamSimulation({
         });
 
         const simulatedBudget = preferredPlayers.reduce(
-            (sum, player) => sum + (player.base_price || 0),
+            (sum, player) => sum + (player.preference?.max_bid || player.base_price || 0),
             0
         );
 

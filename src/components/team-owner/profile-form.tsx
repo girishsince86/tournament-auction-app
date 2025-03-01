@@ -34,6 +34,9 @@ export function TeamOwnerProfileForm() {
     team_id: '',
     contact_email: '',
     bio: '',
+    sports_background: '',
+    notable_achievements: [],
+    phone_number: '',
   })
   const [isEditing, setIsEditing] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
@@ -76,13 +79,7 @@ export function TeamOwnerProfileForm() {
         bio: profile.bio,
         sports_background: profile.sports_background,
         notable_achievements: profile.notable_achievements,
-        team_role: profile.team_role,
         phone_number: profile.phone_number || '',
-        social_media: profile.social_media || {
-          linkedin: undefined,
-          twitter: undefined,
-          instagram: undefined
-        },
         profile_image_url: profile.profile_image_url || '',
       })
       setSelectedTeam(profile.team_id)
@@ -109,14 +106,8 @@ export function TeamOwnerProfileForm() {
         team_id: profile.team_id,
         sports_background: profile.sports_background || '',
         notable_achievements: profile.notable_achievements || [],
-        team_role: profile.team_role || '',
         contact_email: profile.contact_email,
         phone_number: profile.phone_number || '',
-        social_media: profile.social_media || {
-          linkedin: undefined,
-          twitter: undefined,
-          instagram: undefined
-        },
         profile_image_url: profile.profile_image_url || '',
         bio: profile.bio,
       });
@@ -212,28 +203,41 @@ export function TeamOwnerProfileForm() {
   const validateForm = () => {
     const errors: Record<string, string> = {}
     
+    console.log('Running form validation with data:', formData);
+    
+    // Required fields validation
+    if (!formData.first_name?.trim()) {
+      errors.first_name = 'First name is required'
+    }
+    
+    if (!formData.last_name?.trim()) {
+      errors.last_name = 'Last name is required'
+    }
+    
+    if (!formData.team_id) {
+      errors.team_id = 'Please select a team'
+    }
+    
+    if (!formData.bio?.trim()) {
+      errors.bio = 'Bio is required'
+    }
+    
     // Phone number validation (Indian format)
     if (formData.phone_number && !/^[6-9]\d{9}$/.test(formData.phone_number)) {
       errors.phone_number = 'Please enter a valid 10-digit Indian mobile number'
     }
 
     // Email validation
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.contact_email)) {
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!formData.contact_email) {
+      errors.contact_email = 'Email is required'
+    } else if (!emailPattern.test(formData.contact_email)) {
       errors.contact_email = 'Please enter a valid email address'
     }
 
-    // Social media URL validation
-    if (formData.social_media) {
-      const urlPattern = /^https?:\/\/[^\s/$.?#].[^\s]*$/i
-      if (formData.social_media.linkedin && !urlPattern.test(formData.social_media.linkedin)) {
-        errors.linkedin = 'Please enter a valid LinkedIn URL'
-      }
-      if (formData.social_media.twitter && !urlPattern.test(formData.social_media.twitter)) {
-        errors.twitter = 'Please enter a valid Twitter URL'
-      }
-      if (formData.social_media.instagram && !urlPattern.test(formData.social_media.instagram)) {
-        errors.instagram = 'Please enter a valid Instagram URL'
-      }
+    // Sports background length validation
+    if (formData.sports_background && formData.sports_background.length > 1000) {
+      errors.sports_background = 'Sports background should not exceed 1000 characters'
     }
 
     // Bio length validation
@@ -241,9 +245,11 @@ export function TeamOwnerProfileForm() {
       errors.bio = 'Bio should not exceed 500 characters'
     }
 
-    // Sports background length validation
-    if (formData.sports_background && formData.sports_background.length > 1000) {
-      errors.sports_background = 'Sports background should not exceed 1000 characters'
+    // Log validation errors for debugging
+    if (Object.keys(errors).length > 0) {
+      console.log('Form validation errors:', errors)
+    } else {
+      console.log('Form validation passed')
     }
 
     setFormErrors(errors)
@@ -270,13 +276,7 @@ export function TeamOwnerProfileForm() {
       bio: '',
       sports_background: '',
       notable_achievements: [],
-      team_role: '',
       phone_number: '',
-      social_media: {
-        linkedin: undefined,
-        twitter: undefined,
-        instagram: undefined
-      },
       profile_image_url: ''
     })
     setSelectedFile(null)
@@ -300,7 +300,11 @@ export function TeamOwnerProfileForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
+    console.log('Form submission attempted with data:', formData)
+    console.log('Submit button clicked, running validation...')
+    
     if (!validateForm()) {
+      console.log('Validation failed, showing toast')
       toast({
         title: 'Validation Error',
         description: 'Please correct the errors in the form',
@@ -309,18 +313,32 @@ export function TeamOwnerProfileForm() {
       return
     }
 
+    console.log('Validation passed, proceeding with form submission')
     await submitForm()
   }
 
   const submitForm = async () => {
     setIsLoading(true)
     try {
+      console.log('Submitting form data:', formData);
+      
+      // Upload image if selected
       if (selectedFile) {
-        const uploadResponse = await handleImageUpload(selectedFile)
-        formData.profile_image_url = uploadResponse.data.imageUrl
+        console.log('Uploading image file:', selectedFile.name);
+        try {
+          const uploadResponse = await handleImageUpload(selectedFile)
+          formData.profile_image_url = uploadResponse.data.imageUrl
+          console.log('Image uploaded successfully:', uploadResponse.data.imageUrl);
+        } catch (uploadError) {
+          console.error('Image upload error:', uploadError);
+          throw new Error('Failed to upload profile image');
+        }
       }
 
+      // Submit profile data
+      console.log('Submitting profile data:', formData);
       const response = await (isEditing ? updateProfile(formData) : createProfile(formData))
+      console.log('Profile submission response:', response);
 
       toast({
         title: 'Success',
@@ -333,6 +351,7 @@ export function TeamOwnerProfileForm() {
       // Refresh profile list
       window.dispatchEvent(new CustomEvent('profile-updated'))
     } catch (error) {
+      console.error('Profile submission error:', error);
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to save profile',
@@ -381,7 +400,13 @@ export function TeamOwnerProfileForm() {
         </Typography>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-8">
+      <form 
+        onSubmit={(e) => {
+          console.log('Form onSubmit event triggered');
+          handleSubmit(e);
+        }} 
+        className="space-y-8"
+      >
         {/* Team Information Section */}
         <div className="bg-blue-50 p-6 rounded-lg animate-slideInFromBottom">
           <Typography variant="h6" className="text-primary-700 mb-4 flex items-center">
@@ -389,7 +414,7 @@ export function TeamOwnerProfileForm() {
             Team Information
           </Typography>
           <div className="space-y-4">
-            <FormControl fullWidth>
+            <FormControl fullWidth error={Boolean(formErrors.team_id)}>
               <InputLabel>Select Team</InputLabel>
               <Select
                 value={formData.team_id}
@@ -402,6 +427,11 @@ export function TeamOwnerProfileForm() {
                   </MenuItem>
                 ))}
               </Select>
+              {formErrors.team_id && (
+                <Typography variant="caption" color="error">
+                  {formErrors.team_id}
+                </Typography>
+              )}
             </FormControl>
 
             {selectedTeam && (
@@ -527,6 +557,8 @@ export function TeamOwnerProfileForm() {
               value={formData.first_name}
               onChange={handleChange}
               required
+              error={Boolean(formErrors.first_name)}
+              helperText={formErrors.first_name}
               className="bg-white transition-all duration-300 hover:border-primary-500"
             />
             <TextField
@@ -535,6 +567,8 @@ export function TeamOwnerProfileForm() {
               value={formData.last_name}
               onChange={handleChange}
               required
+              error={Boolean(formErrors.last_name)}
+              helperText={formErrors.last_name}
               className="bg-white transition-all duration-300 hover:border-primary-500"
             />
           </div>
@@ -554,6 +588,8 @@ export function TeamOwnerProfileForm() {
               value={formData.contact_email}
               onChange={handleChange}
               required
+              error={Boolean(formErrors.contact_email)}
+              helperText={formErrors.contact_email}
               className="bg-white transition-all duration-300 hover:border-primary-500"
             />
             <TextField
@@ -609,11 +645,11 @@ export function TeamOwnerProfileForm() {
           </div>
         </div>
 
-        {/* Bio & Social Media Section */}
+        {/* Bio Section */}
         <div className="bg-gray-50 p-6 rounded-lg animate-slideInFromBottom">
           <Typography variant="h6" className="text-primary-700 mb-4 flex items-center">
             <PersonOutlineIcon className="mr-2" />
-            Bio & Social Media
+            Bio
           </Typography>
           <div className="space-y-6">
             <TextField
@@ -624,18 +660,11 @@ export function TeamOwnerProfileForm() {
               multiline
               rows={4}
               required
+              error={Boolean(formErrors.bio)}
+              helperText={formErrors.bio || "Tell us about your passion for sports and your vision for the team"}
               fullWidth
               className="bg-white transition-all duration-300 hover:border-primary-500"
               placeholder="Tell us about your passion for sports and your vision for the team"
-            />
-            <TextField
-              label="Social Media Handle"
-              name="social_media"
-              value={formData.social_media || ''}
-              onChange={handleChange}
-              fullWidth
-              className="bg-white transition-all duration-300 hover:border-primary-500"
-              placeholder="Your Twitter, LinkedIn, or Instagram handle"
             />
           </div>
         </div>
@@ -652,12 +681,78 @@ export function TeamOwnerProfileForm() {
           <Button
             type="submit"
             variant="contained"
+            onClick={() => console.log('Submit button clicked directly')}
             className="bg-primary-600 hover:bg-primary-700 transition-all duration-300"
           >
             {isLoading ? 'Saving...' : isEditing ? 'Update Profile' : 'Create Profile'}
           </Button>
         </div>
       </form>
+
+      {/* Debug Tools (always visible in development) */}
+      <div className="mt-4 p-4 bg-yellow-50 border-2 border-yellow-400 rounded-lg">
+        <Typography variant="h6" className="text-yellow-800 mb-2 font-bold">Debug Tools (Development Only)</Typography>
+        <div className="flex flex-wrap gap-4">
+          <Button
+            type="button"
+            variant="outlined"
+            onClick={() => {
+              console.log('Debug button clicked outside form');
+              console.log('Current form data:', formData);
+              console.log('Form errors:', formErrors);
+              console.log('Validation result:', validateForm());
+              alert(`Form data: ${JSON.stringify({
+                first_name: formData.first_name,
+                last_name: formData.last_name,
+                team_id: formData.team_id,
+                contact_email: formData.contact_email,
+                bio: formData.bio
+              }, null, 2)}`);
+            }}
+            className="bg-yellow-100 text-yellow-800 hover:bg-yellow-200 transition-all duration-300"
+          >
+            Debug Form Data
+          </Button>
+          <Button
+            type="button"
+            variant="outlined"
+            onClick={() => {
+              const testData = {
+                first_name: 'Test',
+                last_name: 'User',
+                team_id: teams[0]?.id || '',
+                contact_email: 'test@example.com',
+                bio: 'Test bio',
+                sports_background: 'Test background',
+                notable_achievements: ['Test achievement'],
+                phone_number: '9876543210'
+              };
+              setFormData(testData);
+              console.log('Set test data:', testData);
+            }}
+            className="bg-blue-100 text-blue-800 hover:bg-blue-200 transition-all duration-300"
+          >
+            Fill Test Data
+          </Button>
+          <Button
+            type="button"
+            variant="outlined"
+            onClick={() => {
+              console.log('Testing direct form submission');
+              if (validateForm()) {
+                console.log('Validation passed, calling submitForm directly');
+                submitForm();
+              } else {
+                console.log('Validation failed, not submitting');
+                alert('Form validation failed. Check console for details.');
+              }
+            }}
+            className="bg-green-100 text-green-800 hover:bg-green-200 transition-all duration-300"
+          >
+            Test Submit
+          </Button>
+        </div>
+      </div>
 
       {/* Confirmation Dialog */}
       <Dialog

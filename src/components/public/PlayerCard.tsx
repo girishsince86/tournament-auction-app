@@ -16,6 +16,8 @@ import {
 } from '@mui/icons-material';
 import Image from 'next/image';
 import { PlayerProfileModal } from './PlayerProfileModal';
+import { POSITIONS, SKILL_LEVELS } from '@/lib/constants';
+import { formatPointsInCrores } from '@/lib/utils/format';
 
 // Define the skill level display mapping
 const SKILL_LEVEL_MAP = {
@@ -155,7 +157,7 @@ export const PlayerCard = ({ player }: PlayerCardProps) => {
                 Points:
               </Typography>
               <Typography variant="body2" fontWeight="medium">
-                {player.base_price}
+                {formatPointsInCrores(player.base_price)}
               </Typography>
             </Box>
           </Stack>

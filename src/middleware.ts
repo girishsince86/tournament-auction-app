@@ -90,7 +90,7 @@ const PROTECTED_ROUTES = [
 const isFullAdmin = (email?: string): boolean => {
   // Define known admin emails (these will have full admin access)
   const adminEmails = [
-    'girish@pbel.in', // Super admin
+    'gk@pbel.in', // Super admin
     'admin@pbel.in',  // Admin
     'amit@pbel.in',   // Admin
     'vasu@pbel.in'    // Admin

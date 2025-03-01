@@ -61,6 +61,16 @@ const CategoryRequirementCard = ({ requirement }: { requirement: PlayerCategoryR
     const isValid = requirement.current_count >= requirement.min_players && 
         (!requirement.max_players || requirement.current_count <= requirement.max_players);
 
+    // Add logging to help diagnose the issue
+    console.log('CategoryRequirementCard:', {
+        category_type: requirement.category_type,
+        current_count: requirement.current_count,
+        min_players: requirement.min_players,
+        max_players: requirement.max_players,
+        isValid,
+        progress
+    });
+
     return (
         <Box sx={{ mb: 2 }}>
             <Stack direction="row" justifyContent="space-between" alignItems="center" mb={1}>
@@ -96,6 +106,19 @@ const CategoryRequirementCard = ({ requirement }: { requirement: PlayerCategoryR
 const CompositionStatusContent = ({ status }: { status: TeamCompositionStatus }) => {
     const totalProgress = (status.total_players / status.max_players) * 100;
     const isTotalValid = status.total_players >= status.min_players && status.total_players <= status.max_players;
+
+    // Add logging to help diagnose the issue
+    console.log('CompositionStatusContent:', {
+        status,
+        totalProgress,
+        isTotalValid,
+        category_requirements: status.category_requirements.map(req => ({
+            category_type: req.category_type,
+            current_count: req.current_count,
+            min_players: req.min_players,
+            is_valid: req.current_count >= req.min_players
+        }))
+    });
 
     return (
         <Stack spacing={2}>
@@ -143,6 +166,14 @@ export function TeamCompositionStatus({ analysis }: TeamCompositionStatusProps) 
 
     const currentStatus = analysis.current_squad;
     const simulatedStatus = analysis.with_preferred;
+
+    // Add logging to help diagnose the issue
+    console.log('TeamCompositionStatus:', {
+        analysis,
+        currentStatus,
+        simulatedStatus,
+        selectedTab
+    });
 
     return (
         <Card>

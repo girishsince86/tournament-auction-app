@@ -3,6 +3,7 @@
 import { useState, useRef } from 'react';
 import { Timer } from '@/components/auction/Timer';
 import { TimerConfig, PlayerProfile, QueueItemWithPlayer } from '@/types/auction';
+import { formatPointsInCrores } from '@/lib/utils/format';
 
 interface TimerHandle {
     reset: () => void;
@@ -153,7 +154,7 @@ export default function TestAuction() {
                                         <p>Name: {currentPlayer.name}</p>
                                         <p>Last Played: {currentPlayer.registration_data?.last_played_date}</p>
                                         <p>Skill Level: {currentPlayer.skill_level}</p>
-                                        <p>Base Price: {currentPlayer.base_price}</p>
+                                        <p>Base Price: {formatPointsInCrores(currentPlayer.base_price)}</p>
                                         <div className="mt-2">
                                             <h4 className="font-semibold">Achievements</h4>
                                             {currentPlayer.achievements.map((achievement: { title: string; year: number }) => (

@@ -73,6 +73,7 @@ import MilitaryTechIcon from '@mui/icons-material/MilitaryTech';
 import GroupsIcon from '@mui/icons-material/Groups';
 import ScoreboardIcon from '@mui/icons-material/Scoreboard';
 import LeaderboardIcon from '@mui/icons-material/Leaderboard';
+import { formatPointsInCrores } from '@/lib/utils/format';
 
 interface AuctionControlProps {
     params: {
@@ -224,7 +225,7 @@ function SortableQueueItem({ item, currentPlayer, onSelectPlayer }: {
                 secondary={
                     <Stack direction="row" spacing={1}>
                         <Chip 
-                            label={`Base Points: ${item.player.base_price}`}
+                            label={`Base Points: ${formatPointsInCrores(item.player.base_price)}`}
                             size="small"
                             icon={<LeaderboardIcon fontSize="small" />}
                             sx={getBasePointsStyling('small')}
@@ -666,7 +667,7 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                                 <Grid item xs={12}>
                                                     <Stack direction="row" spacing={1.5} flexWrap="wrap" gap={1}>
                                                         <Chip 
-                                                            label={`Base Points: ${currentPlayer.base_price}`}
+                                                            label={`Base Points: ${formatPointsInCrores(currentPlayer.base_price)}`}
                                                             icon={<LeaderboardIcon />}
                                                             sx={getBasePointsStyling()}
                                                         />
@@ -1292,7 +1293,7 @@ export default function AuctionControl({ params: { tournamentId } }: AuctionCont
                                         secondary={
                                             <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
                                                 <Chip 
-                                                    label={`Base Points: ${player.base_price}`}
+                                                    label={`Base Points: ${formatPointsInCrores(player.base_price)}`}
                                                     size="small"
                                                     icon={<LeaderboardIcon fontSize="small" />}
                                                     sx={getBasePointsStyling('small')}

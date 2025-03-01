@@ -44,7 +44,7 @@ interface TeamManagementDashboardProps {
 const isFullAdmin = (email?: string): boolean => {
     // Define known admin emails (these will have full admin access)
     const adminEmails = [
-        'girish@pbel.in', // Super admin
+        'gk@pbel.in', // Super admin
         'admin@pbel.in',  // Admin
         'amit@pbel.in',   // Admin
         'vasu@pbel.in'    // Admin
@@ -160,17 +160,30 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
             id: p.id,
             name: p.name,
             category: p.category?.category_type,
-            rawCategory: p.category
+            is_preferred: p.is_preferred,
+            raw_is_preferred: JSON.stringify(p.is_preferred)
         })));
 
         const preferredPlayersNotInSquad = allPreferredPlayers
             .filter(p => !currentSquadPlayers.some(cp => cp.id === p.id))
             .map(p => {
+                // Extract preference data if available
+                const preferenceData = Array.isArray(p.is_preferred) && p.is_preferred.length > 0 
+                    ? p.is_preferred[0] 
+                    : null;
+                
                 // Log individual player mapping for debugging
                 console.log('Mapping preferred player:', {
                     id: p.id,
                     name: p.name,
-                    category: p.category
+                    category: p.category,
+                    is_preferred: p.is_preferred,
+                    raw_is_preferred: JSON.stringify(p.is_preferred),
+                    preferenceData: preferenceData,
+                    preference: preferenceData ? {
+                        max_bid: preferenceData.max_bid,
+                        notes: preferenceData.notes
+                    } : undefined
                 });
                 
                 return {
@@ -185,7 +198,11 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                         category_type: p.category.category_type,
                         name: p.category.name,
                         base_points: p.category.base_points
-                    } : null
+                    } : null,
+                    preference: preferenceData ? {
+                        max_bid: preferenceData.max_bid,
+                        notes: preferenceData.notes
+                    } : undefined
                 };
             });
 
@@ -195,7 +212,7 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                 id: p.id,
                 name: p.name,
                 category: p.category?.category_type,
-                rawCategory: p.category
+                preference: p.preference
             }))
         });
 

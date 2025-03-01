@@ -11,12 +11,7 @@ import {
 } from '@mui/material';
 import type { SimulationState } from '../../hooks/useTeamSimulation';
 import { POSITIONS, SKILL_LEVELS } from '@/lib/constants';
-
-// Utility function to format points in crores
-function formatPointsInCrores(points: number): string {
-    const crores = points / 10000000; // 1 crore = 10 million
-    return `${crores.toLocaleString()} Cr points`;
-}
+import { formatPointsInCrores } from '@/lib/utils/format';
 
 interface SimulationSummaryProps {
     simulation: SimulationState;
@@ -109,7 +104,7 @@ export function SimulationSummary({ simulation, isPreAuction }: SimulationSummar
                     </Grid>
                     <Grid item xs={4}>
                         <Typography variant="body2" color="text.secondary">
-                            Simulated Spend
+                            Max Bid Total
                         </Typography>
                         <Typography variant="h6" color={budgetValid ? "success.main" : "error.main"}>
                             {formatPointsInCrores(simulatedBudget)}
@@ -117,7 +112,7 @@ export function SimulationSummary({ simulation, isPreAuction }: SimulationSummar
                     </Grid>
                     <Grid item xs={4}>
                         <Typography variant="body2" color="text.secondary">
-                            Remaining After Simulation
+                            Remaining After Max Bids
                         </Typography>
                         <Typography variant="h6" color={budgetValid ? "inherit" : "error.main"}>
                             {formatPointsInCrores(remainingBudget - simulatedBudget)}

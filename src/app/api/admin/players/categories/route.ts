@@ -40,7 +40,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Execute the query
-    const { data: categories, error } = await query.order('name');
+    const { data: rawCategories, error } = await query.order('name');
 
     if (error) {
       console.error('Error fetching player categories:', error);
@@ -50,7 +50,7 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return NextResponse.json({ categories });
+    return NextResponse.json({ categories: rawCategories });
   } catch (error) {
     console.error('Unexpected error:', error);
     return NextResponse.json(

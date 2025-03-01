@@ -36,6 +36,7 @@ import SearchIcon from '@mui/icons-material/Search';
 import SortIcon from '@mui/icons-material/Sort';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import TrendingDownIcon from '@mui/icons-material/TrendingDown';
+import { formatPointsInCrores } from '@/lib/utils/format';
 
 interface Team {
     id: string;
@@ -260,7 +261,7 @@ export default function TeamBudgetsPage() {
                                                         Total Budget Allocated
                                                     </Typography>
                                                     <Typography variant="h4">
-                                                        {totals.initial}
+                                                        {formatPointsInCrores(totals.initial)}
                                                     </Typography>
                                                 </CardContent>
                                             </Card>
@@ -272,7 +273,7 @@ export default function TeamBudgetsPage() {
                                                         Total Spent
                                                     </Typography>
                                                     <Typography variant="h4" color="error">
-                                                        {totals.spent}
+                                                        {formatPointsInCrores(totals.spent)}
                                                     </Typography>
                                                 </CardContent>
                                             </Card>
@@ -284,7 +285,7 @@ export default function TeamBudgetsPage() {
                                                         Total Remaining
                                                     </Typography>
                                                     <Typography variant="h4" color="success.main">
-                                                        {totals.remaining}
+                                                        {formatPointsInCrores(totals.remaining)}
                                                     </Typography>
                                                 </CardContent>
                                             </Card>
@@ -386,9 +387,9 @@ export default function TeamBudgetsPage() {
                                                         sx={{ cursor: 'pointer' }}
                                                     >
                                                         <TableCell>{team.name}</TableCell>
-                                                        <TableCell align="right">{team.initial_budget}</TableCell>
-                                                        <TableCell align="right">{team.total_spent}</TableCell>
-                                                        <TableCell align="right">{team.remaining_budget}</TableCell>
+                                                        <TableCell align="right">{formatPointsInCrores(team.initial_budget)}</TableCell>
+                                                        <TableCell align="right">{formatPointsInCrores(team.total_spent)}</TableCell>
+                                                        <TableCell align="right">{formatPointsInCrores(team.remaining_budget)}</TableCell>
                                                         <TableCell align="right">{team.players_count}</TableCell>
                                                         <TableCell>
                                                             <Tooltip title={`${percentageUsed.toFixed(1)}% used`}>

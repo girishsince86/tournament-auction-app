@@ -23,6 +23,7 @@ import type { PositionConfig, SkillLevelConfig as SkillConfig, CategoryConfig } 
 import { PlayerChip } from '../shared/PlayerChip';
 import { POSITIONS, SKILL_LEVELS, CATEGORY_LABELS } from '../../constants/index';
 import { ConfirmationDialog } from '../dialogs/ConfirmationDialog';
+import { formatPointsInCrores } from '@/lib/utils/format';
 
 interface PreferredPlayersTableProps {
     players: PlayerWithPreference[];
@@ -134,10 +135,10 @@ export function PreferredPlayersTable({
                                     ) : '-'}
                                 </TableCell>
                                 <TableCell align="right">
-                                    {player.base_price.toLocaleString()} points
+                                    {formatPointsInCrores(player.base_price)} points
                                 </TableCell>
                                 <TableCell align="right">
-                                    {(player.preference?.max_bid || player.base_price).toLocaleString()} points
+                                    {formatPointsInCrores(player.preference?.max_bid || player.base_price)} points
                                 </TableCell>
                                 <TableCell>
                                     <Typography 
