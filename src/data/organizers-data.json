@@ -1,0 +1,81 @@
+{
+  "organizers": [
+    {
+      "first_name": "Balaji",
+      "last_name": "Khonde",
+      "profession": "Volleyball Enthusiast",
+      "sports_background": "Played state-level tournaments three times",
+      "philosophy": "Having played at the state level three times, I believe in pushing limits, competing with integrity, and inspiring others through my journey.",
+      "role": "Organizer",
+      "profile_image_url": "/Organizers/Balaji.jpg"
+    },
+    {
+      "first_name": "Amit",
+      "last_name": "Saxena",
+      "profession": "Sport Enthusiast",
+      "sports_background": "2-time winner and 2-time runner-up in the PBEL City Volleyball League",
+      "philosophy": "I believe in relentless effort, resilience, and the pursuit of excellence—both on and off the court.",
+      "role": "Organizer",
+      "profile_image_url": "/Organizers/AmitSaxena.jpg"
+    },
+    {
+      "first_name": "Girish",
+      "last_name": "",
+      "profession": "Volleyball Enthusiast",
+      "sports_background": "Played cricket at state and university levels. Represented his district at age-group level for Kho-Kho, Throwball, Table Tennis, and Cricket. Finished his first full marathon this year.",
+      "philosophy": "Passion, perseverance, and pushing limits define me—state and university-level cricketer, multi-sport athlete, and marathon finisher, always striving for excellence.",
+      "role": "Organizer",
+      "profile_image_url": "/Organizers/Girish.jpg"
+    },
+    {
+      "first_name": "Raghu",
+      "last_name": "Kumar Viswanath Bhagavatula",
+      "profession": "Volleyball Enthusiast",
+      "sports_background": "National Volleyball Player and runner-up in last year's PBEL Volleyball League",
+      "philosophy": "Dedication, discipline, and teamwork define my journey. As a National Volleyball Player, I believe in pushing limits, inspiring others, and striving for excellence on and off the court.",
+      "role": "Organizer",
+      "profile_image_url": "/Organizers/Raghu.jpg"
+    },
+    {
+      "first_name": "Amarbir",
+      "last_name": "Singh Jogar",
+      "profession": "Volleyball Enthusiast",
+      "sports_background": "Professional Volleyball Player",
+      "philosophy": "Passion, discipline, and excellence define my journey.",
+      "role": "Organizer",
+      "profile_image_url": "/Organizers/Amarbir.jpg"
+    },
+    {
+      "first_name": "Preethi",
+      "last_name": "",
+      "profession": "Volleyball Enthusiast",
+      "role": "Organizer",
+      "profile_image_url": "/Organizers/Preethi.png"
+    },
+    {
+      "first_name": "Surya",
+      "last_name": "Karri",
+      "profession": "Volleyball Enthusiast",
+      "role": "Organizer",
+      "profile_image_url": "/Organizers/Surya.png"
+    },
+    {
+      "first_name": "Vasu",
+      "last_name": "Chepuru",
+      "profession": "Volleyball Enthusiast",
+      "sports_background": "Runner-up in last year's PBEL Volleyball League",
+      "philosophy": "Resilience and teamwork fuel my game.",
+      "role": "Organizer",
+      "profile_image_url": "/Organizers/vasu.jpg"
+    },
+    {
+      "first_name": "GV",
+      "last_name": "Sudhakar",
+      "profession": "Volleyball Enthusiast",
+      "sports_background": "Played inter-school and inter-college volleyball, cricket, table tennis, and basketball",
+      "philosophy": "Versatility, teamwork, and passion drive me. I believe in constant growth, sportsmanship, and the pursuit of excellence in every game.",
+      "role": "Organizer",
+      "profile_image_url": "/Organizers/sudhakar.jpg"
+    }
+  ]
+} 

@@ -1,4 +1,5 @@
 import { TeamOwnerProfile } from '@/types/team-owner';
+import { OrganizerProfile } from '@/types/organizer';
 
 /**
  * Fetches all team owner profiles for public display
@@ -66,6 +67,30 @@ export async function getPublicTeamOwnerProfileById(id: string): Promise<TeamOwn
     return data.data
   } catch (error) {
     console.error('Error fetching public team owner profile:', error)
+    throw error
+  }
+}
+
+/**
+ * Fetches all organizer profiles for public display
+ */
+export async function getPublicOrganizerProfiles(): Promise<OrganizerProfile[]> {
+  try {
+    const response = await fetch('/api/public/organizers', {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    })
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch organizer profiles')
+    }
+
+    const data = await response.json()
+    return data.data
+  } catch (error) {
+    console.error('Error fetching public organizer profiles:', error)
     throw error
   }
 } 
