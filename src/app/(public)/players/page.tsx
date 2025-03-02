@@ -97,7 +97,7 @@ export default function PlayersPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPosition, setSelectedPosition] = useState('');
   const [selectedSkillLevel, setSelectedSkillLevel] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<string | null>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
   
   // Hardcoded tournament ID
   const tournamentId = '11111111-1111-1111-1111-111111111111';
@@ -291,10 +291,8 @@ export default function PlayersPage() {
       return false;
     }
     
-    // Filter by category
-    if (selectedCategory === null) {
-      return !player.category_id;
-    } else if (selectedCategory && selectedCategory !== '') {
+    // Filter by category - modified to remove special handling for null category
+    if (selectedCategory && selectedCategory !== '') {
       return player.category_id === selectedCategory;
     }
     
@@ -315,10 +313,6 @@ export default function PlayersPage() {
   
   // Sort categories by player count (descending)
   const sortedCategoryStats = [...categoryStats].sort((a, b) => b.playerCount - a.playerCount);
-  
-  // Count players with no category
-  const playersWithNoCategory = players.filter(player => !player.category_id).length;
-  const noCategoryPercentage = players.length > 0 ? Math.round((playersWithNoCategory / players.length) * 100) : 0;
   
   const handleViewModeChange = (
     event: React.MouseEvent<HTMLElement>,
@@ -578,36 +572,6 @@ export default function PlayersPage() {
                 </Paper>
               </Grid>
             ))}
-            
-            {/* No category chip */}
-            <Grid item xs={6} sm={4} md={3} lg={2}>
-              <Paper 
-                variant="outlined" 
-                sx={{ 
-                  p: 2, 
-                  textAlign: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s',
-                  bgcolor: selectedCategory === null ? 'action.selected' : 'background.paper',
-                  '&:hover': {
-                    bgcolor: 'action.hover',
-                  }
-                }}
-                onClick={() => setSelectedCategory(selectedCategory === null ? '' : null)}
-              >
-                <Chip 
-                  label="No Category"
-                  color="default"
-                  sx={{ mb: 1 }}
-                />
-                <Typography variant="h5" sx={{ fontWeight: 'bold' }}>
-                  {playersWithNoCategory}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Players ({noCategoryPercentage}%)
-                </Typography>
-              </Paper>
-            </Grid>
           </Grid>
         </Box>
       </Paper>
