@@ -125,13 +125,13 @@ export default async function TeamOwnerProfilePage({ params }: TeamOwnerProfileP
                       </Typography>
                     )}
                     <Stack direction="row" spacing={1} mt={1}>
-                      {ownerProfile.social_media.linkedin && (
+                      {ownerProfile.social_media && ownerProfile.social_media.linkedin && (
                         <LinkedInIcon fontSize="small" />
                       )}
-                      {ownerProfile.social_media.twitter && (
+                      {ownerProfile.social_media && ownerProfile.social_media.twitter && (
                         <TwitterIcon fontSize="small" />
                       )}
-                      {ownerProfile.social_media.website && (
+                      {ownerProfile.social_media && ownerProfile.social_media.website && (
                         <LanguageIcon fontSize="small" />
                       )}
                     </Stack>
@@ -217,7 +217,7 @@ export default async function TeamOwnerProfilePage({ params }: TeamOwnerProfileP
             </Typography>
           </div>
 
-          {ownerProfile.notable_achievements.length > 0 && (
+          {ownerProfile.notable_achievements && ownerProfile.notable_achievements.length > 0 && (
             <div>
               <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                 Notable Achievements
@@ -249,13 +249,13 @@ export default async function TeamOwnerProfilePage({ params }: TeamOwnerProfileP
               </Typography>
             )}
             <Stack direction="row" spacing={2} mt={1}>
-              {ownerProfile.social_media.linkedin && (
+              {ownerProfile.social_media && ownerProfile.social_media.linkedin && (
                 <LinkedInIcon />
               )}
-              {ownerProfile.social_media.twitter && (
+              {ownerProfile.social_media && ownerProfile.social_media.twitter && (
                 <TwitterIcon />
               )}
-              {ownerProfile.social_media.website && (
+              {ownerProfile.social_media && ownerProfile.social_media.website && (
                 <LanguageIcon />
               )}
             </Stack>
