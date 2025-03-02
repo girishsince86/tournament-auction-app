@@ -41,7 +41,9 @@ const nameMapping: Record<string, { firstName: string; lastName: string }> = {
   'sraveen k': { firstName: 'Sraveen', lastName: 'Kuchipudi' },
   'praveenraj r': { firstName: 'PraveenRaj', lastName: 'R' },
   'praveen raj r': { firstName: 'PraveenRaj', lastName: 'R' },
-  'praveen r': { firstName: 'PraveenRaj', lastName: 'R' }
+  'praveen r': { firstName: 'PraveenRaj', lastName: 'R' },
+  'naveen kl': { firstName: 'Naveen', lastName: 'KL' },
+  'naveen k': { firstName: 'Naveen', lastName: 'KL' }
 };
 
 /**
