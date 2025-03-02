@@ -3,9 +3,17 @@ import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/lib/supabase/types/supabase';
 
 // Create a Supabase client with the public anon key
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+// Validate environment variables
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase environment variables');
+}
+
 const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  supabaseUrl || '',
+  supabaseAnonKey || ''
 );
 
 // Force dynamic rendering and disable caching
@@ -14,6 +22,18 @@ export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
+    // Log the request for debugging
+    console.log(`API /public/players - Request received at ${new Date().toISOString()}`);
+    
+    // Validate Supabase client
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Missing Supabase environment variables');
+      return NextResponse.json(
+        { error: 'Server configuration error' },
+        { status: 500 }
+      );
+    }
+    
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get('status');
     const position = searchParams.get('position');
@@ -40,6 +60,8 @@ export async function GET(request: NextRequest) {
         status,
         profile_image_url,
         category_id,
+        height,
+        registration_data,
         categories:player_categories(
           id,
           category_type,
@@ -70,17 +92,21 @@ export async function GET(request: NextRequest) {
     }
 
     // First get the players
+    console.log('Executing players query...');
     const { data: players, error } = await query.order('name');
 
     if (error) {
       console.error('Error fetching players:', error);
       return NextResponse.json(
-        { error: 'Failed to fetch players' },
+        { error: 'Failed to fetch players', details: error.message },
         { status: 500 }
       );
     }
 
+    console.log(`Successfully fetched ${players?.length || 0} players`);
+
     // Get the marquee players (Level-1 category) separately
+    console.log('Fetching marquee players...');
     const { data: marqueePlayers, error: marqueeError } = await supabase
       .from('players')
       .select(`
@@ -92,6 +118,8 @@ export async function GET(request: NextRequest) {
         status,
         profile_image_url,
         category_id,
+        height,
+        registration_data,
         categories:player_categories(
           id,
           category_type,
@@ -104,6 +132,8 @@ export async function GET(request: NextRequest) {
 
     if (marqueeError) {
       console.error('Error fetching marquee players:', marqueeError);
+    } else {
+      console.log(`Successfully fetched ${marqueePlayers?.length || 0} marquee players`);
     }
 
     // Combine regular players with marquee players, avoiding duplicates
@@ -157,6 +187,7 @@ export async function GET(request: NextRequest) {
       if (categoriesError) {
         console.error('Error fetching categories:', categoriesError);
       } else if (tournamentCategories) {
+        console.log(`Successfully fetched ${tournamentCategories.length} categories`);
         // Create a map of category IDs to category objects
         categories = tournamentCategories.reduce((acc: Record<string, any>, category) => {
           acc[category.id] = category;
@@ -204,9 +235,13 @@ export async function GET(request: NextRequest) {
         status: player.status,
         profile_image_url: player.profile_image_url,
         category_id: categoryId,
-        category: category
+        category: category,
+        height: player.height,
+        registration_data: player.registration_data
       };
     });
+
+    console.log(`API /public/players - Successfully formatted ${formattedPlayers.length} players`);
 
     // Create response with no-cache headers
     const response = NextResponse.json({ players: formattedPlayers });
@@ -216,9 +251,10 @@ export async function GET(request: NextRequest) {
     
     return response;
   } catch (error) {
-    console.error('Unexpected error:', error);
+    console.error('Unexpected error in /api/public/players:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
     const errorResponse = NextResponse.json(
-      { error: 'An unexpected error occurred' },
+      { error: 'An unexpected error occurred', details: errorMessage },
       { status: 500 }
     );
     errorResponse.headers.set('Cache-Control', 'no-store, max-age=0');

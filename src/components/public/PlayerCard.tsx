@@ -4,19 +4,22 @@ import { useState } from 'react';
 import { 
   Card, 
   CardContent, 
-  CardMedia, 
-  Typography, 
   Box, 
+  Typography, 
   Chip, 
   Button,
-  Stack
+  Stack,
+  useTheme
 } from '@mui/material';
 import { 
-  Person as PersonIcon
+  Person as PersonIcon,
+  SportsVolleyball as SportsVolleyballIcon,
+  Star as StarIcon,
+  Leaderboard as LeaderboardIcon,
+  Height as HeightIcon
 } from '@mui/icons-material';
 import Image from 'next/image';
 import { PlayerProfileModal } from './PlayerProfileModal';
-import { POSITIONS, SKILL_LEVELS } from '@/lib/constants';
 import { formatPointsInCrores } from '@/lib/utils/format';
 
 // Define the skill level display mapping
@@ -37,6 +40,13 @@ const POSITION_MAP = {
   'P6_MIDDLE_BACK': 'Middle Back',
 };
 
+// Define last played options
+const LAST_PLAYED_OPTIONS = [
+  { value: 'PLAYING_ACTIVELY', label: 'Playing Actively' },
+  { value: 'NOT_PLAYED_SINCE_LAST_YEAR', label: 'Not Played since last year' },
+  { value: 'NOT_PLAYED_IN_FEW_YEARS', label: 'Not played in few years' }
+];
+
 export interface PlayerCardProps {
   player: {
     id: string;
@@ -47,6 +57,8 @@ export interface PlayerCardProps {
     status: string;
     profile_image_url?: string | null;
     category_id?: string | null;
+    height?: number | null;
+    registration_data?: any;
     category?: {
       id: string;
       category_type: string;
@@ -58,6 +70,7 @@ export interface PlayerCardProps {
 
 export const PlayerCard = ({ player }: PlayerCardProps) => {
   const [openModal, setOpenModal] = useState(false);
+  const theme = useTheme();
 
   const handleOpenModal = () => {
     setOpenModal(true);
@@ -73,6 +86,42 @@ export const PlayerCard = ({ player }: PlayerCardProps) => {
     ? (SKILL_LEVEL_MAP[player.skill_level as keyof typeof SKILL_LEVEL_MAP] || player.skill_level)
     : 'Not specified';
 
+  // Get the last played status
+  const getLastPlayedStatus = () => {
+    // Default to "Playing Actively" if no registration data is available
+    if (!player.registration_data) {
+      return LAST_PLAYED_OPTIONS.find(opt => 
+        opt.value === 'PLAYING_ACTIVELY'
+      )?.label || 'Playing Actively';
+    }
+    
+    // Try multiple approaches to get the last played date
+    const regData = player.registration_data;
+    
+    // Try direct access to known field names
+    const lastPlayedValue = 
+      regData.last_played_date || 
+      regData.last_played ||
+      regData.lastPlayed ||
+      regData.playing_status;
+        
+    // If we found a value, look up its label
+    if (lastPlayedValue) {
+      const option = LAST_PLAYED_OPTIONS.find(opt => 
+        opt.value === lastPlayedValue
+      );
+      if (option) return option.label;
+      
+      // If the value doesn't match our options but is a string, return it directly
+      if (typeof lastPlayedValue === 'string') return lastPlayedValue;
+    }
+    
+    // Default to "Playing Actively" if no value is found
+    return LAST_PLAYED_OPTIONS.find(opt => 
+      opt.value === 'PLAYING_ACTIVELY'
+    )?.label || 'Playing Actively';
+  };
+
   return (
     <>
       <Card 
@@ -80,10 +129,13 @@ export const PlayerCard = ({ player }: PlayerCardProps) => {
           height: '100%', 
           display: 'flex', 
           flexDirection: 'column',
-          transition: 'transform 0.2s, box-shadow 0.2s',
+          transition: 'all 0.3s ease',
+          borderRadius: 2,
+          overflow: 'hidden',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.05)',
           '&:hover': {
             transform: 'translateY(-4px)',
-            boxShadow: 6,
+            boxShadow: '0 6px 16px rgba(0,0,0,0.1)',
           }
         }}
       >
@@ -95,7 +147,9 @@ export const PlayerCard = ({ player }: PlayerCardProps) => {
             backgroundColor: 'grey.100',
             display: 'flex',
             justifyContent: 'center',
-            alignItems: 'center'
+            alignItems: 'center',
+            borderBottom: '2px solid',
+            borderColor: 'primary.main',
           }}
         >
           {player.profile_image_url ? (
@@ -128,45 +182,105 @@ export const PlayerCard = ({ player }: PlayerCardProps) => {
           )}
         </Box>
         
-        <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
-          <Typography variant="h6" component="div" gutterBottom noWrap>
+        <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 2 }}>
+          <Typography 
+            variant="h6" 
+            component="div" 
+            gutterBottom 
+            noWrap
+            sx={{ 
+              fontWeight: 600,
+              textAlign: 'center',
+              mb: 2
+            }}
+          >
             {player.name}
           </Typography>
           
-          <Stack spacing={1} sx={{ mb: 2 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+          <Chip 
+            label={`${formatPointsInCrores(player.base_price)}`}
+            icon={<LeaderboardIcon />}
+            sx={{
+              bgcolor: theme.palette.primary.main,
+              color: theme.palette.primary.contrastText,
+              fontWeight: 600,
+              alignSelf: 'center',
+              mb: 2
+            }}
+          />
+          
+          <Stack spacing={1.5} sx={{ mb: 2 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" color="text.secondary">
-                Position:
+                Position
               </Typography>
-              <Typography variant="body2" fontWeight="medium">
-                {positionDisplay}
+              <Chip 
+                label={positionDisplay}
+                icon={<SportsVolleyballIcon />}
+                size="small"
+                sx={{ 
+                  bgcolor: theme.palette.primary.light,
+                  color: theme.palette.primary.contrastText,
+                  fontWeight: 'medium',
+                }}
+              />
+            </Box>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" color="text.secondary">
+                Skill Level
+              </Typography>
+              <Chip 
+                label={skillLevelDisplay}
+                icon={<StarIcon />}
+                size="small"
+                sx={{ 
+                  bgcolor: theme.palette.secondary.light,
+                  color: theme.palette.secondary.contrastText,
+                  fontWeight: 'medium',
+                }}
+              />
+            </Box>
+            
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Typography variant="body2" color="text.secondary">
+                Height
+              </Typography>
+              <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                <HeightIcon fontSize="small" color="action" />
+                {player.height ? `${player.height} m` : 'N/A'}
               </Typography>
             </Box>
             
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" color="text.secondary">
-                Skill Level:
+                Status
               </Typography>
-              <Typography variant="body2" fontWeight="medium">
-                {skillLevelDisplay}
-              </Typography>
-            </Box>
-            
-            <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-              <Typography variant="body2" color="text.secondary">
-                Points:
-              </Typography>
-              <Typography variant="body2" fontWeight="medium">
-                {formatPointsInCrores(player.base_price)}
-              </Typography>
+              <Chip 
+                label={player.status} 
+                color={
+                  player.status === 'AVAILABLE' ? 'success' :
+                  player.status === 'SOLD' ? 'primary' :
+                  player.status === 'UNSOLD' ? 'warning' :
+                  'default'
+                }
+                size="small"
+              />
             </Box>
           </Stack>
           
           <Box sx={{ mt: 'auto' }}>
             <Button 
-              variant="outlined" 
+              variant="contained" 
               fullWidth
               onClick={handleOpenModal}
+              sx={{
+                borderRadius: 2,
+                py: 1,
+                fontWeight: 600,
+                textTransform: 'none',
+                boxShadow: 2
+              }}
             >
               View Profile
             </Button>

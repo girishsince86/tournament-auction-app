@@ -1,0 +1,123 @@
+{
+  "owners": [
+    {
+      "first_name": "Saravanan",
+      "last_name": "Muthu",
+      "profession": "Infra-Architect",
+      "sports_interests": "Enjoys badminton, table tennis, volleyball, and carroms",
+      "family_impact": "Inspired his daughter to compete in an Under-14 national throwball championship organized by SGFI",
+      "philosophy": "Believes sports impart valuable lessons in teamwork, discipline, and friendship",
+      "bio": "Saravanan is a passionate sports enthusiast who has been involved in various sports activities throughout his life. He brings his technical expertise and love for sports to the team.",
+      "contact_email": "saravanan.muthu@example.com",
+      "social_media": {
+        "linkedin": "https://linkedin.com/in/saravanan-muthu",
+        "twitter": "https://twitter.com/saravananmuthu"
+      }
+    },
+    {
+      "first_name": "Poluru",
+      "last_name": "Sreenivasulu",
+      "profession": "Supply Chain Operations Professional, widely known as Sreeni in the PBEL community",
+      "sports_interests": "Actively plays kabaddi, volleyball, and handball",
+      "sports_background": "Introduced to Kho Kho at age 13, sparking his lifelong passion for outdoor sports",
+      "notable_achievements": [
+        "Represented Andhra Pradesh in Under-17 Volleyball",
+        "Captained district teams in Kho Kho and Volleyball to championship titles",
+        "Honored as Best Outgoing Sports Person at NIT Calicut"
+      ],
+      "bio": "Sreeni has been a sports enthusiast since childhood and has represented his state in various competitions. His passion for sports drives him to promote sporting activities in the community.",
+      "contact_email": "sreeni@example.com",
+      "social_media": {
+        "linkedin": "https://linkedin.com/in/poluru-sreenivasulu",
+        "instagram": "https://instagram.com/sreeni_sports"
+      }
+    },
+    {
+      "first_name": "Subhamitra",
+      "last_name": "Chatterjee",
+      "profession": "NIS Certified & World Athletic Level-1 Coach; accomplished international athlete",
+      "sports_background": "Medalist at state, national, and international levels",
+      "philosophy": "Emphasizes dedication, perseverance, and continuous improvement in sports and life",
+      "sports_interests": "Focuses on combining her athletic experience with a passion for developing emerging talent",
+      "bio": "Subhamitra brings her extensive experience as an international athlete to mentor and guide young talent. Her coaching philosophy emphasizes both technical skills and mental strength.",
+      "contact_email": "subhamitra.c@example.com",
+      "social_media": {
+        "twitter": "https://twitter.com/subhamitra_coach",
+        "website": "https://subhamitrachatterjee.com"
+      }
+    },
+    {
+      "first_name": "Romesh",
+      "last_name": "Binwani",
+      "profession": "IT Engineer with a lifelong enthusiasm for sports",
+      "sports_background": "Competed in cricket at district and divisional levels. Enjoyed playing table tennis and basketball during his youth",
+      "sports_interests": "Transitioned to long-distance running; completed his first full marathon in under five hours",
+      "team_role": "Serves as the race director for the PBEL Winter Marathon, continually chasing new goals",
+      "bio": "Romesh combines his technical expertise with his passion for sports. He has been instrumental in organizing various sporting events in the community.",
+      "contact_email": "romesh.binwani@example.com",
+      "social_media": {
+        "linkedin": "https://linkedin.com/in/romesh-binwani",
+        "instagram": "https://instagram.com/romesh_runs"
+      }
+    },
+    {
+      "first_name": "Anish",
+      "last_name": "Narayanan Aravindakshan",
+      "profession": "Investment Banker",
+      "sports_interests": "Deeply devoted to football, which he views as a way of life",
+      "family_impact": "Uses the discipline and competitive spirit from football to excel in running and other pursuits",
+      "philosophy": "Believes that athletic dedication is key to personal excellence both on and off the field",
+      "bio": "Anish's love for football has shaped his approach to life and business. He brings strategic thinking and team-building skills to his role as a team owner.",
+      "contact_email": "anish.na@example.com",
+      "social_media": {
+        "twitter": "https://twitter.com/anish_football",
+        "linkedin": "https://linkedin.com/in/anish-narayanan"
+      }
+    },
+    {
+      "first_name": "Rajendra",
+      "last_name": "Sharma",
+      "profession": "Former banker and former bank union president, bringing strong leadership experience",
+      "sports_interests": "Active table tennis player with a passion for the game",
+      "notable_achievements": ["Secured second place in a recent doubles tournament"],
+      "philosophy": "Committed to mentoring and building a balanced team to nurture young talent and new entrants",
+      "team_role": "Known as Raju in the PBEL community",
+      "bio": "Rajendra (Raju) brings his leadership experience from banking to sports management. He is dedicated to creating opportunities for young talent to flourish.",
+      "contact_email": "raju.sharma@example.com",
+      "social_media": {
+        "linkedin": "https://linkedin.com/in/rajendra-sharma",
+        "website": "https://rajusharma.com"
+      }
+    },
+    {
+      "first_name": "Sraveen",
+      "last_name": "Kuchipudi",
+      "profession": "Professional Badminton Player",
+      "sports_interests": "Badminton and team sports",
+      "sports_background": "Professional badminton player with competitive experience at national and district levels",
+      "notable_achievements": [
+        "CBSE National - Bronze",
+        "CBSE Southzone - Gold",
+        "Hyderabad district - Gold"
+      ],
+      "philosophy": "Sports captures the essence of dedication and perseverance. When it comes to team sports like volleyball, one person can be a key ingredient on a team but one person cannot make a team.",
+      "team_role": "Team Owner",
+      "bio": "Sraveen is a professional badminton player who has competed at various levels, earning medals in CBSE National, Southzone, and Hyderabad district competitions. His philosophy emphasizes the importance of teamwork in sports, recognizing that while individual talent is valuable, true success comes from collective effort and collaboration.",
+      "contact_email": "shraveenkbr@gmail.com",
+      "social_media": {}
+    },
+    {
+      "first_name": "PraveenRaj",
+      "last_name": "R",
+      "profession": "Cricket Enthusiast and Team Player",
+      "sports_interests": "Cricket and team sports",
+      "sports_background": "Cricket enthusiast, played for university and currently active player of PBEL Cricket team",
+      "notable_achievements": [],
+      "philosophy": "GO ALL IN",
+      "team_role": "Team Owner",
+      "bio": "PraveenRaj is a dedicated cricket enthusiast with experience playing at the university level. He is currently an active member of the PBEL Cricket team. His straightforward philosophy of 'GO ALL IN' reflects his commitment to giving maximum effort and dedication to his sporting endeavors and team ownership.",
+      "contact_email": "rpr.vivid@gmail.com",
+      "social_media": {}
+    }
+  ]
+} 

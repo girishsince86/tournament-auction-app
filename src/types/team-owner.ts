@@ -14,11 +14,16 @@ export interface TeamOwnerProfile {
     linkedin?: string;
     twitter?: string;
     instagram?: string;
+    website?: string;
   };
   profile_image_url?: string;
   bio: string;
   created_at: string;
   updated_at: string;
+  profession?: string;
+  sports_interests?: string;
+  family_impact?: string;
+  philosophy?: string;
 }
 
 export interface TeamOwnerUpdateRequest {
@@ -34,9 +39,14 @@ export interface TeamOwnerUpdateRequest {
     linkedin?: string;
     twitter?: string;
     instagram?: string;
+    website?: string;
   };
   profile_image_url?: string;
   bio: string;
+  profession?: string;
+  sports_interests?: string;
+  family_impact?: string;
+  philosophy?: string;
 }
 
 export interface TeamNameUpdateRequest {

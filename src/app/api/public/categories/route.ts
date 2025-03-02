@@ -3,9 +3,17 @@ import { createClient } from '@supabase/supabase-js';
 import { Database } from '@/lib/supabase/types/supabase';
 
 // Create a Supabase client with the public anon key
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+// Validate environment variables
+if (!supabaseUrl || !supabaseAnonKey) {
+  console.error('Missing Supabase environment variables in categories API');
+}
+
 const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+  supabaseUrl || '',
+  supabaseAnonKey || ''
 );
 
 // Force dynamic rendering and disable caching
@@ -14,6 +22,15 @@ export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
+    // Log the request for debugging
+    console.log(`API /public/categories - Request received at ${new Date().toISOString()}`);
+    
+    // Validate Supabase client
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Missing Supabase environment variables');
+      throw new Error('Server configuration error');
+    }
+    
     // Use hardcoded tournament ID
     const tournamentId = '11111111-1111-1111-1111-111111111111';
     const searchParams = request.nextUrl.searchParams;
@@ -50,6 +67,7 @@ export async function GET(request: NextRequest) {
     // Try to fetch categories from the database, but don't fail if there's an error
     let dbCategories = [];
     try {
+      console.log('Executing categories query...');
       const { data, error } = await supabase
         .from('player_categories')
         .select('*')
@@ -58,13 +76,15 @@ export async function GET(request: NextRequest) {
 
       if (error) {
         console.error('Error fetching categories from database:', error);
+        throw new Error(`Database query error: ${error.message}`);
       } else {
         dbCategories = data || [];
         console.log(`API /public/categories - Found ${dbCategories.length} categories from database`);
       }
     } catch (dbError) {
       console.error('Database error:', dbError);
-      // Continue with default categories
+      // Log the error but continue with default categories
+      console.log('Falling back to default categories due to database error');
     }
 
     // Create a new array with the database categories
@@ -89,7 +109,9 @@ export async function GET(request: NextRequest) {
     
     return response;
   } catch (error) {
-    console.error('Unexpected error:', error);
+    console.error('Unexpected error in /api/public/categories:', error);
+    const errorMessage = error instanceof Error ? error.message : 'An unexpected error occurred';
+    
     // Return default categories even if there's an error
     const defaultCategories = [
       {
@@ -115,8 +137,12 @@ export async function GET(request: NextRequest) {
       }
     ];
     
-    // Create error response with no-cache headers
-    const errorResponse = NextResponse.json({ categories: defaultCategories });
+    // Create error response with no-cache headers and include error details
+    const errorResponse = NextResponse.json({ 
+      categories: defaultCategories,
+      error: errorMessage,
+      fallback: true
+    });
     errorResponse.headers.set('Cache-Control', 'no-store, max-age=0');
     errorResponse.headers.set('Pragma', 'no-cache');
     errorResponse.headers.set('Expires', '0');

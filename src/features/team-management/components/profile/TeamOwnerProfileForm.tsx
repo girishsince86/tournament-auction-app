@@ -14,7 +14,7 @@ import {
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import DeleteIcon from '@mui/icons-material/Delete'
-import type { TeamOwnerProfile } from '@/lib/api/team-owners'
+import type { TeamOwnerProfile } from '@/types/team-owner'
 
 interface TeamOwnerProfileFormProps {
   initialData?: Partial<TeamOwnerProfile>
@@ -36,7 +36,11 @@ export function TeamOwnerProfileForm({ initialData, onSubmit, isLoading }: TeamO
       twitter: '',
       website: ''
     },
-    bio: initialData?.bio || ''
+    bio: initialData?.bio || '',
+    profession: initialData?.profession || '',
+    sports_interests: initialData?.sports_interests || '',
+    family_impact: initialData?.family_impact || '',
+    philosophy: initialData?.philosophy || ''
   })
   const [newAchievement, setNewAchievement] = useState('')
 
@@ -110,57 +114,132 @@ export function TeamOwnerProfileForm({ initialData, onSubmit, isLoading }: TeamO
               value={formData.profile_image_url}
               onChange={(e) => handleChange('profile_image_url', e.target.value)}
               fullWidth
+              placeholder="https://example.com/profile-image.jpg"
             />
 
             <TextField
               label="Team Role"
               value={formData.team_role}
               onChange={(e) => handleChange('team_role', e.target.value)}
-              required
               fullWidth
+              placeholder="e.g., Team Owner, Manager, Coach"
+            />
+
+            <TextField
+              label="Profession"
+              value={formData.profession}
+              onChange={(e) => handleChange('profession', e.target.value)}
+              fullWidth
+              placeholder="e.g., Software Engineer, Doctor, Business Owner"
             />
 
             <TextField
               label="Sports Background"
               value={formData.sports_background}
               onChange={(e) => handleChange('sports_background', e.target.value)}
+              fullWidth
               multiline
               rows={3}
-              required
+              placeholder="Describe your sports background and experience"
+            />
+
+            <TextField
+              label="Sports Interests"
+              value={formData.sports_interests}
+              onChange={(e) => handleChange('sports_interests', e.target.value)}
               fullWidth
+              multiline
+              rows={3}
+              placeholder="Describe your sports interests and activities"
+            />
+
+            <TextField
+              label="Family Impact"
+              value={formData.family_impact}
+              onChange={(e) => handleChange('family_impact', e.target.value)}
+              fullWidth
+              multiline
+              rows={3}
+              placeholder="Describe how sports has impacted your family"
+            />
+
+            <TextField
+              label="Philosophy"
+              value={formData.philosophy}
+              onChange={(e) => handleChange('philosophy', e.target.value)}
+              fullWidth
+              multiline
+              rows={3}
+              placeholder="Share your philosophy about sports and life"
             />
 
             <Box>
-              <Typography variant="subtitle2" gutterBottom>
+              <Typography variant="subtitle1" gutterBottom>
                 Notable Achievements
               </Typography>
               <Box className="flex gap-2 mb-2">
                 <TextField
                   value={newAchievement}
                   onChange={(e) => setNewAchievement(e.target.value)}
-                  placeholder="Add achievement"
-                  size="small"
+                  placeholder="Add an achievement"
                   fullWidth
+                  size="small"
                 />
                 <Button
-                  onClick={handleAddAchievement}
-                  variant="outlined"
-                  size="small"
+                  variant="contained"
                   startIcon={<AddIcon />}
+                  onClick={handleAddAchievement}
+                  disabled={!newAchievement.trim()}
                 >
                   Add
                 </Button>
               </Box>
-              <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+              <Box className="flex flex-wrap gap-2">
                 {formData.notable_achievements.map((achievement, index) => (
                   <Chip
                     key={index}
                     label={achievement}
                     onDelete={() => handleRemoveAchievement(index)}
-                    size="small"
+                    deleteIcon={<DeleteIcon />}
                   />
                 ))}
-              </Stack>
+              </Box>
+            </Box>
+
+            <TextField
+              label="Contact Email"
+              type="email"
+              value={formData.contact_email}
+              onChange={(e) => handleChange('contact_email', e.target.value)}
+              required
+              fullWidth
+            />
+
+            <Typography variant="subtitle1" gutterBottom>
+              Social Media
+            </Typography>
+            <Box className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <TextField
+                label="LinkedIn"
+                value={formData.social_media.linkedin || ''}
+                onChange={(e) => handleSocialMediaChange('linkedin', e.target.value)}
+                fullWidth
+                placeholder="https://linkedin.com/in/username"
+              />
+              <TextField
+                label="Twitter"
+                value={formData.social_media.twitter || ''}
+                onChange={(e) => handleSocialMediaChange('twitter', e.target.value)}
+                fullWidth
+                placeholder="https://twitter.com/username"
+              />
+              <TextField
+                label="Website"
+                value={formData.social_media.website || ''}
+                onChange={(e) => handleSocialMediaChange('website', e.target.value)}
+                fullWidth
+                placeholder="https://example.com"
+              />
             </Box>
 
             <TextField
@@ -169,49 +248,21 @@ export function TeamOwnerProfileForm({ initialData, onSubmit, isLoading }: TeamO
               onChange={(e) => handleChange('bio', e.target.value)}
               multiline
               rows={4}
-              required
               fullWidth
+              placeholder="Tell us about yourself"
             />
 
-            <TextField
-              label="Contact Email"
-              type="email"
-              value={formData.contact_email}
-              onChange={(e) => handleChange('contact_email', e.target.value)}
-              fullWidth
-            />
-
-            <Box className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <TextField
-                label="LinkedIn URL"
-                value={formData.social_media.linkedin}
-                onChange={(e) => handleSocialMediaChange('linkedin', e.target.value)}
-                fullWidth
-              />
-              <TextField
-                label="Twitter URL"
-                value={formData.social_media.twitter}
-                onChange={(e) => handleSocialMediaChange('twitter', e.target.value)}
-                fullWidth
-              />
-              <TextField
-                label="Website URL"
-                value={formData.social_media.website}
-                onChange={(e) => handleSocialMediaChange('website', e.target.value)}
-                fullWidth
-              />
+            <Box className="flex justify-end">
+              <Button
+                type="submit"
+                variant="contained"
+                color="primary"
+                disabled={isLoading}
+              >
+                {isLoading ? 'Saving...' : 'Save Profile'}
+              </Button>
             </Box>
           </Stack>
-
-          <Box className="flex justify-end pt-4">
-            <Button
-              type="submit"
-              variant="contained"
-              disabled={isLoading}
-            >
-              {isLoading ? 'Saving...' : (initialData ? 'Update Profile' : 'Create Profile')}
-            </Button>
-          </Box>
         </form>
       </CardContent>
     </Card>

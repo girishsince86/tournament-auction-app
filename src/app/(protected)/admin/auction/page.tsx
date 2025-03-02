@@ -13,15 +13,23 @@ import {
     Select,
     MenuItem,
     Alert,
-    CircularProgress
+    CircularProgress,
+    Paper,
+    Divider,
+    alpha,
+    useTheme
 } from '@mui/material';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import SettingsIcon from '@mui/icons-material/Settings';
 import { useRouter } from 'next/navigation';
 import { useTournaments } from '@/hooks/useTournaments';
+import Image from 'next/image';
+import Link from 'next/link';
+import HandshakeIcon from '@mui/icons-material/Handshake';
 
 export default function AuctionManagementPage() {
     const router = useRouter();
+    const theme = useTheme();
     const { tournaments, currentTournament, isLoading, error } = useTournaments();
     const [selectedTournament, setSelectedTournament] = useState<string>('');
 
@@ -50,7 +58,71 @@ export default function AuctionManagementPage() {
 
     return (
         <div className="p-4">
-            <Typography variant="h4" component="h1" gutterBottom>
+            {/* PBL League Banner */}
+            <Paper
+                elevation={0}
+                sx={{
+                    mb: 4,
+                    p: 2,
+                    borderRadius: 2,
+                    background: alpha(theme.palette.background.paper, 0.7),
+                    backdropFilter: 'blur(10px)',
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 2
+                }}
+            >
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Box sx={{ position: 'relative', width: 60, height: 60 }}>
+                        <Image
+                            src="/pbel-volleyball-logo.png"
+                            alt="PBL Volleyball Logo"
+                            width={60}
+                            height={60}
+                            style={{ objectFit: 'contain' }}
+                        />
+                    </Box>
+                    <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+                            PBEL CIty VOLLEYBALL
+                        </Typography>
+                        <Typography variant="subtitle2" color="text.secondary">
+                            AND THROWBALL LEAGUE 2025
+                        </Typography>
+                    </Box>
+                </Box>
+                
+                <Button
+                    component={Link}
+                    href="/sponsors"
+                    variant="outlined"
+                    color="primary"
+                    size="small"
+                    startIcon={<HandshakeIcon />}
+                    sx={{ 
+                        borderRadius: 2,
+                        px: 2
+                    }}
+                >
+                    View Sponsors
+                </Button>
+            </Paper>
+            
+            <Typography 
+                variant="h4" 
+                component="h1" 
+                gutterBottom
+                sx={{ 
+                    fontWeight: 700,
+                    background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    color: 'transparent',
+                    mb: 2
+                }}
+            >
                 Auction Management
                 {currentTournament && selectedTournament === currentTournament.id && (
                     <Typography component="span" color="primary" sx={{ ml: 1 }}>
@@ -58,6 +130,8 @@ export default function AuctionManagementPage() {
                     </Typography>
                 )}
             </Typography>
+            
+            <Divider sx={{ mb: 3 }} />
 
             {/* Tournament Selection */}
             <Box mb={4}>
@@ -86,10 +160,20 @@ export default function AuctionManagementPage() {
             <Grid container spacing={3}>
                 {/* Auction Display Card */}
                 <Grid item xs={12} md={6}>
-                    <Card>
+                    <Card 
+                        elevation={3}
+                        sx={{ 
+                            borderRadius: 2,
+                            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                            '&:hover': {
+                                transform: 'translateY(-5px)',
+                                boxShadow: theme.shadows[8]
+                            }
+                        }}
+                    >
                         <CardContent>
                             <Box display="flex" alignItems="center" mb={2}>
-                                <VisibilityIcon sx={{ mr: 2 }} />
+                                <VisibilityIcon sx={{ mr: 2, color: theme.palette.primary.main }} />
                                 <Typography variant="h6">
                                     Auction Display
                                 </Typography>
@@ -103,6 +187,11 @@ export default function AuctionManagementPage() {
                                 onClick={() => router.push(`/auction/${selectedTournament}/display`)}
                                 startIcon={<VisibilityIcon />}
                                 disabled={!selectedTournament}
+                                sx={{ 
+                                    borderRadius: '20px',
+                                    px: 3,
+                                    py: 1
+                                }}
                             >
                                 Open Display
                             </Button>
@@ -112,10 +201,20 @@ export default function AuctionManagementPage() {
 
                 {/* Auction Control Card */}
                 <Grid item xs={12} md={6}>
-                    <Card>
+                    <Card 
+                        elevation={3}
+                        sx={{ 
+                            borderRadius: 2,
+                            transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                            '&:hover': {
+                                transform: 'translateY(-5px)',
+                                boxShadow: theme.shadows[8]
+                            }
+                        }}
+                    >
                         <CardContent>
                             <Box display="flex" alignItems="center" mb={2}>
-                                <SettingsIcon sx={{ mr: 2 }} />
+                                <SettingsIcon sx={{ mr: 2, color: theme.palette.secondary.main }} />
                                 <Typography variant="h6">
                                     Auction Control
                                 </Typography>
@@ -129,6 +228,11 @@ export default function AuctionManagementPage() {
                                 onClick={() => router.push(`/auction/${selectedTournament}/control`)}
                                 startIcon={<SettingsIcon />}
                                 disabled={!selectedTournament}
+                                sx={{ 
+                                    borderRadius: '20px',
+                                    px: 3,
+                                    py: 1
+                                }}
                             >
                                 Open Control Panel
                             </Button>

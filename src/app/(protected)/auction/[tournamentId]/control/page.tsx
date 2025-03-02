@@ -959,6 +959,67 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
             {(teamsError || queueError || playersError) && (
                 <Alert severity="error" sx={{ mb: 3 }}>
                     {teamsError || queueError || playersError}
+                    <Box sx={{ mt: 1, display: 'flex', gap: 1 }}>
+                        <Button 
+                            color="inherit" 
+                            size="small" 
+                            onClick={async () => {
+                                try {
+                                    // Use isSubmitting as a loading indicator since it's already defined
+                                    setIsSubmitting(true);
+                                    setError('Running diagnostics...');
+                                    
+                                    const response = await fetch('/api/diagnostics/supabase');
+                                    if (!response.ok) {
+                                        throw new Error('Failed to run diagnostics');
+                                    }
+                                    const diagnosticData = await response.json();
+                                    console.log('Diagnostic results:', diagnosticData);
+                                    
+                                    // Format diagnostic results for display
+                                    const isHealthy = diagnosticData.supabaseConnection.isHealthy;
+                                    const schemaValid = diagnosticData.databaseSchema.isValid;
+                                    const envVarsPresent = Object.values(diagnosticData.environmentVariables).every(Boolean);
+                                    
+                                    let diagnosticMessage = '';
+                                    
+                                    if (!envVarsPresent) {
+                                        diagnosticMessage = 'Missing environment variables. Please check your .env file.';
+                                    } else if (!isHealthy) {
+                                        diagnosticMessage = `Database connection error: ${diagnosticData.supabaseConnection.message}`;
+                                    } else if (!schemaValid) {
+                                        diagnosticMessage = `Database schema issue: ${diagnosticData.databaseSchema.message}`;
+                                    } else {
+                                        diagnosticMessage = 'Diagnostics completed successfully. Database connection is healthy.';
+                                        // If diagnostics are successful, refresh the data
+                                        handleRefresh();
+                                        setError('');
+                                        return;
+                                    }
+                                    
+                                    // Show diagnostic message in the error state
+                                    setError(diagnosticMessage);
+                                } catch (err) {
+                                    console.error('Error running diagnostics:', err);
+                                    const errorMessage = err instanceof Error ? err.message : 'Unknown error';
+                                    setError(`Failed to run diagnostics: ${errorMessage}`);
+                                } finally {
+                                    setIsSubmitting(false);
+                                }
+                            }}
+                            disabled={isSubmitting}
+                        >
+                            Diagnose
+                        </Button>
+                        <Button 
+                            color="inherit" 
+                            size="small" 
+                            onClick={handleRefresh}
+                            disabled={isSubmitting}
+                        >
+                            Retry
+                        </Button>
+                    </Box>
                 </Alert>
             )}
 
@@ -1265,176 +1326,6 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                                                         </Grid>
                                                     </Paper>
                                                 </Grid>
-
-                                                {/* Tournament History */}
-                                                <Grid item xs={12} md={6}>
-                                                    <Paper 
-                                                        elevation={0}
-                                                        sx={{ 
-                                                            p: 2,
-                                                            height: '100%',
-                                                            bgcolor: 'background.paper',
-                                                            borderRadius: 2,
-                                                            border: '1px solid',
-                                                            borderColor: 'divider'
-                                                        }}
-                                                    >
-                                                        <Typography 
-                                                            variant="subtitle1" 
-                                                            color="primary"
-                                                            sx={{ 
-                                                                mb: 1.5,
-                                                                fontWeight: 600,
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: 1
-                                                            }}
-                                                        >
-                                                            <EmojiEventsIcon fontSize="small" />
-                                                            Tournament History
-                                                        </Typography>
-                                                        {currentPlayer.tournament_history && currentPlayer.tournament_history.length > 0 ? (
-                                                            <Stack spacing={2} sx={{ maxHeight: '200px', overflowY: 'auto', pr: 1 }}>
-                                                                {currentPlayer.tournament_history.map((history, index) => (
-                                                                    <Box 
-                                                                        key={index}
-                                                                        sx={{
-                                                                            p: 1.5,
-                                                                            bgcolor: 'action.hover',
-                                                                            borderRadius: 1,
-                                                                            border: '1px solid',
-                                                                            borderColor: 'divider',
-                                                                            transition: 'all 0.2s ease',
-                                                                            '&:hover': {
-                                                                                bgcolor: 'action.selected',
-                                                                                transform: 'translateY(-2px)'
-                                                                            }
-                                                                        }}
-                                                                    >
-                                                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                                                            {history.name} ({history.year})
-                                                                        </Typography>
-                                                                        <Typography variant="caption" color="text.secondary">
-                                                                            Role: {history.role}
-                                                                        </Typography>
-                                                                    </Box>
-                                                                ))}
-                                                            </Stack>
-                                                        ) : (
-                                                            <Box
-                                                                sx={{
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
-                                                                    height: '100px',
-                                                                    bgcolor: 'action.hover',
-                                                                    borderRadius: 1,
-                                                                    border: '1px dashed',
-                                                                    borderColor: 'divider'
-                                                                }}
-                                                            >
-                                                            <Typography 
-                                                                variant="body2" 
-                                                                color="text.secondary"
-                                                                sx={{ 
-                                                                    textAlign: 'center',
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        gap: 1
-                                                                }}
-                                                            >
-                                                                    <InfoIcon fontSize="small" />
-                                                                No tournament history available
-                                                            </Typography>
-                                                            </Box>
-                                                        )}
-                                                    </Paper>
-                                                </Grid>
-
-                                                {/* Achievements Section */}
-                                                <Grid item xs={12} md={6}>
-                                                        <Paper 
-                                                        elevation={0}
-                                                            sx={{ 
-                                                                p: 2,
-                                                            height: '100%',
-                                                                bgcolor: 'background.paper',
-                                                                borderRadius: 2,
-                                                                border: '1px solid',
-                                                                borderColor: 'divider'
-                                                            }}
-                                                        >
-                                                            <Typography 
-                                                            variant="subtitle1" 
-                                                                color="primary"
-                                                            sx={{ 
-                                                                mb: 1.5, 
-                                                                fontWeight: 600,
-                                                                display: 'flex',
-                                                                alignItems: 'center',
-                                                                gap: 1
-                                                            }}
-                                                        >
-                                                            <EmojiEventsIcon fontSize="small" />
-                                                                Achievements
-                                                            </Typography>
-                                                        {currentPlayer.achievements && currentPlayer.achievements.length > 0 ? (
-                                                            <Stack spacing={2} sx={{ maxHeight: '200px', overflowY: 'auto', pr: 1 }}>
-                                                                {currentPlayer.achievements.map((achievement, index) => (
-                                                                    <Box 
-                                                                        key={index}
-                                                                        sx={{
-                                                                            p: 1.5,
-                                                                            bgcolor: 'action.hover',
-                                                                            borderRadius: 1,
-                                                                            border: '1px solid',
-                                                                            borderColor: 'divider',
-                                                                            transition: 'all 0.2s ease',
-                                                                            '&:hover': {
-                                                                                bgcolor: 'action.selected',
-                                                                                transform: 'translateY(-2px)'
-                                                                            }
-                                                                        }}
-                                                                    >
-                                                                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                                                                            {achievement.title} ({achievement.year})
-                                                                        </Typography>
-                                                                        <Typography variant="caption" color="text.secondary">
-                                                                            {achievement.description}
-                                                                        </Typography>
-                                                                    </Box>
-                                                                ))}
-                                                            </Stack>
-                                                        ) : (
-                                                            <Box
-                                                                sx={{
-                                                                    display: 'flex',
-                                                                    alignItems: 'center',
-                                                                    justifyContent: 'center',
-                                                                    height: '100px',
-                                                                    bgcolor: 'action.hover',
-                                                                    borderRadius: 1,
-                                                                    border: '1px dashed',
-                                                                    borderColor: 'divider'
-                                                                }}
-                                                            >
-                                                                <Typography 
-                                                                    variant="body2" 
-                                                                    color="text.secondary"
-                                                                    sx={{ 
-                                                                        textAlign: 'center',
-                                                                        display: 'flex',
-                                                                        alignItems: 'center',
-                                                                        gap: 1
-                                                                    }}
-                                                                >
-                                                                    <InfoIcon fontSize="small" />
-                                                                    No achievements available
-                                                                </Typography>
-                                                            </Box>
-                                                        )}
-                                                        </Paper>
-                                                    </Grid>
                                             </Grid>
                                         </Box>
                                     </Box>

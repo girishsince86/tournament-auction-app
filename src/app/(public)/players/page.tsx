@@ -27,17 +27,22 @@ import {
   TableBody,
   TableRow,
   TableCell,
-  Tooltip
+  Tooltip,
+  alpha,
+  Button
 } from '@mui/material';
 import { 
   Search as SearchIcon,
   FilterList as FilterListIcon,
   ViewModule as GridViewIcon,
-  ViewList as ListViewIcon
+  ViewList as ListViewIcon,
+  Handshake as HandshakeIcon
 } from '@mui/icons-material';
 import { PlayerCard } from '@/components/public/PlayerCard';
 import { PlayerListView } from '@/components/public/PlayerListView';
 import type { PlayerCardProps } from '@/components/public/PlayerCard';
+import Image from 'next/image';
+import Link from 'next/link';
 
 // Define types for API responses
 interface Tournament {
@@ -99,7 +104,7 @@ export default function PlayersPage() {
   
   // Fetch players and categories when component mounts
   useEffect(() => {
-    const fetchPlayersAndCategories = async () => {
+    const fetchPlayersAndCategories = async (retryCount = 0) => {
       setLoading(true);
       setError(null);
       
@@ -108,32 +113,166 @@ export default function PlayersPage() {
         const timestamp = Date.now();
         
         // Fetch players
+        console.log(`Fetching players data (attempt ${retryCount + 1})...`);
         const playersResponse = await fetch(`/api/public/players?tournamentId=${tournamentId}&_t=${timestamp}`);
+        
         if (!playersResponse.ok) {
-          throw new Error('Failed to fetch players');
+          const errorText = await playersResponse.text();
+          console.error(`Players API error (${playersResponse.status}):`, errorText);
+          
+          // Try to parse the error response
+          let errorDetails = 'Unknown error';
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorDetails = errorJson.error || errorJson.details || errorText;
+          } catch (e) {
+            // If parsing fails, use the raw text
+            errorDetails = errorText;
+          }
+          
+          throw new Error(`Failed to fetch players: ${errorDetails}`);
         }
         
         const playersData = await playersResponse.json();
+        console.log(`Successfully fetched ${playersData.players?.length || 0} players`);
         setPlayers(playersData.players || []);
         
         // Fetch categories with the same timestamp
+        console.log(`Fetching categories data (attempt ${retryCount + 1})...`);
         const categoriesResponse = await fetch(`/api/public/categories?tournamentId=${tournamentId}&_t=${timestamp}`);
+        
         if (!categoriesResponse.ok) {
-          throw new Error('Failed to fetch categories');
+          const errorText = await categoriesResponse.text();
+          console.error(`Categories API error (${categoriesResponse.status}):`, errorText);
+          
+          // Try to parse the error response
+          let errorDetails = 'Unknown error';
+          try {
+            const errorJson = JSON.parse(errorText);
+            errorDetails = errorJson.error || errorJson.details || errorText;
+          } catch (e) {
+            // If parsing fails, use the raw text
+            errorDetails = errorText;
+          }
+          
+          throw new Error(`Failed to fetch categories: ${errorDetails}`);
         }
         
         const categoriesData = await categoriesResponse.json();
+        console.log(`Successfully fetched ${categoriesData.categories?.length || 0} categories`);
         setCategories(categoriesData.categories || []);
       } catch (err) {
         console.error('Error fetching data:', err);
-        setError('Failed to load player data. Please try again later.');
+        
+        // Implement retry logic (up to 3 attempts)
+        if (retryCount < 2) {
+          console.log(`Retrying fetch (attempt ${retryCount + 2} of 3)...`);
+          setTimeout(() => fetchPlayersAndCategories(retryCount + 1), 1000 * (retryCount + 1));
+          return;
+        }
+        
+        // After all retries failed, show error to user
+        const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+        setError(`Failed to load player data: ${errorMessage}. Please try again later.`);
       } finally {
         setLoading(false);
       }
     };
     
     fetchPlayersAndCategories();
-  }, []);
+  }, [tournamentId]);
+  
+  // Function to manually retry loading data
+  const handleRetryFetch = () => {
+    console.log('Manually retrying data fetch...');
+    setLoading(true);
+    setError(null);
+    
+    // Add a small delay before retrying
+    setTimeout(() => {
+      const timestamp = Date.now();
+      
+      // Fetch players and categories again
+      fetch(`/api/public/players?tournamentId=${tournamentId}&_t=${timestamp}`)
+        .then(response => {
+          if (!response.ok) {
+            return response.text().then(text => {
+              throw new Error(`Failed to fetch players: ${text}`);
+            });
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log(`Successfully fetched ${data.players?.length || 0} players`);
+          setPlayers(data.players || []);
+          
+          // Now fetch categories
+          return fetch(`/api/public/categories?tournamentId=${tournamentId}&_t=${timestamp}`);
+        })
+        .then(response => {
+          if (!response.ok) {
+            return response.text().then(text => {
+              throw new Error(`Failed to fetch categories: ${text}`);
+            });
+          }
+          return response.json();
+        })
+        .then(data => {
+          console.log(`Successfully fetched ${data.categories?.length || 0} categories`);
+          setCategories(data.categories || []);
+          setLoading(false);
+        })
+        .catch(err => {
+          console.error('Error in manual retry:', err);
+          setError(`Failed to load data: ${err.message}. Please try again later.`);
+          setLoading(false);
+        });
+    }, 500);
+  };
+  
+  // Function to run diagnostics
+  const handleRunDiagnostics = async () => {
+    try {
+      setLoading(true);
+      setError('Running diagnostics...');
+      
+      // Call the diagnostics endpoint
+      const response = await fetch('/api/diagnostics/supabase');
+      if (!response.ok) {
+        throw new Error('Failed to run diagnostics');
+      }
+      
+      const diagnosticData = await response.json();
+      console.log('Diagnostic results:', diagnosticData);
+      
+      // Format diagnostic results for display
+      const isHealthy = diagnosticData.supabaseConnection.isHealthy;
+      const schemaValid = diagnosticData.databaseSchema.isValid;
+      const envVarsPresent = Object.values(diagnosticData.environmentVariables).every(Boolean);
+      
+      let diagnosticMessage = '';
+      
+      if (!envVarsPresent) {
+        diagnosticMessage = 'Missing environment variables. Please check your .env file.';
+      } else if (!isHealthy) {
+        diagnosticMessage = `Database connection error: ${diagnosticData.supabaseConnection.message}`;
+      } else if (!schemaValid) {
+        diagnosticMessage = `Database schema issue: ${diagnosticData.databaseSchema.message}`;
+      } else {
+        diagnosticMessage = 'Diagnostics completed successfully. Database connection is healthy.';
+        // If diagnostics are successful, retry fetching data
+        handleRetryFetch();
+        return;
+      }
+      
+      setError(`${diagnosticMessage} Please contact support if the issue persists.`);
+    } catch (err) {
+      console.error('Error running diagnostics:', err);
+      setError(`Failed to run diagnostics: ${err instanceof Error ? err.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+    }
+  };
   
   // Filter players based on search and filter criteria
   const filteredPlayers = players.filter(player => {
@@ -192,28 +331,127 @@ export default function PlayersPage() {
   
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
+      {/* PBL League Banner */}
+      <Paper
+        elevation={0}
+        sx={{
+          mb: 4,
+          p: 2,
+          borderRadius: 2,
+          background: alpha(theme.palette.background.paper, 0.7),
+          backdropFilter: 'blur(10px)',
+          border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 2
+        }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+          <Box sx={{ position: 'relative', width: 60, height: 60 }}>
+            <Image
+              src="/pbel-volleyball-logo.png"
+              alt="PBL Volleyball Logo"
+              width={60}
+              height={60}
+              style={{ objectFit: 'contain' }}
+            />
+          </Box>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 600, lineHeight: 1.2 }}>
+              PBEL CIty VOLLEYBALL
+            </Typography>
+            <Typography variant="subtitle2" color="text.secondary">
+              AND THROWBALL LEAGUE 2025
+            </Typography>
+          </Box>
+        </Box>
+        
+        <Button
+          component={Link}
+          href="/sponsors"
+          variant="outlined"
+          color="primary"
+          size="small"
+          startIcon={<HandshakeIcon />}
+          sx={{ 
+            borderRadius: 2,
+            px: 2
+          }}
+        >
+          View Sponsors
+        </Button>
+      </Paper>
+      
       <Box sx={{ mb: 4, textAlign: 'center' }}>
-        <Typography variant="h3" component="h1" gutterBottom>
+        <Typography 
+          variant="h3" 
+          component="h1" 
+          gutterBottom
+          sx={{ 
+            fontWeight: 700,
+            background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
+            backgroundClip: 'text',
+            WebkitBackgroundClip: 'text',
+            color: 'transparent',
+            mb: 1
+          }}
+        >
           Volleyball Players
         </Typography>
-        <Typography variant="subtitle1" color="text.secondary">
+        <Typography 
+          variant="h6" 
+          color="text.secondary"
+          sx={{ 
+            maxWidth: '700px',
+            mx: 'auto',
+            mb: 2,
+            fontWeight: 400
+          }}
+        >
           Browse and discover the talented players participating in our tournaments
         </Typography>
+        <Divider sx={{ width: '100px', mx: 'auto', mb: 2, borderColor: theme.palette.primary.main }} />
       </Box>
       
       {error && (
-        <Alert severity="error" sx={{ mb: 4 }}>
+        <Alert 
+          severity="error" 
+          sx={{ mb: 4 }}
+          action={
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button 
+                color="inherit" 
+                size="small" 
+                onClick={handleRunDiagnostics}
+                disabled={loading}
+              >
+                Diagnose
+              </Button>
+              <Button 
+                color="inherit" 
+                size="small" 
+                onClick={handleRetryFetch}
+                disabled={loading}
+              >
+                Retry
+              </Button>
+            </Box>
+          }
+        >
           {error}
         </Alert>
       )}
       
       <Paper 
-        elevation={0} 
+        elevation={3} 
         sx={{ 
           p: 3, 
           mb: 4, 
           borderRadius: 2,
-          border: `1px solid ${theme.palette.divider}`,
+          background: alpha(theme.palette.background.paper, 0.8),
+          backdropFilter: 'blur(10px)',
+          boxShadow: `0 8px 32px 0 ${alpha(theme.palette.primary.main, 0.1)}`
         }}
       >
         <Box sx={{ mb: 3 }}>

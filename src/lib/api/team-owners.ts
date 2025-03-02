@@ -24,14 +24,23 @@ export interface TeamOwnerProfile {
   first_name: string
   last_name: string
   profile_image_url?: string
-  sports_background: string
-  notable_achievements: string[]
-  team_role: string
+  sports_background?: string
+  notable_achievements?: string[]
+  team_role?: string
   contact_email?: string
-  social_media: Record<string, string>
+  social_media?: {
+    linkedin?: string
+    twitter?: string
+    instagram?: string
+    website?: string
+  }
   bio: string
   created_at: string
   updated_at: string
+  profession?: string
+  sports_interests?: string
+  family_impact?: string
+  philosophy?: string
 }
 
 export async function getTeamOwnerProfile(userId: string): Promise<TeamOwnerProfile | null> {

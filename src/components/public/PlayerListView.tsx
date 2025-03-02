@@ -13,9 +13,13 @@ import {
   Button,
   Chip,
   Avatar,
-  Box
+  Box,
+  Tooltip
 } from '@mui/material';
-import { Person as PersonIcon } from '@mui/icons-material';
+import { 
+  Person as PersonIcon,
+  Height as HeightIcon
+} from '@mui/icons-material';
 import { PlayerProfileModal } from './PlayerProfileModal';
 import type { PlayerCardProps } from './PlayerCard';
 import { POSITIONS, SKILL_LEVELS } from '@/lib/constants';
@@ -68,6 +72,7 @@ export function PlayerListView({ players }: PlayerListViewProps) {
               <TableCell>Category</TableCell>
               <TableCell>Position</TableCell>
               <TableCell>Skill Level</TableCell>
+              <TableCell>Height</TableCell>
               <TableCell align="right">Points</TableCell>
               <TableCell align="center">Action</TableCell>
             </TableRow>
@@ -122,6 +127,12 @@ export function PlayerListView({ players }: PlayerListViewProps) {
                   </TableCell>
                   <TableCell>{positionDisplay}</TableCell>
                   <TableCell>{skillLevelDisplay}</TableCell>
+                  <TableCell>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <HeightIcon fontSize="small" color="action" />
+                      {player.height ? `${player.height} m` : 'N/A'}
+                    </Box>
+                  </TableCell>
                   <TableCell align="right">{formatPointsInCrores(player.base_price)}</TableCell>
                   <TableCell align="center">
                     <Button 
