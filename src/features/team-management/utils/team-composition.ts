@@ -1,13 +1,24 @@
 import type { TeamCompositionStatus, PlayerCategoryRequirement } from '@/types/team-management';
 import type { DatabaseTeam } from '@/features/team-management/types/database';
+import type { PlayerCategory } from '@/features/team-management/types/player';
 
-// Update the PlayerWithCategory type to include preference
-type PlayerWithCategory = DatabaseTeam['players'][0]['player'] & {
+// Update the PlayerWithCategory type to include preference and phone_number
+export interface PlayerWithCategory {
+    id: string;
+    name: string;
+    player_position: DatabaseTeam['players'][0]['player']['player_position'];
+    skill_level: DatabaseTeam['players'][0]['player']['skill_level'];
+    base_price: number;
+    profile_image_url: string | null;
+    phone_number?: string | null;  // Allow both undefined and null
+    status: DatabaseTeam['players'][0]['player']['status'];
+    category: PlayerCategory | null;
     preference?: {
         max_bid: number;
         notes?: string;
     };
-};
+    is_preferred?: boolean;
+}
 
 export interface TeamCompositionAnalysis {
     current_squad: TeamCompositionStatus;

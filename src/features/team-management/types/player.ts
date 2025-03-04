@@ -17,10 +17,11 @@ export interface Player {
     player_position: PlayerPosition;
     skill_level: SkillLevel;
     base_price: number;
-    profile_image_url?: string;
+    profile_image_url: string | null;
     status: PlayerStatus;
-    category?: PlayerCategory | null;
+    category: PlayerCategory | null;
     is_preferred?: boolean;
+    phone_number?: string | null;
 }
 
 export interface PlayerPreference {
