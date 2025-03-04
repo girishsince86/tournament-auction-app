@@ -70,7 +70,10 @@ const PUBLIC_ROUTES = [
   '/login', 
   '/signup', 
   '/auth/callback',
-  '/profile'
+  '/profile',
+  '/teams',
+  '/players',
+  '/team-owners'
 ]
 
 const ADMIN_ROUTES = [
@@ -85,7 +88,6 @@ const PROTECTED_ROUTES = [
   '/registration-summary',
   '/dashboard',
   '/admin',
-  '/teams',
   '/team-management',
   '/team-owner/profile',
   '/auction'
@@ -125,16 +127,6 @@ const isTeamOwner = (email?: string): boolean => {
 const canAccessTeamOwnerFeatures = (email?: string): boolean => {
   return isFullAdmin(email) || isTeamOwner(email);
 }
-
-// Define protected routes that require authentication
-const protectedRoutes = [
-  '/dashboard',
-  '/profile',
-  '/tournaments/register',
-  '/registration-summary',
-  '/admin',
-  '/auction',
-];
 
 // Define admin-only routes
 const adminRoutes = [
@@ -179,9 +171,10 @@ export async function middleware(request: NextRequest) {
     }
     
     // If the user is not authenticated and trying to access a protected route
+    const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route));
     const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname.startsWith(route));
     
-    if (!session && isProtectedRoute) {
+    if (!session && isProtectedRoute && !isPublicRoute) {
       // Redirect to login page with a return URL
       const redirectUrl = new URL(ROUTES.auth.login, request.url);
       redirectUrl.searchParams.set('returnUrl', pathname);
