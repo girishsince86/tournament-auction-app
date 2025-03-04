@@ -67,6 +67,7 @@ const isAuthPath = (path: string): boolean => {
 }
 
 const PUBLIC_ROUTES = [
+  '/',
   '/login', 
   '/signup', 
   '/auth/callback',
@@ -144,12 +145,13 @@ export async function middleware(request: NextRequest) {
   try {
     const { pathname } = request.nextUrl;
     
-    // Skip middleware for static files and API routes
+    // Skip middleware for static files, API routes, and public routes
     if (
       pathname.startsWith('/_next') ||
       pathname.startsWith('/static') ||
       pathname.includes('.') ||
-      pathname.startsWith('/api')
+      pathname.startsWith('/api') ||
+      PUBLIC_ROUTES.some(route => pathname === route) // Exact match for public routes
     ) {
       return NextResponse.next();
     }
@@ -171,14 +173,18 @@ export async function middleware(request: NextRequest) {
     }
     
     // If the user is not authenticated and trying to access a protected route
-    const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route));
-    const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname.startsWith(route));
+    const isPublicRoute = PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(`${route}/`));
     
-    if (!session && isProtectedRoute && !isPublicRoute) {
-      // Redirect to login page with a return URL
-      const redirectUrl = new URL(ROUTES.auth.login, request.url);
-      redirectUrl.searchParams.set('returnUrl', pathname);
-      return NextResponse.redirect(redirectUrl);
+    // Only check protected routes if it's not a public route
+    if (!isPublicRoute) {
+      const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname === route || pathname.startsWith(`${route}/`));
+      
+      if (!session && isProtectedRoute) {
+        // Redirect to login page with a return URL
+        const redirectUrl = new URL(ROUTES.auth.login, request.url);
+        redirectUrl.searchParams.set('returnUrl', pathname);
+        return NextResponse.redirect(redirectUrl);
+      }
     }
     
     // If the user is authenticated and trying to access an auth page
