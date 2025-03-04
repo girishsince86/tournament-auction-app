@@ -52,7 +52,7 @@ export function QueueManager({ tournamentId }: QueueManagerProps) {
         players: availablePlayers,
         isLoading: isPlayersLoading,
         error: playersError,
-        fetchPlayers
+        refetch: fetchPlayers
     } = useAvailablePlayers({ tournamentId });
 
     const { showToast } = useToast();
