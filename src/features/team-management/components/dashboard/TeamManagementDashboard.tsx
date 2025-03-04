@@ -38,6 +38,7 @@ import { DASHBOARD_TABS } from '../../constants';
 import type { PlayerWithPreference } from '../../types/player';
 import type { TeamData } from '../../types/team';
 import type { TeamBudgetDetails, TeamBudgetMetrics } from '../../types/budget';
+import type { PlayerWithCategory } from '../../utils/team-composition';
 
 interface TeamManagementDashboardProps {
     teamId: string;
@@ -85,6 +86,18 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
         budgetMetrics: rawBudgetMetrics,
         refreshTeamData 
     } = useTeamData(teamId);
+
+    // Add initial data logging
+    console.log('Raw team data received:', {
+        hasPlayers: Boolean(teamData?.players),
+        playerCount: teamData?.players?.length,
+        samplePlayer: teamData?.players?.[0] ? {
+            id: teamData.players[0].player.id,
+            name: teamData.players[0].player.name,
+            rawPhoneNumber: teamData.players[0].player.phone_number,
+            phoneNumberType: typeof teamData.players[0].player.phone_number
+        } : null
+    });
 
     // Convert null to undefined for type compatibility
     const budgetDetails = useMemo(() => {
@@ -137,23 +150,51 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
         });
         
         // Map current squad players to the correct format
-        const currentSquadPlayers = teamData.players.map(p => ({
-            id: p.player.id,
-            name: p.player.name,
-            player_position: p.player.player_position,
-            skill_level: p.player.skill_level,
-            base_price: p.player.base_price,
-            profile_image_url: p.player.profile_image_url,
-            status: p.player.status,
-            category: p.player.category ? {
-                category_type: p.player.category.category_type,
-                name: p.player.category.name,
-                base_points: p.player.category.base_points
-            } : null
-        }));
+        const currentSquadPlayers = teamData.players.map(p => {
+            // Enhanced debug logging for raw player data
+            console.log('Raw player data in mapping:', {
+                id: p.player.id,
+                name: p.player.name,
+                rawPhoneNumber: p.player.phone_number,
+                phoneNumberType: typeof p.player.phone_number,
+                fullPlayerData: JSON.stringify(p.player)
+            });
 
-        // Log current squad mapping
-        console.log('Mapped current squad players:', currentSquadPlayers);
+            const player: PlayerWithCategory = {
+                id: p.player.id,
+                name: p.player.name,
+                player_position: p.player.player_position,
+                skill_level: p.player.skill_level,
+                base_price: p.player.base_price,
+                profile_image_url: p.player.profile_image_url,
+                phone_number: p.player.phone_number,
+                status: p.player.status,
+                category: p.player.category || null
+            };
+
+            // Log the mapped player with detailed phone number info
+            console.log('Mapped player data:', {
+                id: player.id,
+                name: player.name,
+                mappedPhoneNumber: player.phone_number,
+                phoneNumberType: typeof player.phone_number,
+                isNull: player.phone_number === null,
+                isUndefined: player.phone_number === undefined
+            });
+
+            return player;
+        });
+
+        // Log the final mapped data
+        console.log('Final mapped current squad players:', currentSquadPlayers.map(p => ({
+            id: p.id,
+            name: p.name,
+            phoneNumber: p.phone_number,
+            phoneNumberType: typeof p.phone_number,
+            isNull: p.phone_number === null,
+            isUndefined: p.phone_number === undefined,
+            stringified: JSON.stringify(p.phone_number)
+        })));
 
         // Map preferred players to the correct format
         const allPreferredPlayers = (teamData.available_players || [])
@@ -189,24 +230,22 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                     } : undefined
                 });
                 
-                return {
+                const player: PlayerWithCategory = {
                     id: p.id,
                     name: p.name,
                     player_position: p.player_position,
                     skill_level: p.skill_level,
                     base_price: p.base_price,
-                    profile_image_url: p.profile_image_url || null,
+                    profile_image_url: p.profile_image_url,
+                    phone_number: p.phone_number,
                     status: p.status,
-                    category: p.category ? {
-                        category_type: p.category.category_type,
-                        name: p.category.name,
-                        base_points: p.category.base_points
-                    } : null,
+                    category: p.category || null, // Ensure category is never undefined
                     preference: preferenceData ? {
                         max_bid: preferenceData.max_bid,
                         notes: preferenceData.notes
                     } : undefined
                 };
+                return player;
             });
 
         console.log('Mapped preferred players not in squad:', {
@@ -229,6 +268,15 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
 
     // Map players for the current squad table and simulation
     const mappedSquadPlayers = useMemo(() => {
+        // Log raw team data first
+        console.log('Raw team data for squad mapping:', {
+            players: teamData?.players.map(p => ({
+                name: p.player.name,
+                rawPhone: p.player.phone_number,
+                fullPlayer: p.player
+            }))
+        });
+
         // Use a Map to deduplicate players by ID
         const playerMap = new Map();
         
@@ -237,24 +285,71 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
             // Skip if player data is missing
             if (!p.player || !p.player.id) return;
             
-            playerMap.set(p.player.id, {
+            // Log the raw phone number for debugging
+            console.log('Processing player for squad:', {
+                name: p.player.name,
+                rawPhone: p.player.phone_number,
+                phoneType: typeof p.player.phone_number,
+                playerData: JSON.stringify(p.player, null, 2)
+            });
+            
+            const mappedPlayer: PlayerWithCategory & { final_bid_points?: number; is_preferred: boolean } = {
                 id: p.player.id,
                 name: p.player.name,
                 player_position: p.player.player_position,
                 skill_level: p.player.skill_level,
                 base_price: p.player.base_price,
-                profile_image_url: p.player.profile_image_url || undefined,
+                profile_image_url: p.player.profile_image_url,
+                phone_number: p.player.phone_number || null,  // Ensure null if undefined
                 status: p.player.status,
-                category: p.player.category,
+                category: p.player.category || null,
                 is_preferred: false,
                 final_bid_points: p.final_points,
                 preference: undefined
+            };
+
+            // Log the mapped player for debugging
+            console.log('Mapped squad player:', {
+                name: mappedPlayer.name,
+                phone: mappedPlayer.phone_number,
+                phoneType: typeof mappedPlayer.phone_number
             });
+
+            playerMap.set(p.player.id, mappedPlayer);
         });
         
-        // Convert the Map values to an array
-        return Array.from(playerMap.values()) as (PlayerWithPreference & { final_bid_points?: number })[];
+        // Convert Map to array
+        const mappedPlayers = Array.from(playerMap.values());
+        
+        // Log the final mapped players for debugging
+        console.log('Final mapped squad players:', mappedPlayers.map(p => ({
+            name: p.name,
+            phone: p.phone_number,
+            phoneType: typeof p.phone_number
+        })));
+        
+        return mappedPlayers;
     }, [teamData?.players]);
+
+    // Filter available players to get preferred players
+    const preferredPlayers = useMemo(() => {
+        return (teamData?.available_players || [])
+            .filter(p => p.is_preferred)
+            .map(p => ({
+                ...p,
+                category: p.category || null // Ensure category is never undefined
+            })) as PlayerWithCategory[];
+    }, [teamData?.available_players]);
+
+    // Filter available players to get non-preferred players
+    const availablePlayers = useMemo(() => {
+        return (teamData?.available_players || [])
+            .filter(p => !p.is_preferred)
+            .map(p => ({
+                ...p,
+                category: p.category || null // Ensure category is never undefined
+            })) as PlayerWithCategory[];
+    }, [teamData?.available_players]);
 
     // Create a memoized default budget object
     const defaultBudget = useMemo<TeamBudgetDetails>(() => ({
@@ -324,14 +419,6 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
         );
     }
 
-    // First get preferred players
-    const preferredPlayers = (teamData?.available_players || []).filter((p) => p.is_preferred);
-    console.log(`TeamManagementDashboard - Found ${preferredPlayers.length} preferred players`);
-    
-    // Then get available players excluding already preferred ones
-    const availablePlayers = (teamData?.available_players || []).filter((p) => !p.is_preferred);
-    console.log(`TeamManagementDashboard - Found ${availablePlayers.length} non-preferred available players`);
-    
     // Apply filters and sorting only to non-preferred available players
     const filteredPlayers = sortPlayers(filterPlayers(availablePlayers));
 

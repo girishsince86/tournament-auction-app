@@ -31,6 +31,7 @@ export async function GET(
                 skill_level,
                 base_price,
                 profile_image_url,
+                phone_number,
                 category_id,
                 auction_rounds (
                     final_points,
@@ -87,6 +88,7 @@ export async function GET(
                 skill_level: player.skill_level,
                 base_price: player.base_price,
                 profile_image_url: player.profile_image_url,
+                phone_number: player.phone_number,
                 category: playerCategory ? {
                     id: playerCategory.id,
                     name: playerCategory.name,

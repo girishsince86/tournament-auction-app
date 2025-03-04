@@ -32,7 +32,7 @@ import {
     Tooltip
 } from '@mui/material';
 import InfoIcon from '@mui/icons-material/Info';
-import type { PlayerWithPreference } from '../../types/player';
+import type { PlayerWithCategory } from '../../utils/team-composition';
 import type { SimulationState, ValidationResult } from '../../hooks/useTeamSimulation';
 import type { PositionConfig, SkillLevelConfig as SkillConfig, CategoryConfig } from '../../constants/index';
 import type { FilterState } from '../../types/filter';
@@ -40,13 +40,16 @@ import { PlayerChip } from '../shared/PlayerChip';
 import { POSITIONS, SKILL_LEVELS, CATEGORY_LABELS } from '../../constants/index';
 import { FilterBar } from '../shared/FilterBar';
 import { useFiltersAndSort } from '../../hooks/useFiltersAndSort';
+import AddIcon from '@mui/icons-material/Add';
+import RemoveIcon from '@mui/icons-material/Remove';
+import { formatPointsInCrores } from '@/lib/utils/format';
 
 interface AddPreferredPlayerProps {
     open: boolean;
     onClose: () => void;
     onAdd: (selectedPlayers: { player_id: string; max_bid: number }[]) => Promise<void>;
     teamId: string;
-    availablePlayers: PlayerWithPreference[];
+    availablePlayers: PlayerWithCategory[];
 }
 
 export function AddPreferredPlayer({
@@ -56,13 +59,11 @@ export function AddPreferredPlayer({
     teamId,
     availablePlayers
 }: AddPreferredPlayerProps) {
-    const [selectedPlayers, setSelectedPlayers] = useState<Record<string, number>>({});
+    const [selectedPlayers, setSelectedPlayers] = useState<string[]>([]);
+    const [maxBids, setMaxBids] = useState<Record<string, number>>({});
     const [error, setError] = useState<string | null>(null);
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isAdding, setIsAdding] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState<string>('');
-
-    // Filter non-preferred players
-    const nonPreferredPlayers = availablePlayers.filter(player => !player.is_preferred);
 
     const {
         filterState,
@@ -85,7 +86,8 @@ export function AddPreferredPlayer({
     // Reset state when dialog closes
     useEffect(() => {
         if (!open) {
-            setSelectedPlayers({});
+            setSelectedPlayers([]);
+            setMaxBids({});
             setError(null);
             setSelectedCategory('');
             handleClearFilters();
@@ -93,10 +95,10 @@ export function AddPreferredPlayer({
     }, [open]);
 
     // Get unique categories from available players
-    const categories = Array.from(new Set(nonPreferredPlayers.map(player => player.category?.category_type))).filter(Boolean);
+    const categories = Array.from(new Set(availablePlayers.map(player => player.category?.category_type))).filter(Boolean);
 
     // Apply filters including category
-    const filteredPlayers = sortPlayers(filterPlayers(nonPreferredPlayers.filter(player => 
+    const filteredPlayers = sortPlayers(filterPlayers(availablePlayers.filter(player => 
         !selectedCategory || player.category?.category_type === selectedCategory
     )));
 
@@ -106,70 +108,92 @@ export function AddPreferredPlayer({
                 ...acc,
                 [player.id]: player.base_price
             }), {});
-            setSelectedPlayers(newSelected);
+            setMaxBids(newSelected);
+            setSelectedPlayers(Object.keys(newSelected));
         } else {
-            setSelectedPlayers({});
+            setMaxBids({});
+            setSelectedPlayers([]);
         }
     };
 
     const handleSelectPlayer = (playerId: string, basePrice: number) => {
-        setSelectedPlayers(prev => {
+        setMaxBids(prev => {
             if (prev[playerId] !== undefined) {
                 const { [playerId]: _, ...rest } = prev;
                 return rest;
             }
             return { ...prev, [playerId]: basePrice };
         });
+        setSelectedPlayers(prev => {
+            if (prev.includes(playerId)) {
+                return prev.filter(id => id !== playerId);
+            }
+            return [...prev, playerId];
+        });
     };
 
     const handleMaxBidChange = (playerId: string, value: number) => {
-        setSelectedPlayers(prev => ({
+        const player = availablePlayers.find(p => p.id === playerId);
+        if (!player) return;
+
+        // Round to nearest 10 lakhs
+        const roundedValue = Math.round(value / 1000000) * 1000000;
+        
+        if (roundedValue < player.base_price) {
+            setError(`Max bid must be at least ${formatPointsInCrores(player.base_price)} points`);
+            return;
+        }
+
+        setMaxBids(prev => ({
             ...prev,
-            [playerId]: value
+            [playerId]: roundedValue
         }));
+        setError(null);
     };
 
-    const handleSubmit = async () => {
+    const handleAdd = async () => {
         try {
+            setIsAdding(true);
             setError(null);
-            setIsSubmitting(true);
-            
-            if (Object.keys(selectedPlayers).length === 0) {
-                setError('Please select at least one player');
-                setIsSubmitting(false);
-                return;
-            }
-            
-            const selectedPlayersList = Object.entries(selectedPlayers).map(([playerId, maxBid]) => ({
+
+            const selectedPlayersData = selectedPlayers.map(playerId => ({
                 player_id: playerId,
-                max_bid: maxBid
+                max_bid: maxBids[playerId]
             }));
-            
-            await onAdd(selectedPlayersList);
+
+            await onAdd(selectedPlayersData);
+            setSelectedPlayers([]);
+            setMaxBids({});
             onClose();
         } catch (error) {
-            console.error('Error in handleSubmit:', error);
-            setError(error instanceof Error ? error.message : 'Failed to add players');
+            setError(error instanceof Error ? error.message : 'Failed to add selected players');
         } finally {
-            setIsSubmitting(false);
+            setIsAdding(false);
         }
     };
 
-    const getPositionConfig = (position: string) => 
-        POSITIONS.find(p => p.value === position) || POSITIONS[0];
+    const handleClose = () => {
+        setSelectedPlayers([]);
+        setMaxBids({});
+        setError(null);
+        onClose();
+    };
 
-    const getSkillConfig = (skill: string) => 
-        SKILL_LEVELS.find(s => s.value === skill) || SKILL_LEVELS[0];
+    const getPositionConfig = (position: string): PositionConfig => 
+        POSITIONS.find((p: PositionConfig) => p.value === position) || POSITIONS[0];
+
+    const getSkillConfig = (skill: string): SkillConfig => 
+        SKILL_LEVELS.find((s: SkillConfig) => s.value === skill) || SKILL_LEVELS[0];
 
     const getCategoryConfig = (category?: string) =>
         CATEGORY_LABELS.find(c => c.value === category) || CATEGORY_LABELS[0];
 
-    const numSelected = Object.keys(selectedPlayers).length;
+    const numSelected = selectedPlayers.length;
 
     return (
         <Dialog
             open={open}
-            onClose={onClose}
+            onClose={handleClose}
             maxWidth="lg"
             fullWidth
         >
@@ -214,9 +238,9 @@ export function AddPreferredPlayer({
                             </TableHead>
                             <TableBody>
                                 {filteredPlayers.map((player) => {
-                                    const isSelected = selectedPlayers[player.id] !== undefined;
+                                    const isSelected = selectedPlayers.includes(player.id);
                                     const basePrice = player.base_price;
-                                    const maxBid = selectedPlayers[player.id] || basePrice;
+                                    const maxBid = maxBids[player.id] || basePrice;
 
                                     return (
                                         <TableRow
@@ -285,11 +309,7 @@ export function AddPreferredPlayer({
                                                         value={maxBid}
                                                         onChange={(e) => {
                                                             const value = parseInt(e.target.value);
-                                                            // Round to nearest 10 lakhs
-                                                            const roundedValue = Math.round(value / 1000000) * 1000000;
-                                                            if (roundedValue >= basePrice) {
-                                                                handleMaxBidChange(player.id, roundedValue);
-                                                            }
+                                                            handleMaxBidChange(player.id, value);
                                                         }}
                                                         disabled={!isSelected}
                                                         InputProps={{
@@ -320,7 +340,7 @@ export function AddPreferredPlayer({
                                     <TableRow>
                                         <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                                             <Typography variant="body2" color="text.secondary">
-                                                {nonPreferredPlayers.length === 0 
+                                                {availablePlayers.length === 0 
                                                     ? "No available players found" 
                                                     : "No players match the current filters"}
                                             </Typography>
@@ -333,21 +353,13 @@ export function AddPreferredPlayer({
                 </Stack>
             </DialogContent>
             <DialogActions>
-                <Button onClick={onClose}>Cancel</Button>
+                <Button onClick={handleClose} disabled={isAdding}>Cancel</Button>
                 <Button 
-                    onClick={handleSubmit} 
-                    variant="contained" 
-                    color="primary"
-                    disabled={Object.keys(selectedPlayers).length === 0 || isSubmitting}
+                    onClick={handleAdd}
+                    variant="contained"
+                    disabled={selectedPlayers.length === 0 || isAdding}
                 >
-                    {isSubmitting ? (
-                        <>
-                            <CircularProgress size={20} color="inherit" sx={{ mr: 1 }} />
-                            Adding...
-                        </>
-                    ) : (
-                        `Add ${Object.keys(selectedPlayers).length} Selected Player${Object.keys(selectedPlayers).length !== 1 ? 's' : ''}`
-                    )}
+                    {isAdding ? 'Adding...' : `Add ${selectedPlayers.length} Player${selectedPlayers.length !== 1 ? 's' : ''}`}
                 </Button>
             </DialogActions>
         </Dialog>

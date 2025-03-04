@@ -13,18 +13,25 @@ import {
     CircularProgress,
     Chip
 } from '@mui/material';
-import type { PlayerWithPreference } from '../../types/player';
+import type { PlayerWithCategory } from '../../utils/team-composition';
 import type { PositionConfig, SkillLevelConfig as SkillConfig, CategoryConfig } from '../../constants/index';
 import { PlayerChip } from '../shared/PlayerChip';
 import { POSITIONS, SKILL_LEVELS, CATEGORY_LABELS } from '../../constants/index';
 import { formatPointsInCrores } from '@/lib/utils/format';
 
 interface CurrentSquadTableProps {
-    players?: (PlayerWithPreference & { final_bid_points?: number })[];
+    players?: (PlayerWithCategory & { final_bid_points?: number })[];
     isLoading?: boolean;
 }
 
 export function CurrentSquadTable({ players = [], isLoading }: CurrentSquadTableProps) {
+    // Add debug logging for incoming players
+    console.log('CurrentSquadTable received players:', players.map(p => ({
+        name: p.name,
+        phoneNumber: p.phone_number,
+        rawPhoneNumber: JSON.stringify(p.phone_number)
+    })));
+
     if (isLoading) {
         return (
             <Paper sx={{ p: 3 }}>
@@ -47,6 +54,7 @@ export function CurrentSquadTable({ players = [], isLoading }: CurrentSquadTable
                 <TableHead>
                     <TableRow>
                         <TableCell>Player</TableCell>
+                        <TableCell>Phone Number</TableCell>
                         <TableCell>Position</TableCell>
                         <TableCell>Skill Level</TableCell>
                         <TableCell>Category</TableCell>
@@ -68,6 +76,19 @@ export function CurrentSquadTable({ players = [], isLoading }: CurrentSquadTable
                                     )}
                                     <Typography>{player.name}</Typography>
                                 </Stack>
+                            </TableCell>
+                            <TableCell>
+                                <Typography 
+                                    variant="body2" 
+                                    sx={{ 
+                                        fontFamily: 'monospace',
+                                        whiteSpace: 'nowrap',
+                                        color: theme => player.phone_number ? theme.palette.text.primary : theme.palette.text.secondary,
+                                        letterSpacing: '0.5px'
+                                    }}
+                                >
+                                    {player.phone_number ? player.phone_number.replace(/(\d{3})(\d{3})(\d{4})/, '$1-$2-$3') : 'No phone number'}
+                                </Typography>
                             </TableCell>
                             <TableCell>
                                 <PlayerChip
@@ -105,7 +126,7 @@ export function CurrentSquadTable({ players = [], isLoading }: CurrentSquadTable
                     ))}
                     {(!Array.isArray(players) || players.length === 0) && (
                         <TableRow>
-                            <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
+                            <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
                                 <Typography variant="body2" color="text.secondary">
                                     No players in current squad
                                 </Typography>

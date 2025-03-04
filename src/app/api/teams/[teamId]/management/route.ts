@@ -115,6 +115,7 @@ export async function GET(request: NextRequest, { params }: { params: { teamId: 
             skill_level,
             base_price,
             profile_image_url,
+            phone_number,
             category:player_categories (*)
           )
         )

@@ -10,12 +10,12 @@ import {
     Alert,
     InputAdornment
 } from '@mui/material';
-import type { PlayerWithPreference } from '../../types/player';
+import type { PlayerWithCategory } from '../../utils/team-composition';
 import { formatPointsInCrores } from '@/lib/utils/format';
 
 interface EditPreferenceDialogProps {
     open: boolean;
-    player: PlayerWithPreference | null;
+    player: PlayerWithCategory | null;
     onClose: () => void;
     onSave: (playerId: string, maxBid: number, notes?: string) => Promise<void>;
 }

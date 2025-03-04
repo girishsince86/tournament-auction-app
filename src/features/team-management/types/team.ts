@@ -41,6 +41,7 @@ export interface TeamData {
             skill_level: SkillLevel;
             base_price: number;
             profile_image_url: string | null;
+            phone_number?: string;
             status: PlayerStatus;
             category: {
                 category_type: CategoryType;
