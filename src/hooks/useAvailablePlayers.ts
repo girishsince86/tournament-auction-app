@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { PlayerProfile } from '@/types/auction';
 import { useRouter } from 'next/navigation';
+import { fetchWithAuth } from '@/lib/utils/api-client';
 
 interface UseAvailablePlayersProps {
     tournamentId: string;
@@ -21,30 +22,13 @@ export function useAvailablePlayers({ tournamentId }: UseAvailablePlayersProps) 
         }
 
         try {
-            console.log('Fetching available players for tournament:', tournamentId);
+            console.log('[useAvailablePlayers] Fetching available players for tournament:', tournamentId);
             setIsLoading(true);
             setError(null);
 
-            const response = await fetch(`/api/auction/players/available?tournamentId=${tournamentId}`);
-            console.log('Response status:', response.status);
+            const data = await fetchWithAuth<{ players: PlayerProfile[] }>(`/api/auction/players/available?tournamentId=${tournamentId}`);
             
-            // Handle authentication errors
-            if (response.status === 401) {
-                console.error('Authentication error: User not authenticated');
-                setError('You are not authenticated. Please log in again.');
-                // Redirect to login page
-                router.push('/login');
-                return;
-            }
-            
-            const data = await response.json();
-            
-            if (!response.ok) {
-                console.error('API Error:', data);
-                throw new Error(data.error || 'Failed to fetch available players');
-            }
-
-            console.log('Received players data:', data);
+            console.log('[useAvailablePlayers] Received players data:', data);
             
             // DEBUG: Log status counts in received data
             if (data.players && data.players.length > 0) {
@@ -64,28 +48,33 @@ export function useAvailablePlayers({ tournamentId }: UseAvailablePlayersProps) 
                     console.log('[useAvailablePlayers] UNALLOCATED player names:', 
                         unallocatedPlayers.map((p: PlayerProfile) => p.name));
                 }
+            } else {
+                console.warn('[useAvailablePlayers] No players returned from API or empty array');
             }
             
+            // Ensure we always set an array, even if the API returns null or undefined
             setPlayers(data.players || []);
         } catch (err) {
-            console.error('Error in useAvailablePlayers:', err);
-            setError(err instanceof Error ? err.message : 'Failed to fetch available players');
-            setPlayers([]);
+            console.error('[useAvailablePlayers] Error fetching players:', err);
+            setError(err instanceof Error ? err.message : 'Failed to fetch players');
+            
+            // If we get a 401 error, redirect to login
+            if (err instanceof Error && err.message.includes('401')) {
+                router.push('/login');
+            }
         } finally {
             setIsLoading(false);
         }
     }, [tournamentId, router]);
 
-    // Automatically fetch players when the hook is mounted or tournamentId changes
     useEffect(() => {
-        console.log('useAvailablePlayers effect triggered with tournamentId:', tournamentId);
         fetchPlayers();
-    }, [fetchPlayers, tournamentId]);
+    }, [fetchPlayers]);
 
     return {
         players,
         isLoading,
         error,
-        fetchPlayers
+        refetch: fetchPlayers
     };
 } 

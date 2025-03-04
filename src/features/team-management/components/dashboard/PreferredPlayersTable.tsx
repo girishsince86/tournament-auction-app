@@ -18,7 +18,7 @@ import {
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
 import AddIcon from '@mui/icons-material/Add';
-import type { PlayerWithPreference } from '../../types/player';
+import type { PlayerWithCategory } from '../../utils/team-composition';
 import type { PositionConfig, SkillLevelConfig as SkillConfig, CategoryConfig } from '../../constants/index';
 import { PlayerChip } from '../shared/PlayerChip';
 import { POSITIONS, SKILL_LEVELS, CATEGORY_LABELS } from '../../constants/index';
@@ -26,8 +26,8 @@ import { ConfirmationDialog } from '../dialogs/ConfirmationDialog';
 import { formatPointsInCrores } from '@/lib/utils/format';
 
 interface PreferredPlayersTableProps {
-    players: PlayerWithPreference[];
-    onEdit: (player: PlayerWithPreference) => void;
+    players: PlayerWithCategory[];
+    onEdit: (player: PlayerWithCategory) => void;
     onDeleteClick: (playerId: string, playerName: string) => void;
     deleteConfirmation: {
         open: boolean;
@@ -84,6 +84,7 @@ export function PreferredPlayersTable({
                     <TableHead>
                         <TableRow>
                             <TableCell>Player</TableCell>
+                            <TableCell>Phone Number</TableCell>
                             <TableCell>Position</TableCell>
                             <TableCell>Skill Level</TableCell>
                             <TableCell>Category</TableCell>
@@ -107,6 +108,11 @@ export function PreferredPlayersTable({
                                         )}
                                         <Typography>{player.name}</Typography>
                                     </Stack>
+                                </TableCell>
+                                <TableCell>
+                                    <Typography variant="body2" sx={{ fontFamily: 'monospace' }}>
+                                        {player.phone_number || '-'}
+                                    </Typography>
                                 </TableCell>
                                 <TableCell>
                                     <PlayerChip
@@ -179,7 +185,7 @@ export function PreferredPlayersTable({
                         ))}
                         {players.length === 0 && (
                             <TableRow>
-                                <TableCell colSpan={7} align="center" sx={{ py: 4 }}>
+                                <TableCell colSpan={9} align="center" sx={{ py: 4 }}>
                                     <Typography variant="body2" color="text.secondary">
                                         No preferred players added
                                     </Typography>

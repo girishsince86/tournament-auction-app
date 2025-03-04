@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import { motion } from 'framer-motion'
+import { PublicNavigation } from '@/components/public/PublicNavigation'
 
 export default function PublicLayout({
   children,
@@ -160,6 +161,51 @@ export default function PublicLayout({
                   }}
                 >
                   {isMobile ? <PersonIcon fontSize="small" /> : "Players"}
+                </Button>
+                
+                <Button 
+                  component={Link} 
+                  href="/teams"
+                  color="inherit"
+                  startIcon={!isMobile && <GroupsIcon />}
+                  sx={{ 
+                    fontWeight: pathname === '/teams' ? 'bold' : 'normal',
+                    borderBottom: pathname === '/teams' ? '3px solid white' : 'none',
+                    borderRadius: pathname === '/teams' ? '0' : '20px',
+                    mx: { xs: 0.5, sm: 1 },
+                    px: { xs: 1, sm: 2 },
+                    py: 0.8,
+                    transition: 'all 0.3s ease',
+                    position: 'relative',
+                    overflow: 'hidden',
+                    '&:hover': {
+                      backgroundColor: alpha(theme.palette.common.white, 0.1),
+                      transform: 'translateY(-2px)'
+                    },
+                    '&::after': pathname === '/teams' ? {
+                      content: '""',
+                      position: 'absolute',
+                      bottom: 0,
+                      left: 0,
+                      width: '100%',
+                      height: '3px',
+                      background: `linear-gradient(90deg, ${theme.palette.secondary.main}, ${theme.palette.primary.light})`,
+                      animation: 'shimmer 2s infinite',
+                      '@keyframes shimmer': {
+                        '0%': {
+                          backgroundPosition: '0% 50%',
+                        },
+                        '50%': {
+                          backgroundPosition: '100% 50%',
+                        },
+                        '100%': {
+                          backgroundPosition: '0% 50%',
+                        },
+                      },
+                    } : {}
+                  }}
+                >
+                  {isMobile ? <GroupsIcon fontSize="small" /> : "Teams"}
                 </Button>
                 
                 <Button 

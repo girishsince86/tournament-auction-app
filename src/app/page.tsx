@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
+import { ErrorBoundary } from 'next/dist/client/components/error-boundary'
 
 export default function HomePage() {
   return (
@@ -142,28 +144,52 @@ export default function HomePage() {
         </div>
 
         {/* Environment Info */}
-        <div className="mt-8 bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Environment Information</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <p className="text-gray-600">
-                <span className="font-medium">Node Version:</span> {process.version}
-              </p>
-              <p className="text-gray-600">
-                <span className="font-medium">Next.js Version:</span> 14.2.23
-              </p>
-            </div>
-            <div>
-              <p className="text-gray-600">
-                <span className="font-medium">Environment:</span> {process.env.NODE_ENV}
-              </p>
-              <p className="text-gray-600">
-                <span className="font-medium">API URL:</span> {process.env.NEXT_PUBLIC_SUPABASE_URL}
-              </p>
-            </div>
+        <ErrorBoundary errorComponent={({ error }) => (
+          <div className="mt-8 bg-red-50 rounded-lg shadow p-6">
+            <h2 className="text-xl font-semibold text-red-700 mb-4">Environment Information Error</h2>
+            <p className="text-red-600">There was an error loading environment information.</p>
           </div>
-        </div>
+        )}>
+          <Suspense fallback={
+            <div className="mt-8 bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Environment Information</h2>
+              <p className="text-gray-600">Loading environment information...</p>
+            </div>
+          }>
+            <EnvironmentInfo />
+          </Suspense>
+        </ErrorBoundary>
       </div>
     </div>
   )
+}
+
+function EnvironmentInfo() {
+  // Safely get environment variables with fallbacks
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  const apiUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'Not configured';
+  
+  return (
+    <div className="mt-8 bg-white rounded-lg shadow p-6">
+      <h2 className="text-xl font-semibold text-gray-900 mb-4">Environment Information</h2>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <p className="text-gray-600">
+            <span className="font-medium">Node Version:</span> {process.version || 'Unknown'}
+          </p>
+          <p className="text-gray-600">
+            <span className="font-medium">Next.js Version:</span> 14.2.23
+          </p>
+        </div>
+        <div>
+          <p className="text-gray-600">
+            <span className="font-medium">Environment:</span> {nodeEnv}
+          </p>
+          <p className="text-gray-600">
+            <span className="font-medium">API URL:</span> {apiUrl}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
 } 

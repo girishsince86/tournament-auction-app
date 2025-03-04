@@ -32,6 +32,35 @@ export async function GET(request: NextRequest) {
     // Find the current (active) tournament
     const currentTournament = tournaments?.find(t => t.is_active);
 
+    // If no tournaments found, return mock data for development
+    if (!tournaments || tournaments.length === 0) {
+      console.log('API /public/tournaments - No tournaments found, returning mock data');
+      
+      const mockTournaments = [
+        {
+          id: "11111111-1111-1111-1111-111111111111",
+          name: "PCVC Volley Ball and Throwball League 2025",
+          description: "Annual PCVC volleyball and throwball tournament",
+          start_date: "2025-01-01",
+          end_date: "2025-02-28",
+          registration_deadline: "2024-12-15",
+          max_teams: 8,
+          max_players_per_team: 12,
+          min_players_per_team: 6,
+          team_points_budget: 1000,
+          is_active: true,
+          created_at: "2025-02-20 11:33:18.71794+00",
+          updated_at: "2025-02-26 01:43:17.049264+00",
+          team_budget: 1000000000
+        }
+      ];
+      
+      return NextResponse.json({
+        tournaments: mockTournaments,
+        currentTournament: mockTournaments[0]
+      });
+    }
+
     // Return in the same format as the authenticated API
     return NextResponse.json({
       tournaments,

@@ -1,16 +1,18 @@
 import { NextResponse } from 'next/server';
 import { createRouteHandlerClient } from '@supabase/auth-helpers-nextjs';
 import { cookies } from 'next/headers';
+import { handleApiError, handleAuthError, handleValidationError, handleNotFoundError } from '@/lib/api-utils';
 
 export async function POST(request: Request) {
     try {
         const supabase = createRouteHandlerClient({ cookies });
+        const path = '/api/auction/undo-bid';
         
         // Check authentication
         const { data: { session }, error: authError } = await supabase.auth.getSession();
         if (authError || !session) {
             console.error('Authentication error:', authError);
-            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+            return handleAuthError(authError?.message || 'Unauthorized', path);
         }
         
         const body = await request.json();
@@ -18,10 +20,7 @@ export async function POST(request: Request) {
 
         // Validate required fields
         if (!playerId) {
-            return NextResponse.json(
-                { error: 'Missing player ID' },
-                { status: 400 }
-            );
+            return handleValidationError({ playerId: 'Player ID is required' }, path);
         }
 
         // Get player details to find their team
@@ -33,17 +32,11 @@ export async function POST(request: Request) {
 
         if (playerFetchError || !player) {
             console.error('Error fetching player:', playerFetchError);
-            return NextResponse.json(
-                { error: 'Player not found' },
-                { status: 404 }
-            );
+            return handleNotFoundError('player', path);
         }
 
         if (!player.current_team_id) {
-            return NextResponse.json(
-                { error: 'Player is not allocated to any team' },
-                { status: 400 }
-            );
+            return handleValidationError({ player: 'Player is not allocated to any team' }, path);
         }
 
         const teamId = player.current_team_id;
@@ -61,10 +54,7 @@ export async function POST(request: Request) {
 
         if (roundError) {
             console.error('Error fetching auction round:', roundError);
-            return NextResponse.json(
-                { error: 'Failed to find auction record' },
-                { status: 500 }
-            );
+            return handleApiError(roundError, path);
         }
 
         // Get team details
@@ -76,61 +66,71 @@ export async function POST(request: Request) {
 
         if (teamFetchError || !team) {
             console.error('Error fetching team:', teamFetchError);
-            return NextResponse.json(
-                { error: 'Team not found' },
-                { status: 404 }
-            );
+            return handleNotFoundError('team', path);
         }
 
-        // Update player to remove team allocation
-        const { error: playerUpdateError } = await supabase
-            .from('players')
-            .update({
-                current_team_id: null,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', playerId);
+        try {
+            // Update player to remove team allocation
+            const { error: playerUpdateError } = await supabase
+                .from('players')
+                .update({
+                    current_team_id: null,
+                    status: 'AVAILABLE',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', playerId);
 
-        if (playerUpdateError) {
-            console.error('Error updating player:', playerUpdateError);
-            return NextResponse.json(
-                { error: 'Failed to update player' },
-                { status: 500 }
-            );
+            if (playerUpdateError) {
+                console.error('Error updating player:', playerUpdateError);
+                return handleApiError(playerUpdateError, path);
+            }
+        } catch (playerUpdateErr) {
+            console.error('Exception updating player:', playerUpdateErr);
+            return handleApiError(playerUpdateErr, path);
         }
 
-        // Update team's remaining points and player count
-        const { error: teamUpdateError } = await supabase
-            .from('teams')
-            .update({
-                remaining_points: team.remaining_points + auctionRound.final_points,
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', teamId);
+        try {
+            // Determine which field to update (remaining_points or remaining_budget)
+            const pointsToRestore = auctionRound.final_points || 0;
+            const updateField = team.remaining_points !== undefined && team.remaining_points !== null
+                ? { remaining_points: team.remaining_points + pointsToRestore }
+                : { remaining_budget: team.remaining_budget + pointsToRestore };
+                
+            // Update team's remaining points and player count
+            const { error: teamUpdateError } = await supabase
+                .from('teams')
+                .update({
+                    ...updateField,
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', teamId);
 
-        if (teamUpdateError) {
-            console.error('Error updating team:', teamUpdateError);
-            return NextResponse.json(
-                { error: 'Failed to update team' },
-                { status: 500 }
-            );
+            if (teamUpdateError) {
+                console.error('Error updating team:', teamUpdateError);
+                return handleApiError(teamUpdateError, path);
+            }
+        } catch (teamUpdateErr) {
+            console.error('Exception updating team:', teamUpdateErr);
+            return handleApiError(teamUpdateErr, path);
         }
 
-        // Update auction round status
-        const { error: roundUpdateError } = await supabase
-            .from('auction_rounds')
-            .update({
-                status: 'UNDONE',
-                updated_at: new Date().toISOString()
-            })
-            .eq('id', auctionRound.id);
+        try {
+            // Update auction round status
+            const { error: roundUpdateError } = await supabase
+                .from('auction_rounds')
+                .update({
+                    status: 'UNDONE',
+                    updated_at: new Date().toISOString()
+                })
+                .eq('id', auctionRound.id);
 
-        if (roundUpdateError) {
-            console.error('Error updating auction round:', roundUpdateError);
-            return NextResponse.json(
-                { error: 'Failed to update auction round' },
-                { status: 500 }
-            );
+            if (roundUpdateError) {
+                console.error('Error updating auction round:', roundUpdateError);
+                return handleApiError(roundUpdateError, path);
+            }
+        } catch (roundUpdateErr) {
+            console.error('Exception updating auction round:', roundUpdateErr);
+            return handleApiError(roundUpdateErr, path);
         }
 
         return NextResponse.json({ 
@@ -142,9 +142,6 @@ export async function POST(request: Request) {
         });
     } catch (err) {
         console.error('Undo bid API error:', err);
-        return NextResponse.json(
-            { error: 'Internal server error' },
-            { status: 500 }
-        );
+        return handleApiError(err, '/api/auction/undo-bid');
     }
 } 

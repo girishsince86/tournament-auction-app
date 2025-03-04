@@ -116,6 +116,7 @@ export function useTeamData(teamId: string): UseTeamDataReturn {
                     skill_level: player.skill_level,
                     base_price: player.base_price,
                     profile_image_url: player.profile_image_url || null,
+                    phone_number: player.phone_number,
                     status: 'ALLOCATED',
                     category: player.category
                 }

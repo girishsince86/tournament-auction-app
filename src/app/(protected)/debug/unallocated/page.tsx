@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Box, Typography, Paper, Button, CircularProgress, Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Chip } from '@mui/material';
+import { fetchWithAuth } from '@/lib/utils/api-client';
 
 interface DebugData {
     totalPlayers: number;
@@ -19,6 +20,15 @@ interface DebugData {
         unallocatedInResponse: Array<any>;
         unallocatedCount: number;
     };
+}
+
+// Add type definitions for API responses
+interface AvailablePlayersResponse {
+    players: Array<{
+        id: string;
+        name: string;
+        status: string;
+    }>;
 }
 
 export default function UnallocatedDebugPage() {
@@ -67,16 +77,10 @@ export default function UnallocatedDebugPage() {
             setError(null);
             
             // Call the regular available players endpoint
-            const response = await fetch(`/api/auction/players/available?tournamentId=${tournamentId}`);
-            
-            if (!response.ok) {
-                throw new Error(`API error: ${response.status}`);
-            }
-            
-            const result = await response.json();
+            const result = await fetchWithAuth<AvailablePlayersResponse>(`/api/auction/players/available?tournamentId=${tournamentId}`);
             
             // Check if any UNALLOCATED players are in the response
-            const unallocatedPlayers = result.players.filter((p: any) => p.status === 'UNALLOCATED');
+            const unallocatedPlayers = result.players.filter(p => p.status === 'UNALLOCATED');
             
             setData(prev => ({
                 ...prev as DebugData,

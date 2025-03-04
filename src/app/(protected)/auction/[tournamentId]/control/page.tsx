@@ -88,6 +88,8 @@ import { useToast, ToastProvider } from '@/components/providers/toast-provider';
 import InfoIcon from '@mui/icons-material/Info';
 import UndoIcon from '@mui/icons-material/Undo';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import { fetchWithAuth } from '@/lib/utils/api-client';
+import BugReportIcon from '@mui/icons-material/BugReport';
 
 interface AuctionControlProps {
     params: {
@@ -314,6 +316,50 @@ const getTeamRemainingBalance = (team: any): number => {
            team.remaining_budget !== undefined ? team.remaining_budget : 0;
 };
 
+// Add type definitions for API responses
+interface BidResponse {
+    player: {
+        id: string;
+        name: string;
+    };
+    team: {
+        id: string;
+        name: string;
+    };
+    amount: number;
+}
+
+interface UndoBidResponse {
+    player: {
+        id: string;
+        name: string;
+    };
+    team: {
+        id: string;
+        name: string;
+    };
+    points_restored: number;
+}
+
+interface MarkUnallocatedResponse {
+    message: string;
+    player: {
+        id: string;
+        name: string;
+    };
+}
+
+interface CategoriesResponse {
+    categories: Array<{
+        id: string;
+        name: string;
+    }>;
+}
+
+interface ClearQueueResponse {
+    message: string;
+}
+
 function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
     // State management
     const [finalBid, setFinalBid] = useState<number>(0);
@@ -361,7 +407,7 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
         players: availablePlayers,
         isLoading: playersLoading,
         error: playersError,
-        fetchPlayers
+        refetch: fetchPlayers
     } = useAvailablePlayers({ tournamentId });
 
     const { showToast } = useToast();
@@ -426,7 +472,7 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                 amount: bidAmountInPoints
             });
             
-            const response = await fetch('/api/auction/bid', {
+            const data = await fetchWithAuth<BidResponse>('/api/auction/bid', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -435,44 +481,13 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                     tournamentId,
                     playerId: currentPlayer.id,
                     teamId: selectedTeam,
-                    amount: bidAmountInPoints, // Send the converted amount
+                    amount: bidAmountInPoints,
                 }),
             });
 
-            // Handle authentication errors
-            if (response.status === 401) {
-                console.error('Authentication error: User not authenticated');
-                setError('You are not authenticated. Please log in again.');
-                // Redirect to login page after a short delay
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 2000);
-                return;
-            }
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                console.error('Bid recording error:', data);
-                
-                // Handle specific error cases
-                if (data.error?.includes('null value in column')) {
-                    setError('Database constraint error. Please check that all required fields have values.');
-                } else if (data.error === 'Insufficient points') {
-                    setError('The team does not have enough points for this bid.');
-                } else if (data.error === 'Team has reached maximum player limit') {
-                    setError('The team has reached its maximum player limit.');
-                } else {
-                    setError(data.error || 'Failed to record bid. Please try again.');
-                }
-                return;
-            }
-
-            console.log('Bid recorded successfully:', data);
-            
             // Show success message
             showToast({
-                message: `${currentPlayer.name} has been successfully allocated to ${teams.find(t => t.id === selectedTeam)?.name} for ${finalBid} Cr`,
+                message: `${currentPlayer.name} has been allocated to ${teams.find(t => t.id === selectedTeam)?.name}`,
                 type: 'success'
             });
             
@@ -483,14 +498,14 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                 await fetchQueue(); // Refresh queue
             }
 
-            // Refresh teams data to update remaining points
+            // Refresh teams data
             await fetchTeams();
 
-            // Reset form after successful recording
+            // Reset form after successful operation
+            setError('');
+            setCurrentPlayer(null);
             setFinalBid(0);
             setSelectedTeam('');
-            setError('');
-            setCurrentPlayer(null); // Clear current player
         } catch (error) {
             console.error('Error recording bid:', error);
             setError('Failed to record bid. Please check your connection and try again.');
@@ -499,53 +514,54 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
         }
     };
 
-    const handleUndoBid = async (playerId: string) => {
+    const handleUndoBid = async () => {
+        if (!currentPlayer) {
+            setError('No player selected');
+            return;
+        }
+
         try {
-            const response = await fetch('/api/auction/undo-bid', {
+            setError(''); // Clear any previous errors
+            setIsSubmitting(true); // Add loading state
+            
+            console.log('Undoing bid for player:', currentPlayer.id);
+            
+            const data = await fetchWithAuth<UndoBidResponse>('/api/auction/undo-bid', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    playerId,
+                    playerId: currentPlayer.id,
                 }),
             });
 
-            // Handle authentication errors
-            if (response.status === 401) {
-                console.error('Authentication error: User not authenticated');
-                setError('You are not authenticated. Please log in again.');
-                // Redirect to login page after a short delay
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 2000);
-                return;
-            }
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                setError(data.error || 'Failed to undo player allocation');
-                return;
-            }
-
             // Show success message
             showToast({
-                message: `${data.player} has been removed from ${data.team}. ${formatPointsInCrores(data.points_restored)} points restored.`,
+                message: `Bid undone for ${currentPlayer.name}`,
                 type: 'success'
             });
-
-            // Refresh data
-            await fetchQueue();
-            await fetchPlayers();
             
-            // Clear current player if it's the one we just undid
-            if (currentPlayer?.id === playerId) {
-                setCurrentPlayer(null);
+            // Mark current queue item as processed
+            const queueItem = queue.find(item => item.player.id === currentPlayer.id);
+            if (queueItem) {
+                await markAsProcessed(queueItem.id);
+                await fetchQueue(); // Refresh queue
             }
+
+            // Refresh teams data
+            await fetchTeams();
+
+            // Reset form after successful operation
+            setError('');
+            setCurrentPlayer(null);
+            setFinalBid(0);
+            setSelectedTeam('');
         } catch (error) {
             console.error('Error undoing bid:', error);
-            setError('Failed to undo player allocation');
+            setError('Failed to undo bid. Please check your connection and try again.');
+        } finally {
+            setIsSubmitting(false); // Reset loading state
         }
     };
 
@@ -563,7 +579,7 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                 playerId: currentPlayer.id
             });
             
-            const response = await fetch('/api/auction/mark-unallocated', {
+            const data = await fetchWithAuth<MarkUnallocatedResponse>('/api/auction/mark-unallocated', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -572,25 +588,6 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                     playerId: currentPlayer.id,
                 }),
             });
-
-            // Handle authentication errors
-            if (response.status === 401) {
-                console.error('Authentication error: User not authenticated');
-                setError('You are not authenticated. Please log in again.');
-                // Redirect to login page after a short delay
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 2000);
-                return;
-            }
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                console.error('Error marking player as UNALLOCATED:', data);
-                setError(data.error || 'Failed to mark player as UNALLOCATED. Please try again.');
-                return;
-            }
 
             console.log('Player marked as UNALLOCATED successfully:', data);
             
@@ -684,11 +681,8 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
     useEffect(() => {
         const fetchCategories = async () => {
             try {
-                const response = await fetch(`/api/tournaments/${tournamentId}/categories`);
-                if (response.ok) {
-                    const data = await response.json();
-                    setCategories(data.categories || []);
-                }
+                const data = await fetchWithAuth<CategoriesResponse>(`/api/tournaments/${tournamentId}/categories`);
+                setCategories(data.categories || []);
             } catch (error) {
                 console.error('Error fetching categories:', error);
             }
@@ -715,26 +709,34 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
         )
         .filter(player => player.status === 'AVAILABLE' || player.status === 'UNALLOCATED');
 
-    // DEBUG: Log status counts in available players
+    // Inside the AuctionControl component, add a useEffect to log the availablePlayers
     useEffect(() => {
-        if (availablePlayers.length > 0) {
-            const statusCounts = availablePlayers.reduce((acc, player) => {
-                const status = player.status || 'UNKNOWN';
-                acc[status] = (acc[status] || 0) + 1;
-                return acc;
-            }, {} as Record<string, number>);
-            
-            console.log('[DEBUG] Available players status counts:', statusCounts);
-            
-            // Log UNALLOCATED players
-            const unallocatedPlayers = availablePlayers.filter(player => player.status === 'UNALLOCATED');
-            console.log('[DEBUG] UNALLOCATED players count:', unallocatedPlayers.length);
-            
-            // Log filtered UNALLOCATED players
-            const filteredUnallocated = filteredAvailablePlayers.filter(player => player.status === 'UNALLOCATED');
-            console.log('[DEBUG] Filtered UNALLOCATED players count:', filteredUnallocated.length);
+        console.log('[AuctionControl] availablePlayers length:', availablePlayers.length);
+        
+        // Count players by status
+        const statusCounts = availablePlayers.reduce((acc, player) => {
+            const status = player.status || 'UNKNOWN';
+            acc[status] = (acc[status] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+        
+        console.log('[AuctionControl] Player status counts:', statusCounts);
+        
+        // Log UNALLOCATED players
+        const unallocatedPlayers = availablePlayers.filter(p => p.status === 'UNALLOCATED');
+        console.log('[AuctionControl] UNALLOCATED players count:', unallocatedPlayers.length);
+        
+        if (unallocatedPlayers.length > 0) {
+            console.log('[AuctionControl] UNALLOCATED player names:', 
+                unallocatedPlayers.map(p => p.name));
         }
-    }, [availablePlayers, filteredAvailablePlayers]);
+    }, [availablePlayers]);
+
+    // DEBUG: Add a button to manually refresh available players
+    const handleManualRefresh = () => {
+        console.log('[AuctionControl] Manually refreshing available players');
+        fetchPlayers();
+    };
 
     // Use the fetched categories or fallback to available player category IDs
     const playerCategories = categories.length > 0 
@@ -762,7 +764,7 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
             
             // Update queue positions in the backend
             try {
-                await fetch('/api/auction/queue/reorder', {
+                await fetchWithAuth('/api/auction/queue/reorder', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -835,7 +837,7 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
     // Replace the randomize queue handler with clear queue handler
     const handleClearQueue = async () => {
         try {
-            const response = await fetch('/api/auction/queue/clear', {
+            const result = await fetchWithAuth<ClearQueueResponse>('/api/auction/queue/clear', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -845,12 +847,6 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                 }),
             });
 
-            if (!response.ok) {
-                const data = await response.json();
-                throw new Error(data.error || 'Failed to clear queue');
-            }
-
-            const result = await response.json();
             showToast({
                 message: result.message || 'Queue cleared successfully',
                 type: 'success'
@@ -1019,6 +1015,14 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                         >
                             Retry
                         </Button>
+                        <Button 
+                            color="primary" 
+                            size="small" 
+                            onClick={handleManualRefresh}
+                            disabled={isSubmitting}
+                        >
+                            Refresh Players
+                        </Button>
                     </Box>
                 </Alert>
             )}
@@ -1119,7 +1123,7 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                                                     variant="outlined"
                                                     color="error"
                                                     startIcon={<UndoIcon />}
-                                                    onClick={() => handleUndoBid(currentPlayer.id)}
+                                                    onClick={handleUndoBid}
                                                     sx={{
                                                         mt: 1,
                                                         width: '100%',
@@ -1710,6 +1714,23 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                                             onClick={() => setIsAddPlayerOpen(true)}
                                         >
                                             Add Players
+                                    </Button>
+                                        <Button
+                                            variant="outlined"
+                                            color="secondary"
+                                            startIcon={<BugReportIcon />}
+                                            onClick={() => {
+                                                const unallocatedPlayers = availablePlayers.filter(p => p.status === 'UNALLOCATED');
+                                                alert(`UNALLOCATED Players (${unallocatedPlayers.length}):\n\n${
+                                                    unallocatedPlayers.length > 0 
+                                                        ? unallocatedPlayers.map(p => p.name).join('\n') 
+                                                        : 'No unallocated players found'
+                                                }`);
+                                            }}
+                                            sx={{ ml: 1 }}
+                                            disabled={isSubmitting}
+                                        >
+                                            Debug
                                         </Button>
                                         <IconButton
                                             onClick={() => setIsQueueExpanded(false)}
@@ -1808,7 +1829,7 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                     setSelectedPlayers(new Set());
                     }
                 }}
-                maxWidth="md"
+                maxWidth="lg"
                 fullWidth
                 PaperProps={{
                     sx: {
@@ -1827,174 +1848,191 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                     Add Players to Queue
                 </DialogTitle>
                 <DialogContent>
-                    {isAddingPlayers ? (
-                        <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" py={4}>
-                            <CircularProgress size={40} />
-                            <Typography variant="body1" mt={2}>
-                                Adding {selectedPlayers.size} player{selectedPlayers.size > 1 ? 's' : ''} to queue...
-                            </Typography>
-                    </Box>
-                    ) : (
-                        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2} mt={2}>
+                    <Box sx={{ mb: 2 }}>
                         <TextField
-                            label="Search Players"
+                            label="Search"
+                            variant="outlined"
+                            size="small"
+                            fullWidth
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            sx={{ flexGrow: 1, mr: 2 }}
+                            sx={{ mb: 2 }}
                         />
-                            <FormControl sx={{ minWidth: 200, mr: 2 }}>
-                                <InputLabel id="category-filter-label">Category</InputLabel>
-                                <Select
-                                    labelId="category-filter-label"
-                                    value={categoryFilter}
-                                    label="Category"
-                                    onChange={(e) => setCategoryFilter(e.target.value)}
-                                >
-                                    <MenuItem value="">All Categories</MenuItem>
-                                    {playerCategories.map((category) => (
-                                        <MenuItem key={category.id} value={category.id}>
-                                            {category.name}
-                                        </MenuItem>
-                                    ))}
-                                </Select>
-                            </FormControl>
-                        <Button
-                            variant="contained"
-                            onClick={handleBulkAddToQueue}
-                            disabled={selectedPlayers.size === 0}
-                        >
-                            Add Selected ({selectedPlayers.size})
-                        </Button>
+                        
+                        <FormControl variant="outlined" size="small" fullWidth sx={{ mb: 2 }}>
+                            <InputLabel id="category-select-label">Category</InputLabel>
+                            <Select
+                                labelId="category-select-label"
+                                value={categoryFilter}
+                                label="Category"
+                                onChange={(e) => setCategoryFilter(e.target.value)}
+                            >
+                                <MenuItem value="all">All Categories</MenuItem>
+                                {playerCategories.map((category) => (
+                                    <MenuItem key={category.id} value={category.id}>
+                                        {category.name}
+                                    </MenuItem>
+                                ))}
+                            </Select>
+                        </FormControl>
                     </Box>
+                    
+                    {/* Debug Section */}
+                    <Paper sx={{ p: 2, mb: 2, bgcolor: '#f5f5f5' }}>
+                        <Typography variant="subtitle2" gutterBottom>
+                            Debug Information
+                        </Typography>
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2 }}>
+                            <Box>
+                                <Typography variant="body2">
+                                    <strong>Total Players:</strong> {availablePlayers.length}
+                                </Typography>
+                                <Typography variant="body2">
+                                    <strong>Filtered Players:</strong> {filteredAvailablePlayers.length}
+                                </Typography>
+                            </Box>
+                            <Box>
+                                <Typography variant="body2">
+                                    <strong>Status Counts:</strong>
+                                </Typography>
+                                {Object.entries(
+                                    availablePlayers.reduce((acc, player) => {
+                                        const status = player.status || 'UNKNOWN';
+                                        acc[status] = (acc[status] || 0) + 1;
+                                        return acc;
+                                    }, {} as Record<string, number>)
+                                ).map(([status, count]) => (
+                                    <Typography key={status} variant="body2">
+                                        {status}: {count}
+                                    </Typography>
+                                ))}
+                            </Box>
+                        </Box>
+                    </Paper>
+                    
+                    {filteredAvailablePlayers.length === 0 && (
+                        <Typography variant="body1" align="center" sx={{ py: 4 }}>
+                            No players match the current filters.
+                        </Typography>
                     )}
-
-                    <TableContainer component={Paper} sx={{ maxHeight: 400, overflow: 'auto' }}>
-                        <Table stickyHeader size="small">
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell padding="checkbox">
-                                        <Checkbox 
-                                            onChange={(e) => {
-                                                if (e.target.checked) {
-                                                    // Select all filtered players
-                                                    const newSelected = new Set(selectedPlayers);
-                                                    filteredAvailablePlayers.forEach(player => {
-                                                        newSelected.add(player.id);
-                                                    });
-                                                    setSelectedPlayers(newSelected);
+                    {filteredAvailablePlayers.length > 0 && (
+                        <TableContainer component={Paper} sx={{ maxHeight: 400, overflow: 'auto' }}>
+                            <Table stickyHeader size="small">
+                                <TableHead>
+                                    <TableRow>
+                                        <TableCell padding="checkbox">
+                                            <Checkbox 
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        // Select all filtered players
+                                                        const newSelected = new Set(selectedPlayers);
+                                                        filteredAvailablePlayers.forEach(player => {
+                                                            newSelected.add(player.id);
+                                                        });
+                                                        setSelectedPlayers(newSelected);
+                                                    } else {
+                                                        // Deselect all filtered players
+                                                        const newSelected = new Set(selectedPlayers);
+                                                        filteredAvailablePlayers.forEach(player => {
+                                                            newSelected.delete(player.id);
+                                                        });
+                                                        setSelectedPlayers(newSelected);
+                                                    }
+                                                }}
+                                                checked={
+                                                    filteredAvailablePlayers.length > 0 &&
+                                                    filteredAvailablePlayers.every(player => selectedPlayers.has(player.id))
+                                                }
+                                                indeterminate={
+                                                    filteredAvailablePlayers.some(player => selectedPlayers.has(player.id)) &&
+                                                    !filteredAvailablePlayers.every(player => selectedPlayers.has(player.id))
+                                                }
+                                            />
+                                        </TableCell>
+                                        <TableCell>Name</TableCell>
+                                        <TableCell>Position</TableCell>
+                                        <TableCell>Skill Level</TableCell>
+                                        <TableCell>Base Price</TableCell>
+                                        <TableCell>Status</TableCell>
+                                        <TableCell>Category</TableCell>
+                                    </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                    {filteredAvailablePlayers.map((player) => (
+                                        <TableRow 
+                                        key={player.id}
+                                            hover
+                                            onClick={() => {
+                                                const newSelected = new Set(selectedPlayers);
+                                                if (selectedPlayers.has(player.id)) {
+                                                    newSelected.delete(player.id);
                                                 } else {
-                                                    // Deselect all filtered players
-                                                    const newSelected = new Set(selectedPlayers);
-                                                    filteredAvailablePlayers.forEach(player => {
-                                                        newSelected.delete(player.id);
-                                                    });
-                                                    setSelectedPlayers(newSelected);
+                                                    newSelected.add(player.id);
+                                                }
+                                                setSelectedPlayers(newSelected);
+                                            }}
+                                        sx={{
+                                                cursor: 'pointer',
+                                                '&.Mui-selected': {
+                                                    backgroundColor: 'action.selected'
                                                 }
                                             }}
-                                            indeterminate={
-                                                selectedPlayers.size > 0 && 
-                                                selectedPlayers.size < filteredAvailablePlayers.length
-                                            }
-                                            checked={
-                                                filteredAvailablePlayers.length > 0 &&
-                                                filteredAvailablePlayers.every(player => 
-                                                    selectedPlayers.has(player.id)
-                                                )
-                                            }
+                                            selected={selectedPlayers.has(player.id)}
+                                        >
+                                            <TableCell padding="checkbox">
+                                        <Checkbox
+                                            checked={selectedPlayers.has(player.id)}
+                                                    onClick={(e) => e.stopPropagation()}
+                                            onChange={(e) => {
+                                                const newSelected = new Set(selectedPlayers);
+                                                if (e.target.checked) {
+                                                    newSelected.add(player.id);
+                                                } else {
+                                                    newSelected.delete(player.id);
+                                                }
+                                                setSelectedPlayers(newSelected);
+                                            }}
                                         />
-                                    </TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>Name</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>Category</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>Base Points</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>Position</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>Skill Level</TableCell>
-                                    <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {filteredAvailablePlayers.map((player) => (
-                                    <TableRow 
-                                    key={player.id}
-                                        hover
-                                        onClick={() => {
-                                            const newSelected = new Set(selectedPlayers);
-                                            if (selectedPlayers.has(player.id)) {
-                                                newSelected.delete(player.id);
-                                            } else {
-                                                newSelected.add(player.id);
-                                            }
-                                            setSelectedPlayers(newSelected);
-                                        }}
-                                    sx={{
-                                            cursor: 'pointer',
-                                            '&.Mui-selected': {
-                                                backgroundColor: 'action.selected'
-                                            }
-                                        }}
-                                        selected={selectedPlayers.has(player.id)}
-                                    >
-                                        <TableCell padding="checkbox">
-                                    <Checkbox
-                                        checked={selectedPlayers.has(player.id)}
-                                                onClick={(e) => e.stopPropagation()}
-                                        onChange={(e) => {
-                                            const newSelected = new Set(selectedPlayers);
-                                            if (e.target.checked) {
-                                                newSelected.add(player.id);
-                                            } else {
-                                                newSelected.delete(player.id);
-                                            }
-                                            setSelectedPlayers(newSelected);
-                                        }}
-                                    />
-                                        </TableCell>
-                                        <TableCell>
-                                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                <Avatar 
-                                                    src={player.profile_image_url} 
-                                                    alt={player.name || 'Unknown'}
-                                                    sx={{ width: 32, height: 32 }}
-                                                >
-                                                    {player.name ? player.name.charAt(0) : '?'}
-                                                </Avatar>
-                                                <Typography variant="body2">{player.name || 'Unknown'}</Typography>
-                                            </Box>
-                                        </TableCell>
-                                        <TableCell>
-                                            {playerCategories.find(cat => cat.id === player.category_id)?.name || 'N/A'}
-                                        </TableCell>
-                                        <TableCell>{formatPointsInCrores(player.base_price)}</TableCell>
-                                        <TableCell>
-                                            {POSITIONS.find(pos => pos.value === player.player_position)?.label || 'Unknown'}
-                                        </TableCell>
-                                        <TableCell>
-                                                <Chip 
-                                                label={SKILL_LEVELS.find(level => level.value === player.skill_level)?.label || 'Unknown'}
-                                                    size="small"
-                                                sx={getSkillLevelStyling(player.skill_level)}
-                                            />
-                                        </TableCell>
-                                        <TableCell>
-                                                <Chip 
-                                                label={player.status}
-                                                    size="small"
-                                                color={player.status === 'AVAILABLE' || player.status === 'UNALLOCATED' ? 'success' : 'default'}
-                                            />
-                                        </TableCell>
-                                    </TableRow>
-                                ))}
-                                {filteredAvailablePlayers.length === 0 && (
-                                    <TableRow>
-                                        <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
-                                            <Typography color="text.secondary">
-                                                No players found matching the filters
-                                            </Typography>
-                                        </TableCell>
-                                    </TableRow>
-                                )}
-                            </TableBody>
-                        </Table>
-                    </TableContainer>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                    <Avatar 
+                                                        src={player.profile_image_url} 
+                                                        alt={player.name || 'Unknown'}
+                                                        sx={{ width: 32, height: 32 }}
+                                                    >
+                                                        {player.name ? player.name.charAt(0) : '?'}
+                                                    </Avatar>
+                                                    <Typography variant="body2">{player.name || 'Unknown'}</Typography>
+                                                </Box>
+                                            </TableCell>
+                                            <TableCell>
+                                                {POSITIONS.find(pos => pos.value === player.player_position)?.label || 'Unknown'}
+                                            </TableCell>
+                                            <TableCell>
+                                                    <Chip 
+                                                    label={SKILL_LEVELS.find(level => level.value === player.skill_level)?.label || 'Unknown'}
+                                                        size="small"
+                                                    sx={getSkillLevelStyling(player.skill_level)}
+                                                />
+                                            </TableCell>
+                                            <TableCell>{formatPointsInCrores(player.base_price)}</TableCell>
+                                            <TableCell>
+                                                    <Chip 
+                                                    label={player.status}
+                                                        size="small"
+                                                    color={player.status === 'AVAILABLE' || player.status === 'UNALLOCATED' ? 'success' : 'default'}
+                                                />
+                                            </TableCell>
+                                            <TableCell>
+                                                {playerCategories.find(cat => cat.id === player.category_id)?.name || 'N/A'}
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </TableContainer>
+                    )}
                 </DialogContent>
                 <DialogActions>
                     <Button 
@@ -2023,6 +2061,40 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                     50% { transform: rotate(-45deg) translateY(-10px); }
                 }
             `}</style>
+
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                <Typography variant="h5" component="h2">
+                    Auction Control
+                </Typography>
+                <Box>
+                    <Button 
+                        variant="outlined" 
+                        color="primary" 
+                        onClick={() => setIsAddPlayerOpen(true)}
+                        startIcon={<AddIcon />}
+                        sx={{ mr: 1 }}
+                    >
+                        Add Players
+                    </Button>
+                    <Button 
+                        variant="outlined" 
+                        color="secondary" 
+                        onClick={() => {
+                            const unallocatedPlayers = availablePlayers.filter(p => p.status === 'UNALLOCATED');
+                            alert(`UNALLOCATED Players (${unallocatedPlayers.length}):\n\n${
+                                unallocatedPlayers.length > 0 
+                                    ? unallocatedPlayers.map(p => p.name).join('\n') 
+                                    : 'No unallocated players found'
+                            }`);
+                        }}
+                        startIcon={<BugReportIcon />}
+                        sx={{ ml: 1 }}
+                        disabled={isSubmitting}
+                    >
+                        Debug
+                    </Button>
+                </Box>
+            </Box>
         </Box>
     );
 }
