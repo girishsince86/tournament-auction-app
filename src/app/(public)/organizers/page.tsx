@@ -313,7 +313,7 @@ export default function OrganizersPage() {
                 alt="PBL Volleyball Logo"
                 width={60}
                 height={60}
-                style={{ objectFit: 'contain' }}
+                style={{ objectFit: 'contain', width: 'auto', height: 'auto' }}
               />
             </Box>
             <Box>

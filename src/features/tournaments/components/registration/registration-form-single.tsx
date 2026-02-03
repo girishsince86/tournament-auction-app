@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Box,
   Button,
@@ -19,6 +19,7 @@ import {
   Snackbar,
   CircularProgress,
   useTheme,
+  useMediaQuery,
   Collapse,
   Paper,
   Avatar,
@@ -100,6 +101,7 @@ export function RegistrationFormSingle() {
     referenceLoading,
     referenceMessage,
     profileImageUploading,
+    profileImagePreviewUrl,
     profileImageInputRef,
     isSectionComplete,
     validateField,
@@ -117,6 +119,11 @@ export function RegistrationFormSingle() {
 
   const [paymentGateComplete, setPaymentGateComplete] = useState(false)
   const [showTransactionForm, setShowTransactionForm] = useState(false)
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const [prefillCardExpanded, setPrefillCardExpanded] = useState(false)
+  useEffect(() => {
+    if (!isMobile) setPrefillCardExpanded(true)
+  }, [isMobile])
 
   const handleSnackbarClose = () => setSnackbar((prev) => ({ ...prev, open: false }))
 
@@ -219,7 +226,7 @@ export function RegistrationFormSingle() {
         })
       }}
     >
-      <Container maxWidth="lg" sx={{ py: 4 }}>
+      <Container maxWidth="lg" sx={{ py: { xs: 2, sm: 4 }, px: { xs: 1.5, sm: 2 } }}>
         <PrintStyles />
         <form 
           onSubmit={handleSubmit} 
@@ -355,9 +362,9 @@ export function RegistrationFormSingle() {
                         sx={{
                           display: 'flex',
                           alignItems: 'flex-start',
-                          gap: 1.5,
+                          gap: { xs: 1, sm: 1.5 },
                           counterIncrement: 'step',
-                          p: 1.5,
+                          p: { xs: 1, sm: 1.5 },
                           borderRadius: 2,
                           bgcolor: step.current ? alpha(theme.palette.primary.main, 0.08) : 'transparent',
                           border: step.current ? `1px solid ${alpha(theme.palette.primary.main, 0.25)}` : '1px solid transparent',
@@ -365,13 +372,13 @@ export function RegistrationFormSingle() {
                           '&::before': {
                             content: 'counter(step)',
                             flexShrink: 0,
-                            width: 28,
-                            height: 28,
+                            width: { xs: 24, sm: 28 },
+                            height: { xs: 24, sm: 28 },
                             borderRadius: '50%',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
-                            fontSize: '0.8125rem',
+                            fontSize: { xs: '0.75rem', sm: '0.8125rem' },
                             fontWeight: 700,
                             bgcolor: step.current ? theme.palette.primary.main : theme.palette.grey[300],
                             color: step.current ? theme.palette.primary.contrastText : theme.palette.text.secondary,
@@ -383,6 +390,7 @@ export function RegistrationFormSingle() {
                             variant="body2"
                             sx={{
                               fontWeight: 600,
+                              fontSize: { xs: '0.8125rem', sm: '0.875rem' },
                               color: step.current ? 'primary.main' : 'text.primary',
                               lineHeight: 1.3,
                             }}
@@ -394,7 +402,7 @@ export function RegistrationFormSingle() {
                               </Typography>
                             )}
                           </Typography>
-                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.4, mt: 0.25 }}>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.4, mt: 0.25, fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                             {step.desc}
                           </Typography>
                         </Box>
@@ -517,9 +525,9 @@ export function RegistrationFormSingle() {
           {/* Form Header with Sports Image */}
           <Box sx={{ 
             textAlign: 'center', 
-            mb: 6,
+            mb: { xs: 4, sm: 6 },
             position: 'relative',
-            height: { xs: 420, sm: 380, md: 320 },
+            height: { xs: 280, sm: 380, md: 320 },
             borderRadius: 2,
             overflow: 'hidden',
             boxShadow: theme.shadows[4],
@@ -660,7 +668,7 @@ export function RegistrationFormSingle() {
             />
           </Box>
 
-          {/* Pre-fill from last year - at top so returning players can load before filling */}
+          {/* Pre-fill from last year - collapsible on mobile to save space */}
           <Card
             sx={{
               mb: 2,
@@ -670,81 +678,171 @@ export function RegistrationFormSingle() {
               '& .MuiOutlinedInput-input': { color: theme.palette.text.primary },
             }}
           >
-            <CardContent>
-              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>
-                Returning player? Pre-fill from last year
-              </Typography>
-              <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
-                Enter your email or phone from last year’s registration to load your details, then edit as needed and submit.
-              </Typography>
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} sm={4}>
-                  <StyledTextField
-                    fullWidth
-                    size="small"
-                    label="Email (optional)"
-                    value={formData.email}
-                    onChange={handleChange('email')}
-                    placeholder="your.email@example.com"
-                    InputLabelProps={{ sx: { color: 'text.primary' } }}
-                    inputProps={{ sx: { color: 'text.primary' } }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <StyledTextField
-                    fullWidth
-                    size="small"
-                    label="Phone (optional)"
-                    value={formData.phone_number}
-                    onChange={handleChange('phone_number')}
-                    placeholder="+91"
-                    InputLabelProps={{ sx: { color: 'text.primary' } }}
-                    inputProps={{ sx: { color: 'text.primary' } }}
-                  />
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                  <Button
-                    type="button"
-                    variant="outlined"
-                    color="primary"
-                    onClick={loadReference}
-                    disabled={referenceLoading}
-                    size="medium"
-                  >
-                    {referenceLoading ? 'Loading…' : 'Load my 2025 details'}
-                  </Button>
-                </Grid>
-                {referenceMessage && (
-                  <Grid item xs={12}>
-                    <Typography variant="body2" color="text.secondary">
-                      {referenceMessage}
+            {isMobile ? (
+              <>
+                <CardHeader
+                  onClick={() => setPrefillCardExpanded((v) => !v)}
+                  sx={{
+                    cursor: 'pointer',
+                    py: 1.5,
+                    '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.04) },
+                  }}
+                  title={
+                    <Typography variant="subtitle1" sx={{ fontWeight: 600, color: 'text.primary' }}>
+                      Returning player? Pre-fill from last year
                     </Typography>
+                  }
+                  action={
+                    <ExpandMore
+                      expand={prefillCardExpanded}
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setPrefillCardExpanded((v) => !v)
+                      }}
+                      aria-expanded={prefillCardExpanded}
+                      aria-label={prefillCardExpanded ? 'Collapse pre-fill' : 'Expand pre-fill'}
+                    >
+                      <ExpandMoreIcon />
+                    </ExpandMore>
+                  }
+                />
+                <Collapse in={prefillCardExpanded}>
+                  <CardContent sx={{ pt: 0 }}>
+                    <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary', fontSize: '0.8125rem' }}>
+                      Enter email or phone from last year to load your details.
+                    </Typography>
+                    <Grid container spacing={2} alignItems="center">
+                      <Grid item xs={12}>
+                        <StyledTextField
+                          fullWidth
+                          size="small"
+                          label="Email (optional)"
+                          value={formData.email}
+                          onChange={handleChange('email')}
+                          placeholder="your.email@example.com"
+                          InputLabelProps={{ sx: { color: 'text.primary' } }}
+                          inputProps={{ sx: { color: 'text.primary' } }}
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <StyledTextField
+                          fullWidth
+                          size="small"
+                          label="Phone (optional)"
+                          value={formData.phone_number}
+                          onChange={handleChange('phone_number')}
+                          placeholder="+91"
+                          InputLabelProps={{ sx: { color: 'text.primary' } }}
+                          inputProps={{ sx: { color: 'text.primary' } }}
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Button
+                          type="button"
+                          variant="outlined"
+                          color="primary"
+                          fullWidth
+                          onClick={loadReference}
+                          disabled={referenceLoading}
+                          size="medium"
+                          sx={{ minHeight: 44 }}
+                        >
+                          {referenceLoading ? 'Loading…' : 'Load my 2025 details'}
+                        </Button>
+                      </Grid>
+                      {referenceMessage && (
+                        <Grid item xs={12}>
+                          <Typography variant="body2" color="text.secondary">
+                            {referenceMessage}
+                          </Typography>
+                        </Grid>
+                      )}
+                    </Grid>
+                  </CardContent>
+                </Collapse>
+              </>
+            ) : (
+              <CardContent>
+                <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>
+                  Returning player? Pre-fill from last year
+                </Typography>
+                <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+                  Enter your email or phone from last year’s registration to load your details, then edit as needed and submit.
+                </Typography>
+                <Grid container spacing={2} alignItems="center">
+                  <Grid item xs={12} sm={4}>
+                    <StyledTextField
+                      fullWidth
+                      size="small"
+                      label="Email (optional)"
+                      value={formData.email}
+                      onChange={handleChange('email')}
+                      placeholder="your.email@example.com"
+                      InputLabelProps={{ sx: { color: 'text.primary' } }}
+                      inputProps={{ sx: { color: 'text.primary' } }}
+                    />
                   </Grid>
-                )}
-              </Grid>
-            </CardContent>
+                  <Grid item xs={12} sm={4}>
+                    <StyledTextField
+                      fullWidth
+                      size="small"
+                      label="Phone (optional)"
+                      value={formData.phone_number}
+                      onChange={handleChange('phone_number')}
+                      placeholder="+91"
+                      InputLabelProps={{ sx: { color: 'text.primary' } }}
+                      inputProps={{ sx: { color: 'text.primary' } }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={4}>
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      color="primary"
+                      onClick={loadReference}
+                      disabled={referenceLoading}
+                      size="medium"
+                    >
+                      {referenceLoading ? 'Loading…' : 'Load my 2025 details'}
+                    </Button>
+                  </Grid>
+                  {referenceMessage && (
+                    <Grid item xs={12}>
+                      <Typography variant="body2" color="text.secondary">
+                        {referenceMessage}
+                      </Typography>
+                    </Grid>
+                  )}
+                </Grid>
+              </CardContent>
+            )}
           </Card>
 
           {/* Tournament Rules Section */}
           <Card sx={{ mb: 2 }}>
             <CardHeader
-              avatar={<GavelIcon color="primary" />}
+              avatar={<GavelIcon color="primary" sx={{ display: { xs: 'none', sm: 'flex' } }} />}
               title="League Rules & Guidelines"
               action={
                 <Button
-                  startIcon={<ArticleIcon />}
+                  startIcon={<ArticleIcon sx={{ display: { xs: 'none', sm: 'inline-flex' } }} />}
                   onClick={() => setRulesDialogOpen(true)}
                   color="primary"
+                  size={isMobile ? 'small' : 'medium'}
+                  sx={{ whiteSpace: 'nowrap' }}
                 >
-                  View Complete Rules
+                  {isMobile ? 'View Rules' : 'View Complete Rules'}
                 </Button>
               }
+              sx={{
+                flexWrap: 'wrap',
+                '& .MuiCardHeader-content': { minWidth: 0 },
+                '& .MuiCardHeader-action': { alignSelf: 'center', mt: { xs: 1, sm: 0 } },
+              }}
             />
-            <CardContent>
-              <Typography variant="body2" color="text.secondary" paragraph>
-                Please read and acknowledge the League rules before proceeding with registration.
-                The complete rulebook contains important information about match formats, scoring systems,
-                and code of conduct.
+            <CardContent sx={{ pt: 0 }}>
+              <Typography variant="body2" color="text.secondary" paragraph sx={{ fontSize: { xs: '0.8125rem', sm: '0.875rem' } }}>
+                Please read and acknowledge the League rules before proceeding. The rulebook covers match formats, scoring, and code of conduct.
               </Typography>
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                 <FormControlLabel
@@ -753,10 +851,11 @@ export function RegistrationFormSingle() {
                       checked={rulesAcknowledged}
                       onChange={(e) => setRulesAcknowledged(e.target.checked)}
                       color="primary"
+                      sx={{ alignSelf: 'flex-start', mt: 0.5 }}
                     />
                   }
                   label={
-                    <Typography variant="body2">
+                    <Typography variant="body2" sx={{ fontSize: { xs: '0.8125rem', sm: '0.875rem' } }}>
                       I have read and agree to follow the League rules and guidelines
                     </Typography>
                   }
@@ -767,12 +866,12 @@ export function RegistrationFormSingle() {
                       checked={residencyConfirmed}
                       onChange={(e) => setResidencyConfirmed(e.target.checked)}
                       color="primary"
+                      sx={{ alignSelf: 'flex-start', mt: 0.5 }}
                     />
                   }
                   label={
-                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                      I confirm that I am a resident of PBEL City at the time of registration and will be a resident 
-                      of PBEL City for the entire duration of this league
+                    <Typography variant="body2" sx={{ fontWeight: 500, fontSize: { xs: '0.8125rem', sm: '0.875rem' } }}>
+                      I confirm that I am a resident of PBEL City at the time of registration and for the entire duration of this league
                     </Typography>
                   }
                 />
@@ -1001,13 +1100,18 @@ export function RegistrationFormSingle() {
                         style={{ display: 'none' }}
                         aria-label="Upload profile photo"
                       />
-                      {formData.profile_image_url ? (
+                      {(profileImagePreviewUrl || formData.profile_image_url) ? (
                         <>
                           <Avatar
-                            src={formData.profile_image_url}
-                            alt="Profile"
-                            sx={{ width: 80, height: 80 }}
+                            src={profileImagePreviewUrl || formData.profile_image_url || ''}
+                            alt="Profile preview"
                             variant="rounded"
+                            imgProps={{ crossOrigin: 'anonymous' }}
+                            sx={{
+                              width: 80,
+                              height: 80,
+                              '& img': { objectFit: 'cover' },
+                            }}
                           />
                           <Box>
                             <Button
@@ -1427,13 +1531,13 @@ export function RegistrationFormSingle() {
             </Collapse>
           </Card>
 
-          {/* Spacer so content is not hidden behind sticky submit bar */}
-          <Box sx={{ height: 100 }} />
+          {/* Spacer so content is not hidden behind sticky submit bar (extra on mobile for safe area) */}
+          <Box sx={{ height: { xs: 120, sm: 100 } }} />
 
             </>
           )}
 
-        {/* Sticky Submit Bar — always visible; enabled only when all conditions are met */}
+        {/* Sticky Submit Bar — always visible; safe area and full-width button on mobile */}
         {paymentGateComplete && (
           <Box
             sx={{
@@ -1441,27 +1545,35 @@ export function RegistrationFormSingle() {
               bottom: 0,
               left: 0,
               right: 0,
-              py: 2,
-              px: 2,
+              py: { xs: 1.5, sm: 2 },
+              px: { xs: 1.5, sm: 2 },
+              pb: { xs: 'max(12px, env(safe-area-inset-bottom))', sm: 2 },
               bgcolor: theme.palette.background.paper,
               borderTop: `1px solid ${theme.palette.divider}`,
               boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
               zIndex: 10,
             }}
           >
-            <Container maxWidth="lg">
-              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
-                <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+            <Container maxWidth="lg" disableGutters sx={{ px: { xs: 0, sm: 2 } }}>
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'stretch', justifyContent: 'space-between', gap: 1.5 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ flex: 1, display: { xs: 'none', sm: 'block' } }}>
                   {canSubmit
                     ? 'All sections complete. Review and submit when ready.'
                     : 'Complete rules acknowledgment and all sections above to enable submit.'}
+                </Typography>
+                <Typography variant="caption" color="text.secondary" sx={{ display: { xs: 'block', sm: 'none' }, order: -1 }}>
+                  {canSubmit ? 'Ready to submit.' : 'Complete all sections above to enable submit.'}
                 </Typography>
                 <Button
                   type="submit"
                   variant="contained"
                   size="large"
                   disabled={!canSubmit}
-                  sx={{ minWidth: 200 }}
+                  sx={{
+                    minWidth: { xs: '100%', sm: 200 },
+                    minHeight: 44,
+                    py: 1.5,
+                  }}
                 >
                   {isSubmitting ? 'Submitting...' : 'Submit Registration'}
                 </Button>

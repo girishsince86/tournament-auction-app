@@ -156,9 +156,14 @@ export function useRegistrationFormSingle() {
     }, 100)
   }
 
+  const [profileImagePreviewUrl, setProfileImagePreviewUrl] = useState<string | null>(null)
+
   const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    // Show local preview immediately
+    const objectUrl = URL.createObjectURL(file)
+    setProfileImagePreviewUrl(objectUrl)
     setProfileImageUploading(true)
     setErrors((prev) => ({ ...prev, profile_image_url: '' }))
     try {
@@ -168,9 +173,13 @@ export function useRegistrationFormSingle() {
       const res = await fetch('/api/tournaments/register/upload-image', { method: 'POST', body: form })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Upload failed')
+      URL.revokeObjectURL(objectUrl)
+      setProfileImagePreviewUrl(null)
       setFormData((prev) => ({ ...prev, profile_image_url: data.imageUrl }))
       setTimeout(() => handleSectionCompletion('personal'), 100)
     } catch (err) {
+      URL.revokeObjectURL(objectUrl)
+      setProfileImagePreviewUrl(null)
       setErrors((prev) => ({
         ...prev,
         profile_image_url: err instanceof Error ? err.message : 'Failed to upload photo',
@@ -182,6 +191,10 @@ export function useRegistrationFormSingle() {
   }
 
   const removeProfileImage = () => {
+    if (profileImagePreviewUrl) {
+      URL.revokeObjectURL(profileImagePreviewUrl)
+      setProfileImagePreviewUrl(null)
+    }
     setFormData((prev) => ({ ...prev, profile_image_url: '' }))
     setErrors((prev) => ({ ...prev, profile_image_url: 'Profile photo is required' }))
   }
@@ -351,6 +364,7 @@ export function useRegistrationFormSingle() {
     referenceLoading,
     referenceMessage,
     profileImageUploading,
+    profileImagePreviewUrl,
     profileImageInputRef,
     isSectionComplete,
     validateField,

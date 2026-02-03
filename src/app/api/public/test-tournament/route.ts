@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-
-// Initialize Supabase client
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+import { getPublicSupabaseClient } from '@/lib/supabase/public-api';
 
 export async function POST(request: NextRequest) {
   try {
+    const supabase = getPublicSupabaseClient();
+    if (!supabase) {
+      return NextResponse.json(
+        { error: 'Missing Supabase configuration' },
+        { status: 503 }
+      );
+    }
+
     const body = await request.json();
     
     // Validate required fields

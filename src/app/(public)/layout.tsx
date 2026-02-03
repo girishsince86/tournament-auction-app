@@ -73,7 +73,7 @@ export default function PublicLayout({
                     alt="PBL Volleyball Logo" 
                     width={45} 
                     height={45}
-                    style={{ objectFit: 'contain' }}
+                    style={{ objectFit: 'contain', width: 'auto', height: 'auto' }}
                   />
                 </Box>
                 <Box>
@@ -389,7 +389,7 @@ export default function PublicLayout({
                   alt="PBL Volleyball Logo" 
                   width={60} 
                   height={60}
-                  style={{ objectFit: 'contain' }}
+                  style={{ objectFit: 'contain', width: 'auto', height: 'auto' }}
                 />
               </Box>
               <Box>

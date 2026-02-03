@@ -1,12 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { Database } from '@/lib/supabase/types/supabase';
-
-// Create a Supabase client with the public anon key
-const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL || '',
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-);
+import { getPublicSupabaseClient } from '@/lib/supabase/public-api';
 
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
@@ -16,6 +9,10 @@ export async function GET(
   { params }: { params: { tournamentId: string } }
 ) {
   try {
+    const supabase = getPublicSupabaseClient();
+    if (!supabase) {
+      return NextResponse.json({ error: 'Missing Supabase configuration' }, { status: 503 });
+    }
     console.log(`API /public/tournaments/${params.tournamentId}/formats - Fetching formats`);
     
     const { tournamentId } = params;

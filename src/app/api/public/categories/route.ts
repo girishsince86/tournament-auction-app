@@ -1,20 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createClient } from '@supabase/supabase-js';
-import { Database } from '@/lib/supabase/types/supabase';
-
-// Create a Supabase client with the public anon key
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-// Validate environment variables
-if (!supabaseUrl || !supabaseAnonKey) {
-  console.error('Missing Supabase environment variables in categories API');
-}
-
-const supabase = createClient<Database>(
-  supabaseUrl || '',
-  supabaseAnonKey || ''
-);
+import { getPublicSupabaseClient } from '@/lib/supabase/public-api';
 
 // Force dynamic rendering and disable caching
 export const dynamic = 'force-dynamic';
@@ -22,14 +7,12 @@ export const revalidate = 0;
 
 export async function GET(request: NextRequest) {
   try {
+    const supabase = getPublicSupabaseClient();
+    if (!supabase) {
+      return NextResponse.json({ error: 'Missing Supabase configuration' }, { status: 503 });
+    }
     // Log the request for debugging
     console.log(`API /public/categories - Request received at ${new Date().toISOString()}`);
-    
-    // Validate Supabase client
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error('Missing Supabase environment variables');
-      throw new Error('Server configuration error');
-    }
     
     // Use hardcoded tournament ID
     const tournamentId = '11111111-1111-1111-1111-111111111111';

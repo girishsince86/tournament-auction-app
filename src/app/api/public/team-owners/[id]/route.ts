@@ -1,23 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
-import { Database } from '@/lib/supabase/types/supabase'
+import { getServiceRoleSupabaseClient } from '@/lib/supabase/public-api'
 import { enrichTeamOwnerProfile } from '@/lib/utils/team-owners-data'
 
 // Mark this route as dynamic to prevent static generation errors
 export const dynamic = 'force-dynamic'
-
-// Create a Supabase client with the service role key for public access
-// This allows bypassing RLS policies for public data
-const supabase = createClient<Database>(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
 
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
+    const supabase = getServiceRoleSupabaseClient()
+    if (!supabase) {
+      return NextResponse.json({ error: 'Missing Supabase configuration' }, { status: 503 })
+    }
     const id = params.id
     const debug = request.nextUrl.searchParams.get('debug') === 'true'
     

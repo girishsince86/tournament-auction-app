@@ -56,8 +56,11 @@ export function useRegistrationSubmit(): UseRegistrationSubmit {
         clearTimeout(timeoutId)
 
         if (!response.ok) {
-          const data = await response.json()
-          throw new Error(data.error || 'Failed to submit registration')
+          const data = await response.json().catch(() => ({}))
+          const message = data.details
+            ? `${data.error || 'Failed to submit registration'}: ${data.details}`
+            : (data.error || 'Failed to submit registration')
+          throw new Error(message)
         }
 
         const data = await response.json()

@@ -50,6 +50,34 @@ async function performDatabaseOperation<T>(
   throw lastError
 }
 
+/** Extract a string suitable for API response from any thrown value. */
+function getErrorDetails(error: unknown): string {
+  if (error instanceof Error) return error.message
+  if (error && typeof error === 'object') {
+    const o = error as Record<string, unknown>
+    if (typeof o.message === 'string') return o.message
+    if (o.details != null) return typeof o.details === 'string' ? o.details : JSON.stringify(o.details)
+    return JSON.stringify(o)
+  }
+  return String(error)
+}
+
+/** Columns that must not be empty string for DB (use null so defaults or nullable apply). */
+const TIMESTAMP_OR_ID_FIELDS = ['id', 'created_at', 'updated_at', 'date_of_birth', 'verified_at', 'profile_token_expires_at']
+
+function sanitizeRegistrationPayload(data: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...data }
+  // Let DB set id, created_at, updated_at
+  delete out.id
+  delete out.created_at
+  delete out.updated_at
+  // Convert empty strings to null for timestamp/date fields (DB rejects '' for these types)
+  for (const key of TIMESTAMP_OR_ID_FIELDS) {
+    if (key in out && (out[key] === '' || out[key] === undefined)) out[key] = null
+  }
+  return out
+}
+
 export async function POST(request: NextRequest) {
   console.log('Starting registration process...')
   const startTime = Date.now()
@@ -113,13 +141,14 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Insert new registration with retry logic
+    // Insert new registration with retry logic (sanitize so empty strings don't break timestamp columns)
+    const insertPayload = sanitizeRegistrationPayload(data)
     console.log('Creating new registration...')
     const { data: registration, error: insertError } = await performDatabaseOperation<RegistrationResponse>(
       async () => {
         return await supabase
           .from('tournament_registrations')
-          .insert([data])
+          .insert([insertPayload])
           .select('id')
           .single()
       },
@@ -145,32 +174,29 @@ export async function POST(request: NextRequest) {
       processingTime
     })
 
-  } catch (error) {
+  } catch (error: unknown) {
     const processingTime = Date.now() - startTime
+    const details = getErrorDetails(error)
     console.error('Registration error:', error, `(after ${processingTime}ms)`)
-    
-    if (error instanceof Error) {
-      if (error.message === 'Database operation timed out') {
-        return NextResponse.json(
-          { 
-            error: 'Registration timed out. Please try again.',
-            details: 'The server is experiencing high load. Please wait a moment and try again.'
-          },
-          { status: 504 }
-        )
-      }
-      
+    if (error && typeof error === 'object' && 'code' in error) {
+      console.error('Error code/details:', (error as PostgrestError).code, (error as PostgrestError).details)
+    }
+
+    if (error instanceof Error && error.message === 'Database operation timed out') {
       return NextResponse.json(
-        { 
-          error: 'Failed to process registration',
-          details: error.message
+        {
+          error: 'Registration timed out. Please try again.',
+          details: 'The server is experiencing high load. Please wait a moment and try again.',
         },
-        { status: 500 }
+        { status: 504 }
       )
     }
 
     return NextResponse.json(
-      { error: 'An unexpected error occurred' },
+      {
+        error: 'Failed to process registration',
+        details,
+      },
       { status: 500 }
     )
   }
