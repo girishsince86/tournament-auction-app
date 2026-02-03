@@ -124,6 +124,12 @@ export function RegistrationFormSingle() {
   useEffect(() => {
     if (!isMobile) setPrefillCardExpanded(true)
   }, [isMobile])
+  // When moving to the registration form (second screen), scroll to top so page loads from start
+  useEffect(() => {
+    if (paymentGateComplete) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'smooth' })
+    }
+  }, [paymentGateComplete])
 
   const handleSnackbarClose = () => setSnackbar((prev) => ({ ...prev, open: false }))
 
