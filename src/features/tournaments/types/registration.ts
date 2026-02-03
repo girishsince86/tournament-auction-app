@@ -42,6 +42,8 @@ export interface RegistrationFormData {
   payment_upi_id: string
   payment_transaction_id: string
   paid_to: string
+  // Optional: profile photo URL (from upload during registration)
+  profile_image_url?: string
   // Optional fields for youth categories
   date_of_birth?: string
   parent_name?: string
@@ -70,6 +72,7 @@ export const initialFormData: RegistrationFormData = {
   payment_upi_id: '',
   payment_transaction_id: '',
   paid_to: '',
+  profile_image_url: '',
   // Initialize optional fields as empty strings
   date_of_birth: '',
   parent_name: '',

@@ -42,14 +42,15 @@ export function OrganizerCard({ profile, variant = 'compact' }: OrganizerCardPro
     <Card 
       elevation={isHovered ? 8 : 3} 
       sx={{ 
-        height: '100%', 
         display: 'flex', 
         flexDirection: 'column',
         borderRadius: 3,
         overflow: 'hidden',
         transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
-        minHeight: variant === 'full' ? 'auto' : '600px',
-        maxHeight: variant === 'full' ? 'none' : '800px',
+        ...(variant === 'compact'
+          ? { height: 480, minHeight: 480, maxHeight: 480 }
+          : { height: 'auto', minHeight: 'auto', maxHeight: 'none' }
+        ),
         position: 'relative',
         transform: isHovered ? 'translateY(-12px)' : 'none',
         '&::before': {

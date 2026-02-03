@@ -1,9 +1,10 @@
 import '@/styles/globals.css'
-import { Poppins, DM_Sans, JetBrains_Mono } from 'next/font/google'
+import { Poppins, DM_Sans, JetBrains_Mono, Oswald } from 'next/font/google'
 import { Toaster } from 'react-hot-toast'
 import { cn } from '@/lib/utils'
 import { ThemeRegistry } from '@/components/theme-registry'
 import { AuthProvider } from '@/features/auth/context/auth-context'
+import { PoweredByJulley } from '@/components/public/PoweredByJulley'
 
 const poppins = Poppins({
   subsets: ['latin'],
@@ -23,6 +24,12 @@ const jetbrainsMono = JetBrains_Mono({
   variable: '--font-jetbrains-mono',
 })
 
+const oswald = Oswald({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-sports-display',
+})
+
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
@@ -36,6 +43,7 @@ export default function RootLayout({
       poppins.variable,
       dmSans.variable,
       jetbrainsMono.variable,
+      oswald.variable,
     )}>
       <body suppressHydrationWarning className={cn(
         'min-h-screen',
@@ -49,6 +57,7 @@ export default function RootLayout({
             <main className="min-h-screen">
               {children}
             </main>
+            <PoweredByJulley standalone />
             <Toaster 
               position="top-right"
               toastOptions={{

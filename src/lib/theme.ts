@@ -13,19 +13,38 @@ const dmSans = DM_Sans({
   display: 'swap',
 })
 
+/** Sports/broadcast palette for public tournament pages */
+const sportsPalette = {
+  surface: {
+    dark: '#0a0e17',
+    card: '#111827',
+    elevated: '#1a2234',
+  },
+  accent: {
+    blue: '#0ea5e9',
+    blueBright: '#38bdf8',
+    blueDark: '#0284c7',
+  },
+  highlight: {
+    orange: '#f97316',
+    gold: '#eab308',
+  },
+  live: { red: '#ef4444' },
+}
+
 export const theme = createTheme({
   palette: {
     mode: 'light',
     primary: {
-      main: '#2563eb',
-      light: '#60a5fa',
-      dark: '#1d4ed8',
+      main: sportsPalette.accent.blue,
+      light: sportsPalette.accent.blueBright,
+      dark: sportsPalette.accent.blueDark,
       contrastText: '#ffffff',
     },
     secondary: {
-      main: '#4f46e5',
-      light: '#818cf8',
-      dark: '#4338ca',
+      main: sportsPalette.highlight.orange,
+      light: '#fb923c',
+      dark: '#ea580c',
       contrastText: '#ffffff',
     },
     error: {

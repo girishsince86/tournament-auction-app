@@ -8,7 +8,7 @@ const isRegistrationOpen = process.env.NEXT_PUBLIC_REGISTRATION_OPEN === 'true'
 
 export default function RegistrationPage() {
   return (
-    <Container maxWidth="lg">
+    <Container maxWidth="lg" sx={{ position: 'relative', zIndex: 1 }}>
       <Box sx={{ py: 4 }}>
         {isRegistrationOpen ? (
           <RegistrationPageContent />
@@ -18,4 +18,4 @@ export default function RegistrationPage() {
       </Box>
     </Container>
   )
-} 
+}
