@@ -119,28 +119,30 @@ export default function HomePage() {
             </ul>
           </div>
 
-          {/* Development Routes */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Development Routes</h2>
-            <ul className="space-y-3">
-              <li>
-                <Link 
-                  href="/test-form" 
-                  className="text-blue-600 hover:text-blue-800 hover:underline"
-                >
-                  Test Form
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  href="/theme-test" 
-                  className="text-blue-600 hover:text-blue-800 hover:underline"
-                >
-                  Theme Test
-                </Link>
-              </li>
-            </ul>
-          </div>
+          {/* Development Routes — only in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Development Routes</h2>
+              <ul className="space-y-3">
+                <li>
+                  <Link
+                    href="/test-form"
+                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    Test Form
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/theme-test"
+                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    Theme Test
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* Environment Info */}

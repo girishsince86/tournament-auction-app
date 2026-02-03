@@ -85,6 +85,9 @@ A Next.js application for managing sports (e.g. volleyball) tournament registrat
 - `src/lib/` — Supabase client/server/admin, API helpers, DB types, utils.
 - `src/types/` — Shared TypeScript types (auction, auth, team, tournament, etc.).
 - `supabase/migrations/` — PostgreSQL migrations (baseline and feature migrations).
+- `scripts/sql/` — One-off and historical SQL scripts (not part of `supabase migrate`); see `scripts/sql/README.md`.
+- `scripts/fixtures/` — Sample/fixture data (e.g. `players.json`).
+- `docs/` — Topic docs (migrations, profile images, auth, cleanup).
 
 ## Key routes (reference)
 
@@ -102,9 +105,12 @@ API routes under `src/app/api/` cover auth, admin registrations/players, auction
 
 ## Other documentation
 
-- `README_volleyball_migration.md` — Migrating volleyball registrations into the `players` table.
-- `README_profile_image_*.md` — Profile image handling and fixes.
-- `README_cleanup_and_reload.md`, `README_supabase_storage_image_fix.md` — DB/Storage cleanup and image fixes.
+- [docs/README_volleyball_migration.md](docs/README_volleyball_migration.md) — Migrating volleyball registrations into the `players` table.
+- [docs/README_profile_image_fix.md](docs/README_profile_image_fix.md), [docs/README_profile_image_update.md](docs/README_profile_image_update.md), [docs/README_supabase_storage_image_fix.md](docs/README_supabase_storage_image_fix.md) — Profile image handling and fixes.
+- [docs/README_cleanup_and_reload.md](docs/README_cleanup_and_reload.md) — DB/Storage cleanup and image fixes.
+- [docs/AUTH_SESSION_FIX.md](docs/AUTH_SESSION_FIX.md) — Auth session and password-change fixes.
+- [docs/CLEANUP_PROPOSAL.md](docs/CLEANUP_PROPOSAL.md) — Repository cleanup proposal (this cleanup).
+- [supabase/README_PBVB2026_SETUP.md](supabase/README_PBVB2026_SETUP.md) — Supabase PBVB 2026 setup.
 
 ## License
 
