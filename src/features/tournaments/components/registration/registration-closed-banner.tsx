@@ -53,7 +53,7 @@ export function RegistrationClosedBanner() {
         <Box sx={{ width: '100%', height: 'auto', minHeight: '600px', position: 'relative' }}>
           <Image
             src="/tournament-announcement.jpg"
-            alt="PBEL City Volleyball & Throwball League 2025"
+            alt="PBEL City Volleyball & Throwball League 2026"
             fill
             style={{ 
               objectFit: 'contain',

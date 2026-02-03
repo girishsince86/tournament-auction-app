@@ -1,3 +1,4 @@
+'use client'
 import React from 'react'
 import { Box, Button, Typography, Paper } from '@mui/material'
 import { ErrorOutline as ErrorIcon } from '@mui/icons-material'

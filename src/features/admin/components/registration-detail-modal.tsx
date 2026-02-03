@@ -195,7 +195,7 @@ export function RegistrationDetailModal({
                       {new Date(registration.date_of_birth).toLocaleDateString()}
                       {(() => {
                         const dob = new Date(registration.date_of_birth);
-                        const cutoffDate = new Date('2025-04-30');
+                        const cutoffDate = new Date('2026-04-30');
                         const age = cutoffDate.getFullYear() - dob.getFullYear();
                         const monthDiff = cutoffDate.getMonth() - dob.getMonth();
                         const finalAge = monthDiff < 0 || (monthDiff === 0 && cutoffDate.getDate() < dob.getDate()) 
@@ -210,7 +210,7 @@ export function RegistrationDetailModal({
                               fontSize: '0.875rem',
                             }}
                           >
-                            (Age as of Apr 30, 2025: {finalAge} years)
+                            (Age as of Apr 30, 2026: {finalAge} years)
                           </Typography>
                         );
                       })()}

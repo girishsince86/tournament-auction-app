@@ -14,7 +14,7 @@ import {
 } from '@mui/material'
 import { TournamentRegistration } from '@/features/tournaments/types/registration'
 
-const DEFAULT_AMOUNT = 600
+const DEFAULT_AMOUNT = 750
 
 interface VerifyPaymentModalProps {
   open: boolean

@@ -1,13 +1,7 @@
--- Disable all validation triggers on players table
-ALTER TABLE players DISABLE TRIGGER validate_combined_requirements;
-ALTER TABLE players DISABLE TRIGGER validate_team_requirements;
-ALTER TABLE players DISABLE TRIGGER ALL;
-
--- Disable all validation triggers on auction_rounds table
-ALTER TABLE auction_rounds DISABLE TRIGGER ALL;
-
--- Disable all validation triggers on teams table
-ALTER TABLE teams DISABLE TRIGGER ALL;
+-- Disable user-defined validation triggers (USER excludes system/constraint triggers)
+ALTER TABLE players DISABLE TRIGGER USER;
+ALTER TABLE auction_rounds DISABLE TRIGGER USER;
+ALTER TABLE teams DISABLE TRIGGER USER;
 
 -- Create empty dummy functions for any that might be missing
 CREATE OR REPLACE FUNCTION check_combined_requirements()

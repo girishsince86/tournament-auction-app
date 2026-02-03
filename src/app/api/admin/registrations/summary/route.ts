@@ -12,7 +12,7 @@ const REGISTRATION_CATEGORIES = [
   'THROWBALL_8_12_MIXED',
 ] as const;
 
-const DEFAULT_REGISTRATION_AMOUNT = 600;
+const DEFAULT_REGISTRATION_AMOUNT = 750;
 
 interface AgeDistribution {
   age: number;
@@ -61,7 +61,7 @@ export async function GET() {
       .select('date_of_birth')
       .not('date_of_birth', 'is', null)
 
-    const cutoffDate = new Date('2025-04-30')
+    const cutoffDate = new Date('2026-04-30')
     const ageDistributionMap = new Map<number, number>()
 
     registrationsWithDOB?.forEach(registration => {

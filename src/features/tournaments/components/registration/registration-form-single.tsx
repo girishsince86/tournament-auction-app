@@ -321,6 +321,51 @@ export function RegistrationFormSingle() {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [registrationId, setRegistrationId] = useState<string>('')
   const [sizeChartOpen, setSizeChartOpen] = useState(false)
+  const [referenceLoading, setReferenceLoading] = useState(false)
+  const [referenceMessage, setReferenceMessage] = useState<string | null>(null)
+
+  // Load 2025 reference data for pre-fill
+  const loadReference = async () => {
+    const email = (formData.email || '').trim()
+    const phone = (formData.phone_number || '').trim()
+    if (!email && !phone) {
+      setReferenceMessage('Enter your email or phone number above, then click Load my 2025 details.')
+      return
+    }
+    setReferenceMessage(null)
+    setReferenceLoading(true)
+    try {
+      const params = new URLSearchParams()
+      if (email) params.set('email', email)
+      else params.set('phone', phone)
+      const res = await fetch(`/api/tournaments/register/reference?${params}`)
+      const json = await res.json()
+      if (!res.ok) {
+        setReferenceMessage(json.error || 'Lookup failed.')
+        return
+      }
+      if (json.reference) {
+        setFormData(prev => ({
+          ...prev,
+          first_name: json.reference.first_name ?? prev.first_name,
+          last_name: json.reference.last_name ?? prev.last_name,
+          email: json.reference.email ?? prev.email,
+          phone_number: json.reference.phone_number ?? prev.phone_number,
+          date_of_birth: json.reference.date_of_birth ?? prev.date_of_birth,
+          registration_category: (json.reference.registration_category ?? prev.registration_category) as RegistrationCategory,
+          tshirt_size: (json.reference.tshirt_size ?? prev.tshirt_size) as RegistrationFormData['tshirt_size'],
+          tshirt_number: json.reference.tshirt_number ?? prev.tshirt_number,
+        }))
+        setReferenceMessage('Pre-filled from 2025 registration.')
+      } else {
+        setReferenceMessage('No 2025 registration found for this email or phone.')
+      }
+    } catch {
+      setReferenceMessage('Could not load reference. Try again.')
+    } finally {
+      setReferenceLoading(false)
+    }
+  }
 
   // Tournament Rules Content
   const tournamentRules = [
@@ -331,7 +376,7 @@ export function RegistrationFormSingle() {
         'Only PBEL City residents can participate',
         'Individual registrations only (no team registrations)',
         'Players can register for only one category',
-        'Registration fee: INR 600 per player',
+        'Registration fee: INR 750 per player',
         'Registration deadline strictly enforced',
         'No late registrations accepted',
       ]
@@ -738,7 +783,7 @@ export function RegistrationFormSingle() {
             return 'Date of birth is required'
           }
           const dob = new Date(value)
-          const cutoffDate = new Date('2025-04-30')
+          const cutoffDate = new Date('2026-04-30')
           const age = cutoffDate.getFullYear() - dob.getFullYear()
           const monthDiff = cutoffDate.getMonth() - dob.getMonth()
           const finalAge = monthDiff < 0 || (monthDiff === 0 && cutoffDate.getDate() < dob.getDate()) 
@@ -747,25 +792,25 @@ export function RegistrationFormSingle() {
 
           if (formData.registration_category === 'THROWBALL_8_12_MIXED') {
             if (finalAge < 8) {
-              return 'Player must be at least 8 years old as of April 30, 2025'
+              return 'Player must be at least 8 years old as of April 30, 2026'
             }
             if (finalAge > 12) {
-              return 'Player must be under 12 years old as of April 30, 2025'
+              return 'Player must be under 12 years old as of April 30, 2026'
             }
           }
           if (formData.registration_category === 'THROWBALL_13_17_MIXED') {
             if (finalAge < 13) {
-              return 'Player must be at least 13 years old as of April 30, 2025'
+              return 'Player must be at least 13 years old as of April 30, 2026'
             }
             if (finalAge > 17) {
-              return 'Player must be under 17 years old as of April 30, 2025'
+              return 'Player must be under 17 years old as of April 30, 2026'
             }
           }
         } else {
           // For non-youth categories (Volleyball Open and Women's Throwball)
           if (value) {
             const dob = new Date(value)
-            const cutoffDate = new Date('2025-04-30')
+            const cutoffDate = new Date('2026-04-30')
             const age = cutoffDate.getFullYear() - dob.getFullYear()
             const monthDiff = cutoffDate.getMonth() - dob.getMonth()
             const finalAge = monthDiff < 0 || (monthDiff === 0 && cutoffDate.getDate() < dob.getDate()) 
@@ -773,7 +818,7 @@ export function RegistrationFormSingle() {
               : age
 
             if (finalAge < 8) {
-              return 'Player must be at least 8 years old as of April 30, 2025'
+              return 'Player must be at least 8 years old as of April 30, 2026'
             }
           }
         }
@@ -1036,7 +1081,7 @@ export function RegistrationFormSingle() {
                 Payment Required
               </Typography>
               <Typography variant="body1" paragraph sx={{ fontWeight: 500 }}>
-                Registration fee: INR 600
+                Registration fee: INR 750
               </Typography>
               <Box sx={{ pl: 2 }}>
                 <Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
@@ -1116,7 +1161,7 @@ export function RegistrationFormSingle() {
                     WebkitTextFillColor: 'transparent',
                   }}
                 >
-                  PBEL City VolleyBall and ThrowBall League 2025
+                  PBEL City VolleyBall and ThrowBall League 2026
                 </Typography>
                 <Box sx={{ 
                   width: 60, 
@@ -1505,6 +1550,24 @@ export function RegistrationFormSingle() {
                       helperText={errors.flat_number || 'Format: A-123 or a-123'}
                       placeholder="A-123"
                     />
+                  </Grid>
+
+                  <Grid item xs={12}>
+                    <Button
+                      type="button"
+                      variant="outlined"
+                      color="secondary"
+                      onClick={loadReference}
+                      disabled={referenceLoading}
+                      size="medium"
+                    >
+                      {referenceLoading ? 'Loading…' : 'Load my 2025 details'}
+                    </Button>
+                    {referenceMessage && (
+                      <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                        {referenceMessage}
+                      </Typography>
+                    )}
                   </Grid>
 
                   {/* Youth-specific fields */}

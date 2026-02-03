@@ -21,19 +21,21 @@ INSERT INTO auction_settings (
     1   -- min_liberos
 ) ON CONFLICT DO NOTHING;
 
--- Insert default tournament rules
-INSERT INTO tournament_rules (rule_text, rule_order, is_active) VALUES
+-- Insert default tournament rules (skip if any exist)
+INSERT INTO tournament_rules (rule_text, rule_order, is_active)
+SELECT * FROM (VALUES
     ('Each team must have a minimum of 7 players and a maximum of 14 players.', 1, true),
     ('Teams must have at least 1 setter, 2 outside hitters, 2 middle blockers, 1 opposite, and 1 libero.', 2, true),
     ('Players can only be registered in one position.', 3, true),
-    ('The minimum bid increment is ₹1,00,000.', 4, true),
+    ('The minimum bid increment is Rs 1,00,000.', 4, true),
     ('Teams cannot exceed their allocated budget.', 5, true),
     ('Players must meet the minimum skill level requirements for their registered position.', 6, true),
     ('Team owners can only bid for their own team.', 7, true),
     ('Once a player is drafted, they cannot be traded or released.', 8, true),
     ('All team composition requirements must be met by the end of the auction.', 9, true),
     ('The auction conductor has final authority on all decisions.', 10, true)
-) ON CONFLICT DO NOTHING;
+) AS v(rule_text, rule_order, is_active)
+WHERE NOT EXISTS (SELECT 1 FROM tournament_rules LIMIT 1);
 
 -- Insert default player categories for different tournaments
 INSERT INTO player_categories (

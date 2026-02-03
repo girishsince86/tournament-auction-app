@@ -59,7 +59,7 @@ import { TournamentRegistration, RegistrationCategory } from '@/features/tournam
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts'
 import toast from 'react-hot-toast'
 
-const REGISTRATION_AMOUNT = 600
+const REGISTRATION_AMOUNT = 750
 
 const CATEGORY_MAP = {
   'VOLLEYBALL_OPEN_MEN': 'Volleyball - Open',
@@ -553,7 +553,7 @@ export function ManageRegistrations() {
       renderCell: (params: GridRenderCellParams<TournamentRegistration>) => {
         if (!params.row.date_of_birth) return '-';
         const dob = new Date(params.row.date_of_birth);
-        const cutoffDate = new Date('2025-04-30');
+        const cutoffDate = new Date('2026-04-30');
         
         // Calculate years
         const yearDiff = cutoffDate.getFullYear() - dob.getFullYear();
@@ -597,7 +597,7 @@ export function ManageRegistrations() {
                 fontSize: '0.75rem',
               }}
             >
-              Age on Apr 30, 2025: {ageDisplay}
+              Age on Apr 30, 2026: {ageDisplay}
             </Typography>
           </Stack>
         );
@@ -1144,7 +1144,7 @@ export function ManageRegistrations() {
                                 <XAxis 
                                   dataKey="age" 
                                   label={{ 
-                                    value: 'Age (as of Apr 30, 2025)', 
+                                    value: 'Age (as of Apr 30, 2026)', 
                                     position: 'bottom',
                                     offset: 15
                                   }}

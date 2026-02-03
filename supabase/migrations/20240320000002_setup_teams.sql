@@ -5,6 +5,25 @@ DROP TABLE IF EXISTS team_combined_requirements CASCADE;
 DROP FUNCTION IF EXISTS check_team_requirements() CASCADE;
 DROP FUNCTION IF EXISTS check_combined_requirements() CASCADE;
 
+-- Ensure at least one tournament exists (for fresh DBs) so team inserts have a valid tournament_id
+INSERT INTO tournaments (
+    name, description, start_date, end_date, registration_deadline,
+    max_teams, max_players_per_team, min_players_per_team, team_points_budget, team_budget, is_active
+)
+SELECT
+    'Default Tournament',
+    'Default tournament for setup',
+    CURRENT_DATE,
+    CURRENT_DATE + 7,
+    CURRENT_DATE + 6,
+    12,
+    14,
+    7,
+    1000000000,
+    1000000000,
+    true
+WHERE NOT EXISTS (SELECT 1 FROM tournaments LIMIT 1);
+
 -- First modify the teams table structure
 ALTER TABLE teams 
 ADD COLUMN IF NOT EXISTS min_players integer NOT NULL DEFAULT 8,
@@ -34,8 +53,7 @@ DELETE FROM bids;
 DELETE FROM auction_queue;
 DELETE FROM auction_rounds;
 
--- Now delete team-related records
-DELETE FROM team_combined_requirements;
+-- Now delete team-related records (team_combined_requirements already dropped above)
 DELETE FROM preferred_players;
 DELETE FROM team_owners;
 DELETE FROM teams;

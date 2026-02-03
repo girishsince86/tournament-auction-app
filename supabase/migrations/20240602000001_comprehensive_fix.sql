@@ -1,8 +1,14 @@
 -- First, drop all triggers that might be referencing the problematic tables or functions
 DROP TRIGGER IF EXISTS validate_combined_requirements ON players;
 DROP TRIGGER IF EXISTS validate_team_requirements ON players;
-DROP TRIGGER IF EXISTS update_team_position_requirements_updated_at ON team_position_requirements;
-DROP TRIGGER IF EXISTS update_team_skill_requirements_updated_at ON team_skill_requirements;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'team_position_requirements') THEN
+    DROP TRIGGER IF EXISTS update_team_position_requirements_updated_at ON team_position_requirements;
+  END IF;
+  IF EXISTS (SELECT 1 FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'team_skill_requirements') THEN
+    DROP TRIGGER IF EXISTS update_team_skill_requirements_updated_at ON team_skill_requirements;
+  END IF;
+END $$;
 
 -- Drop all functions that might be causing issues
 DROP FUNCTION IF EXISTS check_combined_requirements() CASCADE;

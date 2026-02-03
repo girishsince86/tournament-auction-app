@@ -68,13 +68,14 @@ const isAuthPath = (path: string): boolean => {
 
 const PUBLIC_ROUTES = [
   '/',
-  '/login', 
-  '/signup', 
+  '/login',
+  '/signup',
   '/auth/callback',
   '/profile',
   '/teams',
   '/players',
-  '/team-owners'
+  '/team-owners',
+  '/tournaments/register',
 ]
 
 const ADMIN_ROUTES = [

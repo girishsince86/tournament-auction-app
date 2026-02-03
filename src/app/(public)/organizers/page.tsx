@@ -334,7 +334,7 @@ export default function OrganizersPage() {
                   fontSize: { xs: '0.7rem', sm: '0.875rem' }
                 }}
               >
-                AND THROWBALL LEAGUE 2025
+                AND THROWBALL LEAGUE 2026
               </Typography>
             </Box>
           </Box>

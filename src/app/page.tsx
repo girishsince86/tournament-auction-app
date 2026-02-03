@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { ErrorBoundary } from 'next/dist/client/components/error-boundary'
+import { ErrorBoundary } from '@/components/error-boundary'
 
 export default function HomePage() {
   return (
@@ -144,12 +144,14 @@ export default function HomePage() {
         </div>
 
         {/* Environment Info */}
-        <ErrorBoundary errorComponent={({ error }) => (
-          <div className="mt-8 bg-red-50 rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-red-700 mb-4">Environment Information Error</h2>
-            <p className="text-red-600">There was an error loading environment information.</p>
-          </div>
-        )}>
+        <ErrorBoundary
+          fallback={
+            <div className="mt-8 bg-red-50 rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-red-700 mb-4">Environment Information Error</h2>
+              <p className="text-red-600">There was an error loading environment information.</p>
+            </div>
+          }
+        >
           <Suspense fallback={
             <div className="mt-8 bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Environment Information</h2>

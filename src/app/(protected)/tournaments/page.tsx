@@ -16,7 +16,7 @@ export default function TournamentsPage() {
             <Card>
               <CardContent>
                 <Typography variant="h5" gutterBottom>
-                  PCVC Volley Ball and Throwball League 2025
+                  PCVC Volley Ball and Throwball League 2026
                 </Typography>
                 <Typography color="text.secondary" gutterBottom>
                   Annual PCVC volleyball and throwball tournament

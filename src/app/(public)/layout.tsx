@@ -99,7 +99,7 @@ export default function PublicLayout({
                       fontSize: { xs: '0.65rem', sm: '0.75rem' }
                     }}
                   >
-                    & Throwball League 2025
+                    & Throwball League 2026
                   </Typography>
                 </Box>
               </Box>
@@ -406,7 +406,7 @@ export default function PublicLayout({
                   PBEL CIty Volleyball
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
-                  & Throwball League 2025
+                  & Throwball League 2026
                 </Typography>
               </Box>
             </Box>
