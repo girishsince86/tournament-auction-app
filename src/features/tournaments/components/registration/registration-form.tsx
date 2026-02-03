@@ -171,7 +171,7 @@ export function RegistrationForm({
           color="text.secondary"
           sx={{ mb: 4 }}
         >
-          Join PBEL City VolleyBall & ThrowBall League 2025
+          Join PBEL City VolleyBall & ThrowBall League 2026
         </Typography>
       </Box>
 

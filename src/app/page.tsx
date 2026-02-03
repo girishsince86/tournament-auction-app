@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { Suspense } from 'react'
-import { ErrorBoundary } from 'next/dist/client/components/error-boundary'
+import { ErrorBoundary } from '@/components/error-boundary'
 
 export default function HomePage() {
   return (
@@ -119,37 +119,41 @@ export default function HomePage() {
             </ul>
           </div>
 
-          {/* Development Routes */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">Development Routes</h2>
-            <ul className="space-y-3">
-              <li>
-                <Link 
-                  href="/test-form" 
-                  className="text-blue-600 hover:text-blue-800 hover:underline"
-                >
-                  Test Form
-                </Link>
-              </li>
-              <li>
-                <Link 
-                  href="/theme-test" 
-                  className="text-blue-600 hover:text-blue-800 hover:underline"
-                >
-                  Theme Test
-                </Link>
-              </li>
-            </ul>
-          </div>
+          {/* Development Routes — only in development */}
+          {process.env.NODE_ENV === 'development' && (
+            <div className="bg-white rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">Development Routes</h2>
+              <ul className="space-y-3">
+                <li>
+                  <Link
+                    href="/test-form"
+                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    Test Form
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    href="/theme-test"
+                    className="text-blue-600 hover:text-blue-800 hover:underline"
+                  >
+                    Theme Test
+                  </Link>
+                </li>
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* Environment Info */}
-        <ErrorBoundary errorComponent={({ error }) => (
-          <div className="mt-8 bg-red-50 rounded-lg shadow p-6">
-            <h2 className="text-xl font-semibold text-red-700 mb-4">Environment Information Error</h2>
-            <p className="text-red-600">There was an error loading environment information.</p>
-          </div>
-        )}>
+        <ErrorBoundary
+          fallback={
+            <div className="mt-8 bg-red-50 rounded-lg shadow p-6">
+              <h2 className="text-xl font-semibold text-red-700 mb-4">Environment Information Error</h2>
+              <p className="text-red-600">There was an error loading environment information.</p>
+            </div>
+          }
+        >
           <Suspense fallback={
             <div className="mt-8 bg-white rounded-lg shadow p-6">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Environment Information</h2>

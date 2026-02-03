@@ -159,10 +159,11 @@ export default function PublicHomePage() {
 
   return (
     <Container maxWidth="xl">
-      {/* Hero Section */}
+      {/* Hero Section - sports broadcast style */}
       <Box 
         sx={{ 
           position: 'relative',
+          zIndex: 1,
           py: { xs: 6, md: 10 },
           textAlign: 'center',
           mb: 6
@@ -171,17 +172,19 @@ export default function PublicHomePage() {
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7 }}
+          transition={{ duration: 0.6, ease: [0.32, 0.72, 0, 1] }}
         >
           <Typography 
             variant="h2" 
             component="h1" 
             gutterBottom
             sx={{ 
-              fontWeight: 800,
-              color: theme.palette.primary.main,
-              textShadow: '0px 2px 4px rgba(0,0,0,0.1)',
-              fontSize: { xs: '2.5rem', md: '3.5rem' }
+              fontFamily: 'var(--font-sports-display), Oswald, sans-serif',
+              fontWeight: 700,
+              letterSpacing: '0.04em',
+              color: '#fff',
+              textShadow: '0 0 32px rgba(14, 165, 233, 0.25)',
+              fontSize: { xs: '2.5rem', md: '4rem' }
             }}
           >
             PBEL City Volleyball
@@ -191,20 +194,20 @@ export default function PublicHomePage() {
         <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          transition={{ duration: 0.7, delay: 0.3 }}
+          transition={{ duration: 0.6, delay: 0.2, ease: [0.32, 0.72, 0, 1] }}
         >
           <Typography 
-            variant="h5" 
-            color="text.secondary"
+            variant="h5"
             sx={{ 
               maxWidth: '800px',
               mx: 'auto',
               mb: 4,
-              fontSize: { xs: '1.1rem', md: '1.5rem' }
+              fontSize: { xs: '1rem', md: '1.25rem' },
+              color: 'rgba(255,255,255,0.85)',
             }}
           >
             {loading ? (
-              <Skeleton width="100%" />
+              <Skeleton width="100%" sx={{ bgcolor: 'rgba(255,255,255,0.1)' }} />
             ) : activeTournament ? (
               activeTournament.description || 'Welcome to the official tournament page. Explore teams, players, and more!'
             ) : (
@@ -213,11 +216,11 @@ export default function PublicHomePage() {
           </Typography>
         </motion.div>
         
-        {/* Tournament Stats */}
+        {/* Tournament Stats - scoreboard style cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.5 }}
+          transition={{ duration: 0.5, delay: 0.35, ease: [0.33, 1, 0.68, 1] }}
         >
           <Grid 
             container 
@@ -225,93 +228,78 @@ export default function PublicHomePage() {
             justifyContent="center"
             sx={{ mb: 6 }}
           >
-            <Grid item xs={12} sm={4} md={3}>
-              <Paper 
-                elevation={2} 
-                sx={{ 
-                  p: 3, 
-                  textAlign: 'center',
-                  bgcolor: alpha(theme.palette.primary.main, 0.05),
-                  borderRadius: 2,
-                  height: '100%'
-                }}
-              >
-                <PersonIcon 
-                  color="primary" 
-                  sx={{ fontSize: 40, mb: 1 }} 
-                />
-                <Typography variant="h4" fontWeight="bold" color="primary">
-                  {loading ? <Skeleton width="100%" /> : stats.players}
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                  Players
-                </Typography>
-              </Paper>
-            </Grid>
-            
-            <Grid item xs={12} sm={4} md={3}>
-              <Paper 
-                elevation={2} 
-                sx={{ 
-                  p: 3, 
-                  textAlign: 'center',
-                  bgcolor: alpha(theme.palette.secondary.main, 0.05),
-                  borderRadius: 2,
-                  height: '100%'
-                }}
-              >
-                <GroupIcon 
-                  color="secondary" 
-                  sx={{ fontSize: 40, mb: 1 }} 
-                />
-                <Typography variant="h4" fontWeight="bold" color="secondary">
-                  {loading ? <Skeleton width="100%" /> : stats.teams}
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                  Teams
-                </Typography>
-              </Paper>
-            </Grid>
-            
-            <Grid item xs={12} sm={4} md={3}>
-              <Paper 
-                elevation={2} 
-                sx={{ 
-                  p: 3, 
-                  textAlign: 'center',
-                  bgcolor: alpha(theme.palette.success.main, 0.05),
-                  borderRadius: 2,
-                  height: '100%'
-                }}
-              >
-                <SportsIcon 
-                  sx={{ fontSize: 40, mb: 1, color: theme.palette.success.main }} 
-                />
-                <Typography variant="h4" fontWeight="bold" color="success.main">
-                  {loading ? <Skeleton width="100%" /> : stats.formats}
-                </Typography>
-                <Typography variant="body1" color="text.secondary">
-                  Formats
-                </Typography>
-              </Paper>
-            </Grid>
+            {[
+              { value: stats.players, label: 'Players', icon: <PersonIcon sx={{ fontSize: 36 }} />, accent: '#0ea5e9' },
+              { value: stats.teams, label: 'Teams', icon: <GroupIcon sx={{ fontSize: 36 }} />, accent: '#f97316' },
+              { value: stats.formats, label: 'Formats', icon: <SportsIcon sx={{ fontSize: 36 }} />, accent: '#22c55e' },
+            ].map((stat, i) => (
+              <Grid item xs={12} sm={4} md={3} key={stat.label}>
+                <Paper 
+                  elevation={0}
+                  sx={{ 
+                    p: 3, 
+                    textAlign: 'center',
+                    background: 'linear-gradient(180deg, rgba(26, 34, 52, 0.9) 0%, rgba(17, 24, 39, 0.95) 100%)',
+                    border: '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: 2,
+                    height: '100%',
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+                    transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 24px rgba(14, 165, 233, 0.12)',
+                    },
+                  }}
+                >
+                  <Box sx={{ color: stat.accent, mb: 1 }}>{stat.icon}</Box>
+                  <Typography 
+                    variant="h4" 
+                    sx={{ 
+                      fontFamily: 'var(--font-sports-display), Oswald, sans-serif',
+                      fontWeight: 700,
+                      color: '#fff',
+                      letterSpacing: '-0.02em',
+                    }}
+                  >
+                    {loading ? <Skeleton width={48} sx={{ mx: 'auto', bgcolor: 'rgba(255,255,255,0.1)' }} /> : stat.value}
+                  </Typography>
+                  <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.08em', fontSize: '0.75rem' }}>
+                    {stat.label}
+                  </Typography>
+                </Paper>
+              </Grid>
+            ))}
           </Grid>
         </motion.div>
       </Box>
       
-      {/* Navigation Cards */}
-      <Typography 
-        variant="h4" 
-        component="h2" 
-        gutterBottom
-        sx={{ 
-          fontWeight: 700,
-          mb: 4,
-          textAlign: 'center'
-        }}
-      >
-        Explore the Tournament
-      </Typography>
+      {/* Navigation Cards - sports card style */}
+      <Box sx={{ textAlign: 'center', mb: 4 }}>
+        <Typography 
+          variant="overline" 
+          component="h2"
+          sx={{ 
+            display: 'block',
+            fontFamily: 'var(--font-sports-display), Oswald, sans-serif',
+            fontWeight: 700,
+            letterSpacing: '0.15em',
+            color: 'rgba(255,255,255,0.6)',
+            fontSize: '0.75rem',
+          }}
+        >
+          Explore the Tournament
+        </Typography>
+        <Box 
+          sx={{ 
+            height: 4, 
+            width: 48, 
+            mx: 'auto', 
+            mt: 1, 
+            borderRadius: 2, 
+            background: 'linear-gradient(90deg, #0ea5e9, #f97316)' 
+          }} 
+        />
+      </Box>
       
       <motion.div
         variants={containerVariants}
@@ -323,14 +311,18 @@ export default function PublicHomePage() {
             <Grid item xs={12} sm={6} md={4} key={card.title}>
               <motion.div variants={itemVariants}>
                 <Card 
-                  elevation={3} 
+                  elevation={0}
                   sx={{ 
                     height: '100%',
-                    transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                    background: 'linear-gradient(180deg, rgba(26, 34, 52, 0.95) 0%, rgba(17, 24, 39, 0.98) 100%)',
+                    border: '1px solid rgba(255,255,255,0.06)',
+                    borderRadius: 2,
+                    boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+                    transition: 'transform 0.25s cubic-bezier(0.32, 0.72, 0, 1), box-shadow 0.25s ease',
                     '&:hover': {
-                      transform: 'translateY(-8px)',
-                      boxShadow: theme.shadows[10],
-                    }
+                      transform: 'translateY(-6px)',
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 24px rgba(14, 165, 233, 0.15)',
+                    },
                   }}
                 >
                   <CardActionArea 
@@ -343,7 +335,7 @@ export default function PublicHomePage() {
                         p: 3, 
                         display: 'flex',
                         alignItems: 'center',
-                        bgcolor: alpha(card.color, 0.1),
+                        bgcolor: alpha(card.color, 0.12),
                         color: card.color
                       }}
                     >
@@ -353,7 +345,7 @@ export default function PublicHomePage() {
                       </Typography>
                     </Box>
                     <CardContent sx={{ flexGrow: 1 }}>
-                      <Typography variant="body1" color="text.secondary">
+                      <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
                         {card.description}
                       </Typography>
                     </CardContent>
@@ -362,7 +354,7 @@ export default function PublicHomePage() {
                         p: 2, 
                         display: 'flex', 
                         justifyContent: 'flex-end',
-                        borderTop: `1px solid ${alpha(theme.palette.divider, 0.5)}`
+                        borderTop: '1px solid rgba(255,255,255,0.08)',
                       }}
                     >
                       <Typography 
@@ -371,7 +363,8 @@ export default function PublicHomePage() {
                           display: 'flex', 
                           alignItems: 'center',
                           color: card.color,
-                          fontWeight: 'medium'
+                          fontWeight: 600,
+                          fontSize: '0.8rem',
                         }}
                       >
                         View {card.title}
@@ -386,14 +379,16 @@ export default function PublicHomePage() {
         </Grid>
       </motion.div>
       
-      {/* Current Tournament Section */}
-      <Box sx={{ mb: 8 }}>
+      {/* Current Tournament Section - sports card */}
+      <Box sx={{ mb: 8, position: 'relative', zIndex: 1 }}>
         <Paper 
-          elevation={3} 
+          elevation={0}
           sx={{ 
             p: { xs: 3, md: 5 },
             borderRadius: 2,
-            background: `linear-gradient(135deg, ${alpha(theme.palette.primary.light, 0.1)}, ${alpha(theme.palette.primary.main, 0.05)})`
+            background: 'linear-gradient(180deg, rgba(26, 34, 52, 0.95) 0%, rgba(17, 24, 39, 0.98) 100%)',
+            border: '1px solid rgba(255,255,255,0.06)',
+            boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
           }}
         >
           <Grid container spacing={4} alignItems="center">
@@ -402,10 +397,14 @@ export default function PublicHomePage() {
                 variant="h4" 
                 component="h2" 
                 gutterBottom
-                sx={{ fontWeight: 'bold' }}
+                sx={{ 
+                  fontWeight: 700, 
+                  color: '#fff',
+                  fontFamily: 'var(--font-sports-display), Oswald, sans-serif',
+                }}
               >
                 {loading ? (
-                  <Skeleton width="80%" />
+                  <Skeleton width="80%" sx={{ bgcolor: 'rgba(255,255,255,0.1)' }} />
                 ) : activeTournament ? (
                   `${activeTournament.name}`
                 ) : (
@@ -413,12 +412,12 @@ export default function PublicHomePage() {
                 )}
               </Typography>
               
-              <Typography variant="body1" paragraph>
+              <Typography variant="body1" paragraph sx={{ color: 'rgba(255,255,255,0.85)' }}>
                 {loading ? (
                   <>
-                    <Skeleton />
-                    <Skeleton />
-                    <Skeleton width="80%" />
+                    <Skeleton sx={{ bgcolor: 'rgba(255,255,255,0.1)' }} />
+                    <Skeleton sx={{ bgcolor: 'rgba(255,255,255,0.1)' }} />
+                    <Skeleton width="80%" sx={{ bgcolor: 'rgba(255,255,255,0.1)' }} />
                   </>
                 ) : (
                   'Join us for an exciting volleyball tournament featuring talented players and competitive teams. Experience the thrill of the game, witness amazing skills, and enjoy the spirit of sportsmanship.'
@@ -457,7 +456,8 @@ export default function PublicHomePage() {
                   width: '100%',
                   borderRadius: 2,
                   overflow: 'hidden',
-                  boxShadow: theme.shadows[5]
+                  border: '1px solid rgba(255,255,255,0.08)',
+                  boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
                 }}
               >
                 <Image 

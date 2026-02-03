@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import {
   Box,
   Button,
@@ -8,36 +9,30 @@ import {
   CardHeader,
   Container,
   Grid,
-  TextField,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
-  SelectChangeEvent,
-  Chip,
   FormHelperText,
   Typography,
   Alert,
   Snackbar,
   CircularProgress,
   useTheme,
-  styled,
   Collapse,
-  IconButton,
-  IconButtonProps,
   Paper,
   Avatar,
   alpha,
   Checkbox,
   FormControlLabel,
-  Link,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+  LinearProgress,
 } from '@mui/material'
-import { useState, useEffect } from 'react'
-import { useSearchParams, useRouter } from 'next/navigation'
+import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline'
+import Image from 'next/image'
 import {
   RegistrationFormData,
   initialFormData,
@@ -56,848 +51,99 @@ import GavelIcon from '@mui/icons-material/Gavel'
 import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
 import DoneAllIcon from '@mui/icons-material/DoneAll'
 import StraightenIcon from '@mui/icons-material/Straighten'
-import Image from 'next/image'
-import { RegistrationCategory as AdminRegistrationCategory } from '@/features/admin/types/registration-admin'
+import PhotoCameraIcon from '@mui/icons-material/PhotoCamera'
 import { ErrorBoundary } from '@/components/error-boundary'
-import { useRegistrationSubmit } from '@/features/tournaments/hooks/use-registration-submit'
-
-// Styled components
-const StyledCard = styled(Card)(({ theme }) => ({
-  marginBottom: theme.spacing(3),
-  borderRadius: theme.shape.borderRadius,
-  transition: 'box-shadow 0.3s ease-in-out',
-  '&:hover': {
-    boxShadow: theme.shadows[4],
-  },
-}))
-
-const StyledCardHeader = styled(CardHeader)(({ theme }) => ({
-  backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[800] : theme.palette.grey[50],
-  borderBottom: `1px solid ${theme.palette.mode === 'dark' ? theme.palette.grey[700] : theme.palette.grey[200]}`,
-  '& .MuiTypography-root': {
-    color: theme.palette.mode === 'dark' ? theme.palette.grey[100] : theme.palette.grey[900],
-    fontWeight: 600,
-  },
-}))
-
-const StyledCardContent = styled(CardContent)(({ theme }) => ({
-  padding: theme.spacing(3),
-  backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[900] : theme.palette.common.white,
-}))
-
-const StyledTextField = styled(TextField)(({ theme }) => ({
-  '& .MuiOutlinedInput-root': {
-    backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[900] : theme.palette.common.white,
-    '&:hover fieldset': {
-      borderColor: theme.palette.mode === 'dark' ? theme.palette.grey[600] : theme.palette.grey[300],
-    },
-  },
-  '& .MuiInputLabel-root': {
-    color: theme.palette.mode === 'dark' ? theme.palette.grey[300] : theme.palette.grey[700],
-  },
-}))
-
-const StyledFormControl = styled(FormControl)(({ theme }) => ({
-  '& .MuiOutlinedInput-root': {
-    backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[900] : theme.palette.common.white,
-  },
-  '& .MuiInputLabel-root': {
-    color: theme.palette.mode === 'dark' ? theme.palette.grey[300] : theme.palette.grey[700],
-  },
-}))
-
-const StyledButton = styled(Button)(({ theme }) => ({
-  padding: '12px 32px',
-  fontSize: '1.125rem',
-  fontWeight: 600,
-  backgroundColor: theme.palette.primary.main,
-  '&:hover': {
-    backgroundColor: theme.palette.primary.dark,
-  },
-}))
-
-// Constants for form options
-const SKILL_LEVELS = [
-  { value: 'RECREATIONAL_C', label: 'Recreational C' },
-  { value: 'INTERMEDIATE_B', label: 'Intermediate B' },
-  { value: 'UPPER_INTERMEDIATE_BB', label: 'Upper Intermediate BB' },
-  { value: 'COMPETITIVE_A', label: 'Competitive A' },
-]
-
-const LAST_PLAYED_OPTIONS = [
-  { value: 'PLAYING_ACTIVELY', label: 'Playing Actively' },
-  { value: 'NOT_PLAYED_SINCE_LAST_YEAR', label: 'Not Played since last year' },
-  { value: 'NOT_PLAYED_IN_FEW_YEARS', label: 'Not played in few years' },
-]
-
-const PLAYING_POSITIONS = [
-  { value: 'P1_RIGHT_BACK', label: 'Right Back (P1)' },
-  { value: 'P2_RIGHT_FRONT', label: 'Right Front (P2)' },
-  { value: 'P3_MIDDLE_FRONT', label: 'Middle Front (P3)' },
-  { value: 'P4_LEFT_FRONT', label: 'Left Front (P4)' },
-  { value: 'P5_LEFT_BACK', label: 'Left Back (P5)' },
-  { value: 'P6_MIDDLE_BACK', label: 'Middle Back (P6)' },
-]
-
-const PAYMENT_RECEIVERS = [
-  { value: 'Vasu Chepuru', label: 'Vasu Chepuru (9849521594)' },
-  { value: 'Amit Saxena', label: 'Amit Saxena (9866674460)' },
-]
-
-const TSHIRT_SIZES = [
-  { value: 'XS', label: 'XS (34")', details: 'Chest: 34", Length: 24", Sleeve: 7.5"' },
-  { value: 'S', label: 'S (36")', details: 'Chest: 36", Length: 25", Sleeve: 8"' },
-  { value: 'M', label: 'M (38")', details: 'Chest: 38", Length: 26", Sleeve: 8"' },
-  { value: 'L', label: 'L (40")', details: 'Chest: 40", Length: 27", Sleeve: 8.5"' },
-  { value: 'XL', label: 'XL (42")', details: 'Chest: 42", Length: 28", Sleeve: 8.5"' },
-  { value: '2XL', label: '2XL (44")', details: 'Chest: 44", Length: 29", Sleeve: 9"' },
-  { value: '3XL', label: '3XL (46")', details: 'Chest: 46", Length: 30", Sleeve: 10"' },
-] as const;
-
-const REGISTRATION_CATEGORIES = [
-  { value: 'VOLLEYBALL_OPEN_MEN', label: 'Volleyball - Open' },
-  { value: 'THROWBALL_WOMEN', label: 'Throwball - Women' },
-  { value: 'THROWBALL_13_17_MIXED', label: 'Throwball - 13-17 Mixed' },
-  { value: 'THROWBALL_8_12_MIXED', label: 'Throwball - 8-12 Mixed' },
-]
-
-// Styled components for the expand more icon
-interface ExpandMoreProps extends IconButtonProps {
-  expand: boolean;
-}
-
-const ExpandMore = styled((props: ExpandMoreProps) => {
-  const { expand, ...other } = props;
-  return <IconButton {...other} />;
-})(({ theme, expand }) => ({
-  transform: !expand ? 'rotate(0deg)' : 'rotate(180deg)',
-  marginLeft: 'auto',
-  transition: theme.transitions.create('transform', {
-    duration: theme.transitions.duration.shortest,
-  }),
-}));
-
-// Status chip component
-const StatusChip = styled(Chip)(({ theme }) => ({
-  marginLeft: theme.spacing(2),
-  '&.completed': {
-    backgroundColor: theme.palette.success.main,
-    color: theme.palette.success.contrastText,
-  },
-  '&.incomplete': {
-    backgroundColor: theme.palette.error.main,
-    color: theme.palette.error.contrastText,
-  },
-}));
-
-// Category card styling
-const CategoryCard = styled(Paper)(({ theme }) => ({
-  padding: theme.spacing(3),
-  textAlign: 'center',
-  cursor: 'pointer',
-  transition: 'all 0.3s ease',
-  border: `2px solid ${theme.palette.divider}`,
-  height: '100%',
-  display: 'flex',
-  flexDirection: 'column',
-  alignItems: 'center',
-  gap: theme.spacing(2),
-  position: 'relative',
-  overflow: 'hidden',
-  '&:hover': {
-    transform: 'translateY(-4px)',
-    boxShadow: theme.shadows[4],
-    borderColor: alpha(theme.palette.primary.main, 0.5),
-    '& .category-icon': {
-      transform: 'scale(1.05)',
-      backgroundColor: alpha(theme.palette.primary.main, 0.9),
-    }
-  },
-  '&.selected': {
-    borderColor: theme.palette.primary.main,
-    backgroundColor: alpha(theme.palette.primary.main, 0.04),
-    boxShadow: `0 0 0 1px ${theme.palette.primary.main}`,
-    '&::before': {
-      content: '""',
-      position: 'absolute',
-      top: 0,
-      right: 0,
-      borderStyle: 'solid',
-      borderWidth: '0 32px 32px 0',
-      borderColor: `${theme.palette.primary.main} transparent transparent transparent`,
-    },
-    '& .category-icon': {
-      backgroundColor: theme.palette.primary.main,
-      transform: 'scale(1.1)',
-    },
-    '& .MuiTypography-subtitle1': {
-      color: theme.palette.primary.main,
-    },
-    '&::after': {
-      content: '"✓"',
-      position: 'absolute',
-      top: 2,
-      right: 4,
-      color: '#fff',
-      fontSize: '14px',
-      fontWeight: 'bold',
-    }
-  },
-}));
-
-const CategoryIcon = styled(Avatar)(({ theme }) => ({
-  width: 64,
-  height: 64,
-  backgroundColor: alpha(theme.palette.primary.main, 0.7),
-  marginBottom: theme.spacing(1),
-  transition: 'all 0.3s ease',
-  className: 'category-icon',
-  '& svg': {
-    fontSize: '32px',
-    transition: 'all 0.3s ease',
-  },
-}));
-
-// Section types for type safety
-type SectionName = 'category' | 'personal' | 'profile' | 'jersey' | 'payment';
-
-// Add after the existing styled components
-const PrintStyles = styled('style')({
-  '@media print': {
-    '@page': {
-      size: 'A4',
-      margin: '20mm',
-    },
-    '.no-print': {
-      display: 'none !important',
-    },
-    '.MuiDialog-paper': {
-      boxShadow: 'none !important',
-    },
-    '.MuiDialogTitle-root, .MuiTypography-root': {
-      color: 'black !important',
-    },
-    '.MuiSvgIcon-root': {
-      color: 'black !important',
-    },
-    '.print-content': {
-      padding: '0 !important',
-    },
-    '.info-box': {
-      backgroundColor: 'transparent !important',
-      border: '1px solid black',
-      padding: '16px',
-    }
-  },
-});
+import { useRegistrationFormSingle } from '@/features/tournaments/hooks/useRegistrationFormSingle'
+import type { SectionName } from './registration-constants'
+import { isVolleyballCategory } from './registration-validation'
+import {
+  REGISTRATION_CATEGORIES,
+  SKILL_LEVELS,
+  LAST_PLAYED_OPTIONS,
+  PLAYING_POSITIONS,
+  PAYMENT_RECEIVERS,
+  TSHIRT_SIZES,
+  TOURNAMENT_RULES,
+} from './registration-constants'
+import { RegistrationTicker } from './registration-ticker'
+import {
+  StyledTextField,
+  StyledFormControl,
+  ExpandMore,
+  StatusChip,
+  PrintStyles,
+} from './registration-styles'
 
 export function RegistrationFormSingle() {
   const theme = useTheme()
-  const searchParams = useSearchParams()
-  const router = useRouter()
-  const { submitForm } = useRegistrationSubmit()
-  const [formData, setFormData] = useState<RegistrationFormData>(initialFormData)
-  const [errors, setErrors] = useState<Partial<Record<keyof RegistrationFormData, string>>>({})
-  const [isSubmitting, setIsSubmitting] = useState(false)
-  const [expandedSections, setExpandedSections] = useState<Record<SectionName, boolean>>({
-    category: true,
-    personal: false,
-    profile: false,
-    jersey: false,
-    payment: false,
-  })
-  const [snackbar, setSnackbar] = useState<{
-    open: boolean;
-    message: string;
-    severity: 'success' | 'error';
-  }>({
-    open: false,
-    message: '',
-    severity: 'success'
-  })
-  const [rulesAcknowledged, setRulesAcknowledged] = useState(false)
-  const [residencyConfirmed, setResidencyConfirmed] = useState(false)
-  const [rulesDialogOpen, setRulesDialogOpen] = useState(false)
-  const [showSuccessDialog, setShowSuccessDialog] = useState(false)
-  const [registrationId, setRegistrationId] = useState<string>('')
-  const [sizeChartOpen, setSizeChartOpen] = useState(false)
+  const {
+    formData,
+    setFormData,
+    errors,
+    setErrors,
+    setIsSubmitting,
+    expandedSections,
+    isSubmitting,
+    snackbar,
+    setSnackbar,
+    rulesAcknowledged,
+    setRulesAcknowledged,
+    residencyConfirmed,
+    setResidencyConfirmed,
+    rulesDialogOpen,
+    setRulesDialogOpen,
+    showSuccessDialog,
+    setShowSuccessDialog,
+    registrationId,
+    sizeChartOpen,
+    setSizeChartOpen,
+    referenceLoading,
+    referenceMessage,
+    profileImageUploading,
+    profileImageInputRef,
+    isSectionComplete,
+    validateField,
+    handleChange,
+    handleSelectChange,
+    handleExpandSection,
+    handleSectionCompletion,
+    handleProfileImageChange,
+    removeProfileImage,
+    loadReference,
+    handleSubmit,
+    getFormattedDetails,
+    initialFormData: initFormData,
+  } = useRegistrationFormSingle()
 
-  // Tournament Rules Content
-  const tournamentRules = [
-    {
-      title: 'Categories & Registration',
-      rules: [
-        'Categories: Volleyball - Open, Women\'s Throwball, Throwball 8-12 Mixed, Throwball 13-17 Mixed',
-        'Only PBEL City residents can participate',
-        'Individual registrations only (no team registrations)',
-        'Players can register for only one category',
-        'Registration fee: INR 600 per player',
-        'Registration deadline strictly enforced',
-        'No late registrations accepted',
-      ]
-    },
-    {
-      title: 'Age Requirements',
-      rules: [
-        'Throwball 8-12 Mixed: Must be born on or after May 1, 2012',
-        'Throwball 13-17 Mixed: Must be born on or after May 1, 2008',
-        'Parent/Guardian information required for youth categories',
-        'Age verification may be required during the tournament',
-      ]
-    },
-    {
-      title: 'Team Formation',
-      rules: [
-        'Volleyball - Open:',
-        '• Players will be drafted through skill-based allocation',
-        '• Teams formed considering playing positions and experience',
-        'Throwball Categories:',
-        '• Teams formed through balanced distribution of skill levels',
-        '• Random allocation within skill groups',
-      ]
-    },
-    {
-      title: 'Jersey & Equipment',
-      rules: [
-        'Each player receives a tournament jersey',
-        'Jersey numbers may need to be revised after team formation to avoid conflicts',
-        'Team captains will coordinate jersey number changes if needed',
-        'Jersey name customization available',
-        'Size options available from XS(34") to 3XL(46") with detailed measurements',
-      ]
-    },
-    {
-      title: 'Match Rules & Conduct',
-      rules: [
-        'Teams must arrive 15 minutes before scheduled match time',
-        'Teams must maintain sportsmanlike conduct',
-        'Referee decisions are final',
-      ]
-    },
-    {
-      title: 'Medical & Safety',
-      rules: [
-        'Basic first aid will be available at venue',
-        'Players participate at their own risk',
-        'Report any injuries to tournament officials immediately',
-      ]
-    },
-    {
-      title: 'Communication & Administration',
-      rules: [
-        'Official WhatsApp group for tournament updates',
-        'Schedule changes will be notified 24 hours in advance',
-        'Team captains responsible for relay of information',
-        'Organizing Committee reserves rights to verify residency, modify rules, take disciplinary action, and adjust schedule',
-        'All decisions by the organizing committee are final',
-      ]
-    },
-  ]
+  const [paymentGateComplete, setPaymentGateComplete] = useState(false)
+  const [showTransactionForm, setShowTransactionForm] = useState(false)
 
-  // Add this helper function near the top with other helper functions
-  const isVolleyballCategory = (category: string | undefined): boolean => {
-    return category?.includes('VOLLEYBALL') || false;
-  };
+  const handleSnackbarClose = () => setSnackbar((prev) => ({ ...prev, open: false }))
 
-  // Function to check section completion
-  const isSectionComplete = (section: SectionName): boolean => {
-    switch (section) {
-      case 'category':
-        return !!formData.registration_category && !errors.registration_category;
-      case 'personal':
-        const baseFieldsComplete = !!(
-          formData.first_name &&
-          formData.last_name &&
-          formData.email &&
-          formData.phone_number &&
-          formData.flat_number
-        ) && !errors.first_name && !errors.last_name && !errors.email && !errors.phone_number && !errors.flat_number;
+  const sections = ['category', 'personal', 'profile', 'jersey', 'payment'] as const
+  const completedCount =
+    (rulesAcknowledged ? 1 : 0) +
+    (residencyConfirmed ? 1 : 0) +
+    sections.filter((s) => isSectionComplete(s as SectionName)).length
+  const totalSteps = 2 + sections.length // rules + residency + 5 sections
+  const completionPercent = Math.round((completedCount / totalSteps) * 100)
+  const canSubmit =
+    !isSubmitting &&
+    rulesAcknowledged &&
+    residencyConfirmed &&
+    sections.every((s) => isSectionComplete(s as SectionName))
 
-        if (isYouthCategory(formData.registration_category)) {
-          return baseFieldsComplete && !!(
-            formData.date_of_birth &&
-            formData.parent_name &&
-            formData.parent_phone_number
-          ) && !errors.date_of_birth && !errors.parent_name && !errors.parent_phone_number;
-        }
-        
-        return baseFieldsComplete;
-      case 'profile':
-        const baseProfileFieldsComplete = !!(
-          formData.height &&
-          formData.last_played_date &&
-          formData.skill_level
-        ) && !errors.height && !errors.last_played_date && !errors.skill_level;
-
-        if (isVolleyballCategory(formData.registration_category)) {
-          return baseProfileFieldsComplete && !!(formData.playing_positions.length) && !errors.playing_positions;
-        }
-        return baseProfileFieldsComplete;
-      case 'jersey':
-        return !!(
-          formData.tshirt_size &&
-          formData.tshirt_name &&
-          formData.tshirt_number
-        ) && !errors.tshirt_size && !errors.tshirt_name && !errors.tshirt_number;
-      case 'payment':
-        return !!(
-          formData.payment_upi_id &&
-          formData.payment_transaction_id &&
-          formData.paid_to
-        ) && !errors.payment_upi_id && !errors.payment_transaction_id && !errors.paid_to;
-      default:
-        return false;
-    }
-  };
-
-  // Handle section expansion
-  const handleExpandSection = (section: SectionName) => {
-    const startTime = performance.now()
-    setExpandedSections((prev) => ({
+  const handleProceedAfterPayment = () => {
+    const errPaidTo = validateField('paid_to', formData.paid_to, formData)
+    const errTx = validateField('payment_transaction_id', formData.payment_transaction_id, formData)
+    const errUpi = validateField('payment_upi_id', formData.payment_upi_id, formData)
+    setErrors((prev) => ({
       ...prev,
-      [section]: !prev[section],
+      paid_to: errPaidTo,
+      payment_transaction_id: errTx,
+      payment_upi_id: errUpi,
     }))
-    console.log(`Section ${section} expansion took ${performance.now() - startTime}ms`)
-  }
-
-  // Auto-expand next incomplete section
-  useEffect(() => {
-    const sections: SectionName[] = ['category', 'personal', 'profile', 'jersey', 'payment'];
-    const firstIncomplete = sections.find(section => !isSectionComplete(section));
-    if (firstIncomplete) {
-      setExpandedSections(prev => ({
-        ...prev,
-        [firstIncomplete]: true,
-      }));
-    }
-  }, [formData, errors]);
-
-  // Handle input changes
-  const processPhoneNumber = (value: string): string => {
-    // Remove any non-digit characters except the '+' prefix
-    const digitsOnly = value.replace(/[^\d+]/g, '')
-    
-    // Ensure the +91 prefix
-    if (!digitsOnly.startsWith('+91')) {
-      // If user is typing digits without prefix, add it
-      if (digitsOnly.length > 0 && !digitsOnly.startsWith('+')) {
-        return '+91' + digitsOnly
-      }
-      return digitsOnly
-    }
-    
-    // Limit to +91 plus 10 digits
-    if (digitsOnly.startsWith('+91')) {
-      const remainingDigits = digitsOnly.substring(3)
-      if (remainingDigits.length > 10) {
-        return '+91' + remainingDigits.substring(0, 10)
-      }
-    }
-    
-    return digitsOnly
-  }
-
-  // Add this helper function to find the next incomplete section
-  const findNextIncompleteSection = (): SectionName | null => {
-    const sections: SectionName[] = ['category', 'personal', 'profile', 'jersey', 'payment'];
-    return sections.find(section => !isSectionComplete(section)) || null;
-  };
-
-  // Update this function to keep sections expanded
-  const handleSectionCompletion = (currentSection: SectionName) => {
-    if (isSectionComplete(currentSection)) {
-      const nextIncomplete = findNextIncompleteSection();
-      if (nextIncomplete) {
-        // Only expand the next section, don't collapse the current one
-        setExpandedSections(prev => ({
-          ...prev,
-          [nextIncomplete]: true
-        }));
-        
-        // Scroll to next section
-        const nextSectionElement = document.querySelector(`[data-section="${nextIncomplete}"]`);
-        if (nextSectionElement) {
-          nextSectionElement.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-      }
-    }
-  };
-
-  // Update handleChange to check for section completion
-  const handleChange = (field: keyof RegistrationFormData) => (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    let value = event.target.value;
-    
-    // Special handling for phone numbers
-    if (field === 'phone_number' || field === 'parent_phone_number') {
-      value = processPhoneNumber(value)
-    }
-
-    // Special handling for date of birth
-    if (field === 'date_of_birth') {
-      // Ensure the date is in ISO format for storage
-      const date = new Date(value)
-      if (!isNaN(date.getTime())) {
-        value = date.toISOString().split('T')[0]
-      }
-    }
-
-    const error = validateField(field, value);
-    setErrors(prev => ({ ...prev, [field]: error }));
-    setFormData(prev => ({ ...prev, [field]: value }));
-
-    // Find which section this field belongs to
-    const sectionMap: Record<string, SectionName> = {
-      registration_category: 'category',
-      first_name: 'personal',
-      last_name: 'personal',
-      email: 'personal',
-      phone_number: 'personal',
-      flat_number: 'personal',
-      date_of_birth: 'personal',
-      parent_name: 'personal',
-      parent_phone_number: 'personal',
-      height: 'profile',
-      last_played_date: 'profile',
-      skill_level: 'profile',
-      playing_positions: 'profile',
-      tshirt_size: 'jersey',
-      tshirt_name: 'jersey',
-      tshirt_number: 'jersey',
-      payment_upi_id: 'payment',
-      payment_transaction_id: 'payment',
-      paid_to: 'payment',
-    };
-
-    // Check if section is complete after a short delay to allow state updates
-    setTimeout(() => {
-      const section = sectionMap[field];
-      if (section) {
-        handleSectionCompletion(section);
-      }
-    }, 100);
-
-    // If changing category, validate youth-specific fields
-    if (field === 'registration_category') {
-      const isYouth = isYouthCategory(value as RegistrationCategory)
-      if (isYouth) {
-        ['date_of_birth', 'parent_name', 'parent_phone_number'].forEach(youthField => {
-          const youthError = validateField(
-            youthField as keyof RegistrationFormData,
-            formData[youthField as keyof RegistrationFormData]
-          )
-          setErrors(prev => ({ ...prev, [youthField]: youthError }))
-        })
-      } else {
-        // Clear youth-specific fields and errors when switching to non-youth category
-        setFormData(prev => ({
-          ...prev,
-          date_of_birth: '',
-          parent_name: '',
-          parent_phone_number: ''
-        }))
-        setErrors(prev => ({
-          ...prev,
-          date_of_birth: '',
-          parent_name: '',
-          parent_phone_number: ''
-        }))
-      }
-    }
-  }
-
-  // Update handleSelectChange similarly
-  const handleSelectChange = (event: SelectChangeEvent<any>) => {
-    const { name, value } = event.target;
-    const error = validateField(name as keyof RegistrationFormData, value);
-    setErrors(prev => ({ ...prev, [name]: error }));
-    setFormData(prev => ({ ...prev, [name]: value }));
-
-    // Find which section this field belongs to
-    const sectionMap: Record<string, SectionName> = {
-      registration_category: 'category',
-      skill_level: 'profile',
-      last_played_date: 'profile',
-      playing_positions: 'profile',
-      tshirt_size: 'jersey',
-      paid_to: 'payment',
-    };
-
-    // Check if section is complete after a short delay
-    setTimeout(() => {
-      const section = sectionMap[name];
-      if (section) {
-        handleSectionCompletion(section);
-      }
-    }, 100);
-  };
-
-  // Validation functions
-  const validateField = (name: keyof RegistrationFormData, value: any): string => {
-    const startTime = performance.now()
-    let error = ''
-    
-    // Skip validation for optional fields if they're empty
-    if (!value && !['registration_category', 'first_name', 'last_name', 'email', 'phone_number', 'flat_number', 'height', 'last_played_date', 'skill_level', 'tshirt_size', 'tshirt_name', 'tshirt_number', 'payment_upi_id', 'payment_transaction_id', 'paid_to'].includes(name)) {
-      return '';
-    }
-
-    switch (name) {
-      case 'first_name':
-      case 'last_name':
-        if (!value || value.trim().length < 2) {
-          return `Please enter a valid ${name === 'first_name' ? 'first' : 'last'} name (minimum 2 characters)`;
-        }
-        return '';
-      case 'email':
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-        if (!value || !emailRegex.test(value)) {
-          return 'Please enter a valid email address'
-        }
-        return ''
-      case 'phone_number':
-        const phoneNumberWithoutPrefix = value.replace(/^\+91/, '').replace(/\s+/g, '')
-        if (!phoneNumberWithoutPrefix.match(/^\d{10}$/)) {
-          return 'Please enter a valid 10-digit phone number'
-        }
-        return ''
-      case 'parent_phone_number':
-        if (isYouthCategory(formData.registration_category)) {
-          const parentPhoneNumberWithoutPrefix = value.replace(/^\+91/, '').replace(/\s+/g, '')
-          if (!parentPhoneNumberWithoutPrefix.match(/^\d{10}$/)) {
-            return 'Please enter a valid 10-digit phone number for parent'
-          }
-        }
-        return ''
-      case 'flat_number':
-        if (!value || !value.trim().match(/^[A-Z0-9-]{1,10}$/i)) {
-          return 'Please enter a valid flat number (e.g., A-123)';
-        }
-        return '';
-      case 'height':
-        const heightNum = Number(value);
-        if (isNaN(heightNum) || heightNum < 100 || heightNum > 250 || !Number.isInteger(heightNum)) {
-          return 'Please enter a valid height in centimeters (100-250)';
-        }
-        return '';
-      case 'registration_category':
-        if (!value || !Object.values(RegistrationCategory).includes(value)) {
-          return 'Please select a registration category';
-        }
-        return '';
-      case 'last_played_date':
-        if (!value || !LAST_PLAYED_OPTIONS.some(opt => opt.value === value)) {
-          return 'Please select when you last played';
-        }
-        return '';
-      case 'skill_level':
-        if (!value || !SKILL_LEVELS.some(level => level.value === value)) {
-          return 'Please select your skill level';
-        }
-        return '';
-      case 'playing_positions':
-        if (isVolleyballCategory(formData.registration_category) && (!Array.isArray(value) || value.length === 0)) {
-          return 'Please select at least one playing position';
-        }
-        return '';
-      case 'tshirt_size':
-        if (!value || !TSHIRT_SIZES.some(size => size.value === value)) {
-          return 'Please select a t-shirt size';
-        }
-        return '';
-      case 'tshirt_name':
-        if (!value || value.trim().length < 2 || value.trim().length > 15) {
-          return 'Please enter a valid name for your jersey (2-15 characters)';
-        }
-        return '';
-      case 'tshirt_number':
-        const numberValue = Number(value);
-        if (isNaN(numberValue) || numberValue < 1 || numberValue > 99) {
-          return 'Please enter a valid jersey number (1-99)';
-        }
-        return '';
-      case 'payment_upi_id':
-        if (!value) {
-          return 'Please enter your UPI ID or phone number';
-        }
-        return '';
-      case 'payment_transaction_id':
-        if (!value) {
-          return 'Please enter the transaction ID';
-        }
-        return '';
-      case 'paid_to':
-        if (!value || !PAYMENT_RECEIVERS.some(receiver => receiver.value === value)) {
-          return 'Please select who you paid to';
-        }
-        return '';
-      case 'date_of_birth':
-        if (isYouthCategory(formData.registration_category)) {
-          if (!value) {
-            return 'Date of birth is required'
-          }
-          const dob = new Date(value)
-          const cutoffDate = new Date('2025-04-30')
-          const age = cutoffDate.getFullYear() - dob.getFullYear()
-          const monthDiff = cutoffDate.getMonth() - dob.getMonth()
-          const finalAge = monthDiff < 0 || (monthDiff === 0 && cutoffDate.getDate() < dob.getDate()) 
-            ? age - 1 
-            : age
-
-          if (formData.registration_category === 'THROWBALL_8_12_MIXED') {
-            if (finalAge < 8) {
-              return 'Player must be at least 8 years old as of April 30, 2025'
-            }
-            if (finalAge > 12) {
-              return 'Player must be under 12 years old as of April 30, 2025'
-            }
-          }
-          if (formData.registration_category === 'THROWBALL_13_17_MIXED') {
-            if (finalAge < 13) {
-              return 'Player must be at least 13 years old as of April 30, 2025'
-            }
-            if (finalAge > 17) {
-              return 'Player must be under 17 years old as of April 30, 2025'
-            }
-          }
-        } else {
-          // For non-youth categories (Volleyball Open and Women's Throwball)
-          if (value) {
-            const dob = new Date(value)
-            const cutoffDate = new Date('2025-04-30')
-            const age = cutoffDate.getFullYear() - dob.getFullYear()
-            const monthDiff = cutoffDate.getMonth() - dob.getMonth()
-            const finalAge = monthDiff < 0 || (monthDiff === 0 && cutoffDate.getDate() < dob.getDate()) 
-              ? age - 1 
-              : age
-
-            if (finalAge < 8) {
-              return 'Player must be at least 8 years old as of April 30, 2025'
-            }
-          }
-        }
-        return ''
-      case 'parent_name':
-        if (isYouthCategory(formData.registration_category)) {
-          if (!value || value.trim().length < 2) {
-            return 'Please enter a valid parent/guardian name';
-          }
-        }
-        return '';
-      default:
-        return '';
-    }
-    
-    console.log(`Validation for ${name} took ${performance.now() - startTime}ms`)
-    return error
-  };
-
-  // Function to format the registration details for display
-  const getFormattedDetails = () => [
-    {
-      title: 'Category Details',
-      items: [
-        { label: 'Tournament Category', value: REGISTRATION_CATEGORIES.find(c => c.value === formData.registration_category)?.label || '' },
-      ]
-    },
-    {
-      title: 'Personal Information',
-      items: [
-        { label: 'Name', value: `${formData.first_name} ${formData.last_name}` },
-        { label: 'Email', value: formData.email },
-        { label: 'Phone Number', value: formData.phone_number },
-        { label: 'Flat Number', value: formData.flat_number },
-        ...(isYouthCategory(formData.registration_category) ? [
-          { label: 'Date of Birth', value: formData.date_of_birth ? new Date(formData.date_of_birth).toLocaleDateString() : '' },
-          { label: 'Parent/Guardian Name', value: formData.parent_name },
-          { label: 'Parent/Guardian Phone', value: formData.parent_phone_number },
-        ] : []),
-      ]
-    },
-    {
-      title: 'Player Profile',
-      items: [
-        { label: 'Height', value: `${formData.height} cm` },
-        { label: 'Last Played', value: LAST_PLAYED_OPTIONS.find(o => o.value === formData.last_played_date)?.label || '' },
-        { label: 'Skill Level', value: SKILL_LEVELS.find(s => s.value === formData.skill_level)?.label || '' },
-        ...(isVolleyballCategory(formData.registration_category) ? [
-          { label: 'Playing Position', value: PLAYING_POSITIONS.find(p => p.value === formData.playing_positions[0])?.label || '' },
-        ] : []),
-      ]
-    },
-    {
-      title: 'Jersey Details',
-      items: [
-        { label: 'Jersey Size', value: formData.tshirt_size },
-        { label: 'Jersey Name', value: formData.tshirt_name },
-        { label: 'Jersey Number', value: formData.tshirt_number },
-      ]
-    },
-    {
-      title: 'Payment Information',
-      items: [
-        { label: 'UPI ID/ Phone Number of the Payee', value: formData.payment_upi_id },
-        { label: 'Transaction ID', value: formData.payment_transaction_id },
-        { label: 'Paid To', value: formData.paid_to },
-      ]
-    },
-  ]
-
-  // Handle form submission
-  const handleSubmit = async (event: React.FormEvent) => {
-    const submitStartTime = performance.now()
-    console.log('Starting form submission process...')
-    
-    event.preventDefault()
-    
-    // Validation timing
-    const validationStartTime = performance.now()
-    const validationErrors = Object.keys(formData).reduce((errors: Record<string, string>, field) => {
-      const error = validateField(field as keyof RegistrationFormData, formData[field as keyof RegistrationFormData])
-      if (error) errors[field] = error
-      return errors
-    }, {})
-    console.log(`Form validation took ${performance.now() - validationStartTime}ms`)
-
-    if (Object.keys(validationErrors).length > 0) {
-      console.log('Validation errors found:', validationErrors)
-      setErrors(validationErrors)
-      return
-    }
-
-    if (!rulesAcknowledged || !residencyConfirmed) {
-      setSnackbar({
-        open: true,
-        message: 'Please acknowledge the rules and confirm your residency',
-        severity: 'error',
-      });
-      return;
-    }
-
-    try {
-      setIsSubmitting(true)
-      
-      // Submit form
-      const submissionStartTime = performance.now()
-      await submitForm(formData)
-      console.log(`Form submission to API took ${performance.now() - submissionStartTime}ms`)
-      
-    } catch (error) {
-      console.error('Form submission error:', error)
-      setSnackbar({
-        open: true,
-        message: error instanceof Error ? error.message : 'Failed to submit registration',
-        severity: 'error',
-      })
-    } finally {
-      setIsSubmitting(false)
-      console.log(`Total form process took ${performance.now() - submitStartTime}ms`)
-    }
-  }
-
-  const handleSnackbarClose = () => {
-    setSnackbar(prev => ({ ...prev, open: false }))
+    if (!errPaidTo && !errTx && !errUpi) setPaymentGateComplete(true)
   }
 
   const reviewData = [
@@ -959,7 +205,7 @@ export function RegistrationFormSingle() {
         <Button onClick={() => setSizeChartOpen(false)}>Close</Button>
       </DialogActions>
     </Dialog>
-  )
+  );
 
   return (
     <ErrorBoundary
@@ -1018,50 +264,256 @@ export function RegistrationFormSingle() {
             </Alert>
           </Snackbar>
 
-          {/* Payment Instructions Alert */}
-          <Alert 
-            severity="warning" 
-            sx={{ 
-              mb: 3,
-              '& .MuiAlert-message': {
-                width: '100%'
-              },
-              '& .MuiTypography-root': {
-                color: 'text.primary'
-              }
-            }}
-          >
-            <Box>
-              <Typography variant="h6" sx={{ mb: 1, color: 'warning.dark' }}>
-                Payment Required
-              </Typography>
-              <Typography variant="body1" paragraph sx={{ fontWeight: 500 }}>
-                Registration fee: INR 600
-              </Typography>
-              <Box sx={{ pl: 2 }}>
-                <Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
-                  Payment Options:
-                </Typography>
-                <Box sx={{ pl: 2, mb: 2 }}>
-                  <Typography variant="body1" sx={{ mb: 1 }}>• Vasu Chepuru (9849521594)</Typography>
-                  <Typography variant="body1">• Amit Saxena (9866674460)</Typography>
-                </Box>
-                <Typography 
-                  variant="body1" 
-                  sx={{ 
-                    fontWeight: 600,
-                    color: 'warning.dark',
-                    bgcolor: 'warning.light',
-                    p: 1,
-                    borderRadius: 1
+          {/* Payment gate: show first, then form after payment + transaction details */}
+          {!paymentGateComplete ? (
+            <Card
+              sx={{
+                mb: 3,
+                overflow: 'visible',
+                borderRadius: 3,
+                boxShadow: `0 4px 20px ${alpha(theme.palette.common.black, 0.08)}`,
+                border: `1px solid ${alpha(theme.palette.primary.main, 0.12)}`,
+              }}
+            >
+              <CardContent sx={{ p: 0 }}>
+                {/* Tournament banner with logo */}
+                <Box
+                  sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 2,
+                    p: { xs: 2, sm: 3 },
+                    background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.12)}, ${alpha(theme.palette.primary.dark, 0.08)})`,
+                    borderBottom: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+                    borderRadius: '12px 12px 0 0',
                   }}
                 >
-                  Important: You must complete the payment and have the transaction details ready before proceeding with the registration.
-                </Typography>
-              </Box>
-            </Box>
-          </Alert>
+                  <Box sx={{ position: 'relative', width: 64, height: 64, flexShrink: 0 }}>
+                    <Image
+                      src="/pbel-volleyball-logo.png"
+                      alt="PBEL Volleyball & Throwball League"
+                      width={64}
+                      height={64}
+                      style={{ objectFit: 'contain', width: 'auto', height: 'auto' }}
+                    />
+                  </Box>
+                  <Box>
+                    <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.dark', lineHeight: 1.2 }}>
+                      PBEL City Volleyball
+                    </Typography>
+                    <Typography variant="subtitle2" color="text.secondary" sx={{ fontWeight: 600 }}>
+                      & Throwball League 2026 — Registration
+                    </Typography>
+                  </Box>
+                </Box>
 
+                {/* Registration process overview */}
+                <Box
+                  sx={{
+                    px: { xs: 2, sm: 3 },
+                    py: 2.5,
+                    bgcolor: alpha(theme.palette.grey[50], 0.8),
+                    borderBottom: `1px solid ${theme.palette.divider}`,
+                  }}
+                >
+                  <Typography
+                    variant="subtitle2"
+                    sx={{
+                      fontWeight: 700,
+                      color: 'text.primary',
+                      mb: 2,
+                      letterSpacing: '0.02em',
+                      textTransform: 'uppercase',
+                      fontSize: '0.75rem',
+                    }}
+                  >
+                    How registration works
+                  </Typography>
+                  <Box
+                    component="ol"
+                    sx={{
+                      m: 0,
+                      p: 0,
+                      listStyle: 'none',
+                      display: 'grid',
+                      gridTemplateColumns: { xs: '1fr', sm: '1fr 1fr' },
+                      gap: 1.5,
+                      counterReset: 'step',
+                    }}
+                  >
+                    {[
+                      { title: 'Payment', desc: 'Pay INR 750 and enter transaction details', current: true },
+                      { title: 'Rules & category', desc: 'Accept rules and choose Volleyball or Throwball category', current: false },
+                      { title: 'Personal details', desc: 'Name, email, phone, flat number, profile photo (required)', current: false },
+                      { title: 'Player profile', desc: 'Height, skill level, positions, experience', current: false },
+                      { title: 'Jersey', desc: 'T-shirt size, name on jersey, number', current: false },
+                      { title: 'Review & submit', desc: 'Check details and submit registration', current: false },
+                    ].map((step) => (
+                      <Box
+                        key={step.title}
+                        component="li"
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'flex-start',
+                          gap: 1.5,
+                          counterIncrement: 'step',
+                          p: 1.5,
+                          borderRadius: 2,
+                          bgcolor: step.current ? alpha(theme.palette.primary.main, 0.08) : 'transparent',
+                          border: step.current ? `1px solid ${alpha(theme.palette.primary.main, 0.25)}` : '1px solid transparent',
+                          transition: 'background-color 0.2s, border-color 0.2s',
+                          '&::before': {
+                            content: 'counter(step)',
+                            flexShrink: 0,
+                            width: 28,
+                            height: 28,
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '0.8125rem',
+                            fontWeight: 700,
+                            bgcolor: step.current ? theme.palette.primary.main : theme.palette.grey[300],
+                            color: step.current ? theme.palette.primary.contrastText : theme.palette.text.secondary,
+                          },
+                        }}
+                      >
+                        <Box sx={{ minWidth: 0, pt: 0.25 }}>
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              fontWeight: 600,
+                              color: step.current ? 'primary.main' : 'text.primary',
+                              lineHeight: 1.3,
+                            }}
+                          >
+                            {step.title}
+                            {step.current && (
+                              <Typography component="span" variant="caption" sx={{ ml: 0.5, color: 'primary.main', fontWeight: 500 }}>
+                                (you are here)
+                              </Typography>
+                            )}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', lineHeight: 1.4, mt: 0.25 }}>
+                            {step.desc}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    ))}
+                  </Box>
+                  <Typography
+                    variant="caption"
+                    sx={{
+                      display: 'block',
+                      mt: 2,
+                      pt: 2,
+                      borderTop: `1px solid ${theme.palette.divider}`,
+                      color: 'text.secondary',
+                      lineHeight: 1.5,
+                    }}
+                  >
+                    <strong>Returning players:</strong> You can pre-fill the form with your last year’s details using your phone number or email (in the Personal details step), then edit as needed and submit.
+                  </Typography>
+                </Box>
+
+                <Box sx={{ px: { xs: 2, sm: 3 }, py: 3 }}>
+                <Typography variant="h6" sx={{ mb: 2, color: 'primary.main', fontWeight: 700 }}>
+                  Step 1: Complete your payment
+                </Typography>
+                <Typography variant="body1" paragraph sx={{ fontWeight: 500 }}>
+                  Registration fee: <strong>INR 750</strong>
+                </Typography>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                  Pay to one of the following (UPI or bank transfer):
+                </Typography>
+                <Box sx={{ pl: 2, mb: 2 }}>
+                  <Typography variant="body1" sx={{ mb: 0.5 }}>• Vasu Chepuru — 9849521594</Typography>
+                  <Typography variant="body1">• Amit Saxena — 9866674460</Typography>
+                </Box>
+                <Alert severity="info" sx={{ mb: 3 }}>
+                  Please complete the payment first. Then confirm below and enter who you paid and your transaction details.
+                </Alert>
+
+                {!showTransactionForm ? (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="large"
+                    startIcon={<CheckCircleOutlineIcon />}
+                    onClick={() => setShowTransactionForm(true)}
+                    sx={{ borderRadius: 2 }}
+                  >
+                    I have completed the payment
+                  </Button>
+                ) : (
+                  <Box sx={{ mt: 2 }}>
+                    <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+                      Enter transaction details
+                    </Typography>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12}>
+                        <StyledFormControl fullWidth error={!!errors.paid_to} required>
+                          <InputLabel>Payment was made to</InputLabel>
+                          <Select
+                            name="paid_to"
+                            value={formData.paid_to}
+                            label="Payment was made to"
+                            onChange={handleSelectChange}
+                          >
+                            {PAYMENT_RECEIVERS.map((receiver) => (
+                              <MenuItem key={receiver.value} value={receiver.value}>
+                                {receiver.label}
+                              </MenuItem>
+                            ))}
+                          </Select>
+                          {errors.paid_to && (
+                            <FormHelperText>{errors.paid_to}</FormHelperText>
+                          )}
+                        </StyledFormControl>
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <StyledTextField
+                          required
+                          fullWidth
+                          label="Transaction ID"
+                          value={formData.payment_transaction_id}
+                          onChange={handleChange('payment_transaction_id')}
+                          error={!!errors.payment_transaction_id}
+                          helperText={errors.payment_transaction_id}
+                          placeholder="e.g. UPI reference number"
+                        />
+                      </Grid>
+                      <Grid item xs={12} sm={6}>
+                        <StyledTextField
+                          required
+                          fullWidth
+                          label="UPI ID / Phone number used to pay"
+                          value={formData.payment_upi_id}
+                          onChange={handleChange('payment_upi_id')}
+                          error={!!errors.payment_upi_id}
+                          helperText={errors.payment_upi_id}
+                          placeholder="username@upi or phone number"
+                        />
+                      </Grid>
+                      <Grid item xs={12}>
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          size="large"
+                          onClick={handleProceedAfterPayment}
+                          sx={{ borderRadius: 2 }}
+                        >
+                          Proceed to registration form
+                        </Button>
+                      </Grid>
+                    </Grid>
+                  </Box>
+                )}
+                </Box>
+              </CardContent>
+            </Card>
+          ) : (
+            <>
           {/* Form Header with Sports Image */}
           <Box sx={{ 
             textAlign: 'center', 
@@ -1073,7 +525,7 @@ export function RegistrationFormSingle() {
             boxShadow: theme.shadows[4],
           }}>
             <Image
-              src="/images/community-sports.jpg"
+              src="/volleyball-court-bg.jpg"
               alt="PBEL City Sports Tournament"
               fill
               style={{ objectFit: 'cover' }}
@@ -1116,7 +568,7 @@ export function RegistrationFormSingle() {
                     WebkitTextFillColor: 'transparent',
                   }}
                 >
-                  PBEL City VolleyBall and ThrowBall League 2025
+                  PBEL City VolleyBall and ThrowBall League 2026
                 </Typography>
                 <Box sx={{ 
                   width: 60, 
@@ -1181,6 +633,97 @@ export function RegistrationFormSingle() {
               </Box>
             </Box>
           </Box>
+
+          <RegistrationTicker />
+
+          {/* Completion progress */}
+          <Box sx={{ mb: 3 }}>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+              <Typography variant="subtitle2" sx={{ fontWeight: 600, color: 'text.secondary' }}>
+                Registration progress
+              </Typography>
+              <Typography variant="subtitle2" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                {completionPercent}%
+              </Typography>
+            </Box>
+            <LinearProgress
+              variant="determinate"
+              value={completionPercent}
+              sx={{
+                height: 8,
+                borderRadius: 1,
+                bgcolor: alpha(theme.palette.primary.main, 0.12),
+                '& .MuiLinearProgress-bar': {
+                  borderRadius: 1,
+                },
+              }}
+            />
+          </Box>
+
+          {/* Pre-fill from last year - at top so returning players can load before filling */}
+          <Card
+            sx={{
+              mb: 2,
+              bgcolor: theme.palette.background.paper,
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+              '& .MuiInputLabel-root': { color: theme.palette.text.primary },
+              '& .MuiOutlinedInput-input': { color: theme.palette.text.primary },
+            }}
+          >
+            <CardContent>
+              <Typography variant="subtitle1" sx={{ fontWeight: 600, mb: 2, color: 'text.primary' }}>
+                Returning player? Pre-fill from last year
+              </Typography>
+              <Typography variant="body2" sx={{ mb: 2, color: 'text.secondary' }}>
+                Enter your email or phone from last year’s registration to load your details, then edit as needed and submit.
+              </Typography>
+              <Grid container spacing={2} alignItems="center">
+                <Grid item xs={12} sm={4}>
+                  <StyledTextField
+                    fullWidth
+                    size="small"
+                    label="Email (optional)"
+                    value={formData.email}
+                    onChange={handleChange('email')}
+                    placeholder="your.email@example.com"
+                    InputLabelProps={{ sx: { color: 'text.primary' } }}
+                    inputProps={{ sx: { color: 'text.primary' } }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <StyledTextField
+                    fullWidth
+                    size="small"
+                    label="Phone (optional)"
+                    value={formData.phone_number}
+                    onChange={handleChange('phone_number')}
+                    placeholder="+91"
+                    InputLabelProps={{ sx: { color: 'text.primary' } }}
+                    inputProps={{ sx: { color: 'text.primary' } }}
+                  />
+                </Grid>
+                <Grid item xs={12} sm={4}>
+                  <Button
+                    type="button"
+                    variant="outlined"
+                    color="primary"
+                    onClick={loadReference}
+                    disabled={referenceLoading}
+                    size="medium"
+                  >
+                    {referenceLoading ? 'Loading…' : 'Load my 2025 details'}
+                  </Button>
+                </Grid>
+                {referenceMessage && (
+                  <Grid item xs={12}>
+                    <Typography variant="body2" color="text.secondary">
+                      {referenceMessage}
+                    </Typography>
+                  </Grid>
+                )}
+              </Grid>
+            </CardContent>
+          </Card>
 
           {/* Tournament Rules Section */}
           <Card sx={{ mb: 2 }}>
@@ -1255,8 +798,8 @@ export function RegistrationFormSingle() {
               League Rules & Guidelines
             </DialogTitle>
             <DialogContent dividers>
-              {tournamentRules.map((section, index) => (
-                <Box key={section.title} sx={{ mb: index !== tournamentRules.length - 1 ? 4 : 0 }}>
+              {TOURNAMENT_RULES.map((section, index) => (
+                <Box key={section.title} sx={{ mb: index !== TOURNAMENT_RULES.length - 1 ? 4 : 0 }}>
                   <Typography variant="h6" gutterBottom color="primary">
                     {section.title}
                   </Typography>
@@ -1444,6 +987,62 @@ export function RegistrationFormSingle() {
             <Collapse in={expandedSections.personal}>
               <CardContent>
                 <Grid container spacing={3}>
+                  <Grid item xs={12}>
+                    <Typography variant="subtitle2" color="text.primary" sx={{ mb: 1 }}>
+                      Profile photo (required)
+                    </Typography>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                      <input
+                        ref={profileImageInputRef}
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={handleProfileImageChange}
+                        style={{ display: 'none' }}
+                        aria-label="Upload profile photo"
+                      />
+                      {formData.profile_image_url ? (
+                        <>
+                          <Avatar
+                            src={formData.profile_image_url}
+                            alt="Profile"
+                            sx={{ width: 80, height: 80 }}
+                            variant="rounded"
+                          />
+                          <Box>
+                            <Button
+                              type="button"
+                              size="small"
+                              color="secondary"
+                              onClick={removeProfileImage}
+                              disabled={profileImageUploading}
+                            >
+                              Remove photo
+                            </Button>
+                          </Box>
+                        </>
+                      ) : (
+<Button
+                              type="button"
+                              variant="outlined"
+                              {...({ component: 'span' } as const)}
+                              startIcon={profileImageUploading ? <CircularProgress size={20} /> : <PhotoCameraIcon />}
+                              disabled={profileImageUploading}
+                              onClick={() => profileImageInputRef.current?.click()}
+                            >
+                          {profileImageUploading ? 'Uploading…' : 'Take or upload photo'}
+                        </Button>
+                      )}
+                    </Box>
+                    {errors.profile_image_url && (
+                      <FormHelperText error sx={{ mt: 0.5 }}>
+                        {errors.profile_image_url}
+                      </FormHelperText>
+                    )}
+                    <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
+                      Use camera or choose from gallery. Max 5MB; JPEG, PNG or WebP.
+                    </Typography>
+                  </Grid>
                   <Grid item xs={12} sm={6}>
                     <StyledTextField
                       required
@@ -1658,9 +1257,12 @@ export function RegistrationFormSingle() {
                           label="Playing Position"
                           onChange={(event) => {
                             const value = event.target.value;
-                            const error = validateField('playing_positions', value ? [value] : []);
+                            const arr = value ? [value] : [];
+                            const nextData = { ...formData, playing_positions: arr };
+                            const error = validateField('playing_positions', arr, nextData);
                             setErrors(prev => ({ ...prev, playing_positions: error }));
-                            setFormData(prev => ({ ...prev, playing_positions: value ? [value] : [] }));
+                            setFormData(prev => ({ ...prev, playing_positions: arr }));
+                            setTimeout(() => handleSectionCompletion('profile'), 100);
                           }}
                         >
                           {PLAYING_POSITIONS.map(position => (
@@ -1779,7 +1381,7 @@ export function RegistrationFormSingle() {
             </Collapse>
           </Card>
 
-          {/* Payment Details */}
+          {/* Payment Details — read-only summary (already captured in Step 1) */}
           <Card sx={{ mb: 2 }} data-section="payment">
             <CardHeader
               title={
@@ -1793,6 +1395,7 @@ export function RegistrationFormSingle() {
                   />
                 </Box>
               }
+              subheader="Entered in Step 1 — confirm below before submitting"
               action={
                 <ExpandMore
                   expand={expandedSections.payment}
@@ -1806,72 +1409,66 @@ export function RegistrationFormSingle() {
             />
             <Collapse in={expandedSections.payment}>
               <CardContent>
-                <Grid container spacing={3}>
-                  <Grid item xs={12} sm={6}>
-                    <StyledTextField
-                      required
-                      fullWidth
-                      label="UPI ID/ Phone Number of the Payee"
-                      value={formData.payment_upi_id}
-                      onChange={handleChange('payment_upi_id')}
-                      error={!!errors.payment_upi_id}
-                      helperText={errors.payment_upi_id}
-                      placeholder="username@upi or phone number"
-                    />
-                  </Grid>
-                  <Grid item xs={12} sm={6}>
-                    <StyledTextField
-                      required
-                      fullWidth
-                      label="Transaction ID"
-                      value={formData.payment_transaction_id}
-                      onChange={handleChange('payment_transaction_id')}
-                      error={!!errors.payment_transaction_id}
-                      helperText={errors.payment_transaction_id}
-                    />
-                  </Grid>
-                  <Grid item xs={12}>
-                    <StyledFormControl fullWidth error={!!errors.paid_to} required>
-                      <InputLabel>Paid To</InputLabel>
-                      <Select
-                        name="paid_to"
-                        value={formData.paid_to}
-                        label="Paid To"
-                        onChange={handleSelectChange}
-                      >
-                        {PAYMENT_RECEIVERS.map(receiver => (
-                          <MenuItem key={receiver.value} value={receiver.value}>
-                            {receiver.label}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                      {errors.paid_to && (
-                        <FormHelperText>{errors.paid_to}</FormHelperText>
-                      )}
-                    </StyledFormControl>
-                  </Grid>
-                </Grid>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Paid to</Typography>
+                    <Typography variant="body1">{formData.paid_to || '—'}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">Transaction ID</Typography>
+                    <Typography variant="body1">{formData.payment_transaction_id || '—'}</Typography>
+                  </Box>
+                  <Box>
+                    <Typography variant="caption" color="text.secondary">UPI ID / Phone used to pay</Typography>
+                    <Typography variant="body1">{formData.payment_upi_id || '—'}</Typography>
+                  </Box>
+                </Box>
               </CardContent>
             </Collapse>
           </Card>
 
-          {/* Submit Button */}
-          <Box sx={{ display: 'flex', justifyContent: 'flex-end', mt: 4 }}>
-            <Button
-              type="submit"
-              variant="contained"
-              size="large"
-              disabled={
-                isSubmitting || 
-                !rulesAcknowledged ||
-                !residencyConfirmed ||
-                !(['category', 'personal', 'profile', 'jersey', 'payment'] as const)
-                  .every(section => isSectionComplete(section as SectionName))
-              }
-            >
-              {isSubmitting ? 'Submitting...' : 'Submit Registration'}
-            </Button>
+          {/* Spacer so content is not hidden behind sticky submit bar */}
+          <Box sx={{ height: 100 }} />
+
+            </>
+          )}
+
+        {/* Sticky Submit Bar — always visible; enabled only when all conditions are met */}
+        {paymentGateComplete && (
+          <Box
+            sx={{
+              position: 'sticky',
+              bottom: 0,
+              left: 0,
+              right: 0,
+              py: 2,
+              px: 2,
+              bgcolor: theme.palette.background.paper,
+              borderTop: `1px solid ${theme.palette.divider}`,
+              boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
+              zIndex: 10,
+            }}
+          >
+            <Container maxWidth="lg">
+              <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, alignItems: 'center', justifyContent: 'space-between', gap: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+                  {canSubmit
+                    ? 'All sections complete. Review and submit when ready.'
+                    : 'Complete rules acknowledgment and all sections above to enable submit.'}
+                </Typography>
+                <Button
+                  type="submit"
+                  variant="contained"
+                  size="large"
+                  disabled={!canSubmit}
+                  sx={{ minWidth: 200 }}
+                >
+                  {isSubmitting ? 'Submitting...' : 'Submit Registration'}
+                </Button>
+              </Box>
+            </Container>
           </Box>
+        )}
         </form>
 
         {/* Success Dialog */}

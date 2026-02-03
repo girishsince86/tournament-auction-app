@@ -1,7 +1,7 @@
 'use client'
 
 import { Box, AppBar, Toolbar, Typography, Button, Container, useTheme, alpha, Divider, Paper, useMediaQuery, IconButton, Tooltip, Fade } from '@mui/material'
-import { SportsVolleyball as VolleyballIcon, Groups as GroupsIcon, Person as PersonIcon, Handshake as HandshakeIcon, SupervisorAccount as SupervisorAccountIcon, Instagram as InstagramIcon, Facebook as FacebookIcon, Twitter as TwitterIcon } from '@mui/icons-material'
+import { SportsVolleyball as VolleyballIcon, Groups as GroupsIcon, Person as PersonIcon, Handshake as HandshakeIcon, SupervisorAccount as SupervisorAccountIcon, Instagram as InstagramIcon, Facebook as FacebookIcon, YouTube as YouTubeIcon } from '@mui/icons-material'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import Image from 'next/image'
@@ -21,13 +21,14 @@ export default function PublicLayout({
     <>
       <AppBar 
         position="sticky" 
-        color="primary" 
-        elevation={4}
+        elevation={0}
         sx={{
-          background: `linear-gradient(90deg, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
-          borderBottom: `1px solid ${alpha(theme.palette.common.white, 0.1)}`,
-          backdropFilter: 'blur(8px)',
-          zIndex: 1100
+          background: 'linear-gradient(180deg, #0a0e17 0%, #1a2234 100%)',
+          borderBottom: '4px solid transparent',
+          borderImage: 'linear-gradient(90deg, #0ea5e9, #f97316) 1',
+          boxShadow: '0 4px 24px rgba(0,0,0,0.3)',
+          backdropFilter: 'blur(12px)',
+          zIndex: 1100,
         }}
       >
         <Toolbar>
@@ -81,38 +82,35 @@ export default function PublicLayout({
                     component="div" 
                     sx={{ 
                       flexGrow: 1,
-                      fontWeight: 800,
-                      letterSpacing: '0.5px',
-                      textShadow: '0px 1px 2px rgba(0,0,0,0.3)',
+                      fontFamily: 'var(--font-sports-display), Oswald, sans-serif',
+                      fontWeight: 700,
+                      letterSpacing: '0.04em',
+                      textShadow: '0 0 24px rgba(14, 165, 233, 0.2)',
                       lineHeight: 1.2,
-                      fontSize: { xs: '1.1rem', sm: '1.5rem' }
+                      fontSize: { xs: '1.1rem', sm: '1.5rem' },
+                      color: '#fff',
                     }}
                   >
-                    PBEL CIty Volleyball
+                    PBEL City Volleyball
                   </Typography>
                   <Typography 
-                    variant="caption" 
+                    component="div"
                     sx={{ 
+                      fontFamily: 'var(--font-sports-display), Oswald, sans-serif',
+                      fontWeight: 700,
+                      letterSpacing: '0.04em',
                       color: alpha(theme.palette.common.white, 0.9),
-                      fontWeight: 500,
-                      letterSpacing: '0.5px',
-                      fontSize: { xs: '0.65rem', sm: '0.75rem' }
+                      lineHeight: 1.2,
+                      fontSize: { xs: '1.1rem', sm: '1.5rem' },
                     }}
                   >
-                    & Throwball League 2025
+                    & Throwball League 2026
                   </Typography>
                 </Box>
               </Box>
               
               <Box 
-                sx={{ 
-                  display: 'flex', 
-                  gap: { xs: 0.5, sm: 1 },
-                  overflow: 'auto',
-                  '&::-webkit-scrollbar': {
-                    display: 'none'
-                  }
-                }}
+                sx={{ display: 'none' }}
                 component={motion.div}
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -351,8 +349,8 @@ export default function PublicLayout({
       <Box
         component="main"
         sx={{
-          minHeight: 'calc(100vh - 64px)', // Subtract the AppBar height
-          bgcolor: 'background.default',
+          minHeight: 'calc(100vh - 64px)',
+          background: 'linear-gradient(180deg, #0f172a 0%, #0a0e17 30%, #111827 100%)',
           py: 6,
           position: 'relative',
           '&::before': {
@@ -361,10 +359,11 @@ export default function PublicLayout({
             top: 0,
             left: 0,
             right: 0,
-            height: '250px',
-            background: `linear-gradient(to bottom, ${alpha(theme.palette.primary.main, 0.08)}, transparent)`,
-            zIndex: 0
-          }
+            height: '320px',
+            background: 'radial-gradient(ellipse 80% 50% at 50% -20%, rgba(14, 165, 233, 0.15), transparent 70%)',
+            pointerEvents: 'none',
+            zIndex: 0,
+          },
         }}
       >
         {children}
@@ -374,19 +373,11 @@ export default function PublicLayout({
         component="footer" 
         sx={{ 
           py: 6, 
-          bgcolor: theme.palette.grey[100],
-          borderTop: 1, 
-          borderColor: 'divider',
+          background: 'linear-gradient(180deg, #111827 0%, #0a0e17 100%)',
+          borderTop: '4px solid transparent',
+          borderImage: 'linear-gradient(90deg, #0ea5e9, #f97316) 1',
           position: 'relative',
-          '&::before': {
-            content: '""',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: '4px',
-            background: `linear-gradient(90deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
-          }
+          boxShadow: '0 -4px 24px rgba(0,0,0,0.2)',
         }}
       >
         <Container maxWidth="xl">
@@ -402,11 +393,11 @@ export default function PublicLayout({
                 />
               </Box>
               <Box>
-                <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                  PBEL CIty Volleyball
+                <Typography variant="h6" sx={{ fontWeight: 700, color: '#fff', fontFamily: 'var(--font-sports-display), Oswald, sans-serif' }}>
+                  PBEL City Volleyball
                 </Typography>
-                <Typography variant="caption" color="text.secondary">
-                  & Throwball League 2025
+                <Typography variant="caption" sx={{ color: 'rgba(255,255,255,0.75)', letterSpacing: '0.08em' }}>
+                  & Throwball League 2026
                 </Typography>
               </Box>
             </Box>
@@ -414,90 +405,97 @@ export default function PublicLayout({
             <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center', flexWrap: 'wrap' }}>
               <Button
                 component={Link}
-                href="/players"
-                color="primary"
-                size="small"
-                sx={{ borderRadius: 2 }}
-              >
-                Players
-              </Button>
-              <Button
-                component={Link}
-                href="/team-owners"
-                color="primary"
-                size="small"
-                sx={{ borderRadius: 2 }}
-              >
-                Team Owners
-              </Button>
-              <Button
-                component={Link}
                 href="/organizers"
-                color="primary"
+                variant="outlined"
                 size="small"
-                sx={{ borderRadius: 2 }}
+                sx={{ 
+                  borderRadius: 2, 
+                  borderColor: 'rgba(14, 165, 233, 0.6)', 
+                  color: '#38bdf8',
+                  '&:hover': { borderColor: '#0ea5e9', bgcolor: 'rgba(14, 165, 233, 0.1)' },
+                }}
               >
                 Organizers
-              </Button>
-              <Button
-                component={Link}
-                href="/sponsors"
-                color="primary"
-                size="small"
-                sx={{ borderRadius: 2 }}
-              >
-                Sponsors
               </Button>
             </Box>
             
             <Box sx={{ display: 'flex', gap: 2 }}>
               <Tooltip title="Instagram">
-                <IconButton color="primary" size="small" sx={{ 
-                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                  '&:hover': {
-                    backgroundColor: alpha(theme.palette.primary.main, 0.2),
-                    transform: 'translateY(-3px)'
-                  },
-                  transition: 'all 0.3s ease'
-                }}>
+                <IconButton
+                  component="a"
+                  href="https://instagram.com/pcvc2017"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  size="small"
+                  sx={{
+                    color: '#94a3b8',
+                    border: '1px solid rgba(148, 163, 184, 0.3)',
+                    '&:hover': {
+                      color: '#38bdf8',
+                      borderColor: 'rgba(14, 165, 233, 0.5)',
+                      bgcolor: 'rgba(14, 165, 233, 0.08)',
+                      transform: 'translateY(-2px)',
+                    },
+                    transition: 'all 0.25s ease',
+                  }}
+                >
                   <InstagramIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Facebook">
-                <IconButton color="primary" size="small" sx={{ 
-                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                  '&:hover': {
-                    backgroundColor: alpha(theme.palette.primary.main, 0.2),
-                    transform: 'translateY(-3px)'
-                  },
-                  transition: 'all 0.3s ease'
-                }}>
-                  <FacebookIcon />
+              <Tooltip title="YouTube">
+                <IconButton
+                  component="a"
+                  href="https://www.youtube.com/@PBELCITYVOLLEYBALLCLUB"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  size="small"
+                  sx={{
+                    color: '#94a3b8',
+                    border: '1px solid rgba(148, 163, 184, 0.3)',
+                    '&:hover': {
+                      color: '#38bdf8',
+                      borderColor: 'rgba(14, 165, 233, 0.5)',
+                      bgcolor: 'rgba(14, 165, 233, 0.08)',
+                      transform: 'translateY(-2px)',
+                    },
+                    transition: 'all 0.25s ease',
+                  }}
+                >
+                  <YouTubeIcon />
                 </IconButton>
               </Tooltip>
-              <Tooltip title="Twitter">
-                <IconButton color="primary" size="small" sx={{ 
-                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
-                  '&:hover': {
-                    backgroundColor: alpha(theme.palette.primary.main, 0.2),
-                    transform: 'translateY(-3px)'
-                  },
-                  transition: 'all 0.3s ease'
-                }}>
-                  <TwitterIcon />
+              <Tooltip title="Facebook">
+                <IconButton
+                  component="a"
+                  href="https://www.facebook.com/PBELCITYVBCLUB"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  size="small"
+                  sx={{
+                    color: '#94a3b8',
+                    border: '1px solid rgba(148, 163, 184, 0.3)',
+                    '&:hover': {
+                      color: '#38bdf8',
+                      borderColor: 'rgba(14, 165, 233, 0.5)',
+                      bgcolor: 'rgba(14, 165, 233, 0.08)',
+                      transform: 'translateY(-2px)',
+                    },
+                    transition: 'all 0.25s ease',
+                  }}
+                >
+                  <FacebookIcon />
                 </IconButton>
               </Tooltip>
             </Box>
             
-            <Divider sx={{ width: '100%', mb: 2 }} />
+            <Divider sx={{ width: '100%', mb: 2, borderColor: 'rgba(255,255,255,0.08)' }} />
             
             <Typography 
               variant="body2" 
-              color="text.secondary" 
               align="center"
-              sx={{ fontWeight: 500 }}
+              sx={{ fontWeight: 500, color: 'rgba(255,255,255,0.6)' }}
             >
-              © {new Date().getFullYear()} PBEL CIty Volleyball & Throwball League. All rights reserved.
+              © {new Date().getFullYear()} PBEL City Volleyball & Throwball League. All rights reserved.
             </Typography>
           </Box>
         </Container>

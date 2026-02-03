@@ -60,7 +60,7 @@ const sponsors: Sponsor[] = [
     name: 'Ask Trice',
     logoPath: '/images/sponsors/ask-trice-logo.png',
     website: 'https://apps.apple.com/in/app/trice-your-neighbourhood-app/id1383696181',
-    description: 'Trice is a unique Neighbourhood app built by the residents for the residents of Apartment Communities. It connects you with home chefs, local vendors offering free home delivery for groceries and fresh produce, and provides a personal assistant service called Trice Buddy to help with tasks. The app features natural & organic groceries, vegan & eco products, and same-day delivery from local favorites. As the presenting sponsor of the PBEL CIty Volleyball & Throwball League 2025, Trice is committed to promoting community engagement.',
+    description: 'Trice is a unique Neighbourhood app built by the residents for the residents of Apartment Communities. It connects you with home chefs, local vendors offering free home delivery for groceries and fresh produce, and provides a personal assistant service called Trice Buddy to help with tasks. The app features natural & organic groceries, vegan & eco products, and same-day delivery from local favorites. As the presenting sponsor of the PBEL CIty Volleyball & Throwball League 2026, Trice is committed to promoting community engagement.',
     sponsorshipLevel: 'presenting',
     order: 1
   },
@@ -69,7 +69,7 @@ const sponsors: Sponsor[] = [
     name: 'Indis',
     logoPath: '/images/sponsors/indis-logo.png',
     website: 'https://indis.co.in/',
-    description: 'Indis is a premier real estate developer known for creating sustainable and modern living spaces. As a powered by sponsor, Indis brings its commitment to excellence and community building to the PBEL CIty Volleyball & Throwball League 2025.',
+    description: 'Indis is a premier real estate developer known for creating sustainable and modern living spaces. As a powered by sponsor, Indis brings its commitment to excellence and community building to the PBEL CIty Volleyball & Throwball League 2026.',
     sponsorshipLevel: 'powered',
     order: 2
   },
@@ -78,7 +78,7 @@ const sponsors: Sponsor[] = [
     name: 'Creekside Farm Resort',
     logoPath: '/images/sponsors/creekside-farm-resort-logo.png',
     website: 'https://www.instagram.com/creeksidefarmresortvikarabad/',
-    description: 'Creekside Farm Resort offers a serene retreat amidst nature with world-class amenities and hospitality. As a supporting sponsor, Creekside Farm Resort helps create memorable experiences for players and fans of the PBEL CIty Volleyball & Throwball League 2025.',
+    description: 'Creekside Farm Resort offers a serene retreat amidst nature with world-class amenities and hospitality. As a supporting sponsor, Creekside Farm Resort helps create memorable experiences for players and fans of the PBEL CIty Volleyball & Throwball League 2026.',
     sponsorshipLevel: 'supporting',
     order: 3
   }
@@ -635,7 +635,7 @@ export default function SponsorsPage() {
                 Interested in Sponsoring?
               </Typography>
               <Typography variant="body1" color="text.secondary" paragraph sx={{ maxWidth: 700, mx: 'auto' }}>
-                Join our growing family of sponsors and connect your brand with the excitement of the PBEL CIty Volleyball & Throwball League 2025. Contact the PCVC Organizers team to learn about sponsorship opportunities.
+                Join our growing family of sponsors and connect your brand with the excitement of the PBEL CIty Volleyball & Throwball League 2026. Contact the PCVC Organizers team to learn about sponsorship opportunities.
               </Typography>
               <Box sx={{ 
                 display: 'flex', 

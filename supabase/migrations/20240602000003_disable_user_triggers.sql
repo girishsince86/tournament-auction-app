@@ -37,11 +37,6 @@ BEGIN
 END
 $$;
 
--- Specifically try to disable known problematic triggers
-ALTER TABLE players DISABLE TRIGGER IF EXISTS validate_combined_requirements;
-ALTER TABLE players DISABLE TRIGGER IF EXISTS validate_team_requirements;
-ALTER TABLE players DISABLE TRIGGER IF EXISTS update_players_updated_at;
-
 -- Create empty dummy functions for any that might be missing
 CREATE OR REPLACE FUNCTION check_combined_requirements()
 RETURNS TRIGGER AS $$

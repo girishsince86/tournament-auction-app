@@ -334,7 +334,7 @@ export function AddRegistrationModal({
         is_verified: true, // Auto-verify admin-created registrations
         verified_by: currentUser,
         verified_at: new Date().toISOString(),
-        amount_received: 600, // Default amount
+        amount_received: 750, // Default amount
         last_played_date: formData.last_played_date as LastPlayedStatus,
         // Handle empty date fields - use undefined instead of null for type compatibility
         date_of_birth: formData.date_of_birth || undefined,

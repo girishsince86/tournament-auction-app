@@ -38,6 +38,39 @@ export const animations = {
       '0%, 100%': { transform: 'scale(1)' },
       '50%': { transform: 'scale(1.05)' },
     },
+    // Sports / broadcast-style
+    sportsFadeInUp: {
+      from: { opacity: '0', transform: 'translateY(16px)' },
+      to: { opacity: '1', transform: 'translateY(0)' },
+    },
+    sportsSlideInRight: {
+      from: { opacity: '0', transform: 'translateX(20px)' },
+      to: { opacity: '1', transform: 'translateX(0)' },
+    },
+    sportsScaleIn: {
+      from: { opacity: '0', transform: 'scale(0.96)' },
+      to: { opacity: '1', transform: 'scale(1)' },
+    },
+    sportsGlowPulse: {
+      '0%, 100%': { boxShadow: '0 0 20px rgba(14, 165, 233, 0.15)' },
+      '50%': { boxShadow: '0 0 32px rgba(14, 165, 233, 0.3)' },
+    },
+    sportsLivePulse: {
+      '0%, 100%': { opacity: '1', transform: 'scale(1)' },
+      '50%': { opacity: '0.85', transform: 'scale(1.02)' },
+    },
+    sportsShimmer: {
+      '0%': { backgroundPosition: '200% 0' },
+      '100%': { backgroundPosition: '-200% 0' },
+    },
+    sportsSweep: {
+      '0%': { clipPath: 'inset(0 100% 0 0)' },
+      '100%': { clipPath: 'inset(0 0 0 0)' },
+    },
+    sportsTicker: {
+      '0%': { transform: 'translateX(0)' },
+      '100%': { transform: 'translateX(-50%)' },
+    },
   },
 } as const;
 

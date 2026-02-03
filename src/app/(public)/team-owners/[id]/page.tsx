@@ -197,7 +197,7 @@ export default function TeamOwnerDetailPage({ params }: TeamOwnerDetailPageProps
               PBEL CIty VOLLEYBALL
             </Typography>
             <Typography variant="subtitle2" color="text.secondary">
-              AND THROWBALL LEAGUE 2025
+              AND THROWBALL LEAGUE 2026
             </Typography>
           </Box>
         </Box>

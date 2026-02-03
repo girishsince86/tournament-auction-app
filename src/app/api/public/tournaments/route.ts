@@ -39,11 +39,11 @@ export async function GET(request: NextRequest) {
       const mockTournaments = [
         {
           id: "11111111-1111-1111-1111-111111111111",
-          name: "PCVC Volley Ball and Throwball League 2025",
+          name: "PCVC Volley Ball and Throwball League 2026",
           description: "Annual PCVC volleyball and throwball tournament",
-          start_date: "2025-01-01",
-          end_date: "2025-02-28",
-          registration_deadline: "2024-12-15",
+          start_date: "2026-01-01",
+          end_date: "2026-02-28",
+          registration_deadline: "2025-12-15",
           max_teams: 8,
           max_players_per_team: 12,
           min_players_per_team: 6,

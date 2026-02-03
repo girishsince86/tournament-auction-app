@@ -348,14 +348,22 @@ SELECT
     t.id,
     t.name,
     t.remaining_budget as budget,
-    COUNT(p.id) as player_count,
-    jsonb_object_agg(
-        p.player_position,
-        COUNT(p.id)
-    ) as position_distribution
+    COALESCE(pc.player_count, 0)::bigint as player_count,
+    COALESCE(pc.position_distribution, '{}'::jsonb) as position_distribution
 FROM teams t
-LEFT JOIN players p ON p.current_team_id = t.id
-GROUP BY t.id, t.name, t.remaining_budget;
+LEFT JOIN (
+    SELECT 
+        current_team_id,
+        COUNT(*) as player_count,
+        jsonb_object_agg(player_position::text, cnt) as position_distribution
+    FROM (
+        SELECT current_team_id, player_position, COUNT(*) as cnt
+        FROM players
+        WHERE current_team_id IS NOT NULL
+        GROUP BY current_team_id, player_position
+    ) by_pos
+    GROUP BY current_team_id
+) pc ON pc.current_team_id = t.id;
 
 CREATE OR REPLACE VIEW verification_statistics AS
 SELECT 

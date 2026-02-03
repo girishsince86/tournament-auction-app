@@ -12,6 +12,8 @@ interface PersonalDetailsProps {
 export function PersonalDetails({ onNext, onBack }: PersonalDetailsProps) {
   const { formData, updateFormData } = useRegistrationForm()
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [referenceLoading, setReferenceLoading] = useState(false)
+  const [referenceMessage, setReferenceMessage] = useState<string | null>(null)
 
   const validateField = (name: string, value: string): string => {
     switch (name) {
@@ -35,6 +37,47 @@ export function PersonalDetails({ onNext, onBack }: PersonalDetailsProps) {
     const error = validateField(field, value)
     setErrors(prev => ({ ...prev, [field]: error }))
     updateFormData({ [field]: value })
+  }
+
+  const loadReference = async () => {
+    const email = (formData.email || '').trim()
+    const phone = (formData.phone_number || '').trim()
+    if (!email && !phone) {
+      setReferenceMessage('Enter email or phone number, then click Load 2025 details.')
+      return
+    }
+    setReferenceMessage(null)
+    setReferenceLoading(true)
+    try {
+      const params = new URLSearchParams()
+      if (email) params.set('email', email)
+      else params.set('phone', phone)
+      const res = await fetch(`/api/tournaments/register/reference?${params}`)
+      const json = await res.json()
+      if (!res.ok) {
+        setReferenceMessage(json.error || 'Lookup failed.')
+        return
+      }
+      if (json.reference) {
+        updateFormData({
+          first_name: json.reference.first_name ?? formData.first_name,
+          last_name: json.reference.last_name ?? formData.last_name,
+          email: json.reference.email ?? formData.email,
+          phone_number: json.reference.phone_number ?? formData.phone_number,
+          date_of_birth: json.reference.date_of_birth ?? formData.date_of_birth,
+          registration_category: json.reference.registration_category ?? formData.registration_category,
+          tshirt_size: json.reference.tshirt_size ?? formData.tshirt_size,
+          tshirt_number: json.reference.tshirt_number ?? formData.tshirt_number,
+        })
+        setReferenceMessage('Pre-filled from 2025 registration.')
+      } else {
+        setReferenceMessage('No 2025 registration found for this email/phone.')
+      }
+    } catch {
+      setReferenceMessage('Could not load reference. Try again.')
+    } finally {
+      setReferenceLoading(false)
+    }
   }
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -120,6 +163,31 @@ export function PersonalDetails({ onNext, onBack }: PersonalDetailsProps) {
             helperText={errors.flat_number}
             placeholder="A-123"
           />
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            fullWidth
+            label="Email (optional, for pre-fill)"
+            value={formData.email || ''}
+            onChange={handleChange('email')}
+            placeholder="you@example.com"
+          />
+        </Grid>
+        <Grid item xs={12}>
+          <Button
+            type="button"
+            variant="outlined"
+            color="secondary"
+            onClick={loadReference}
+            disabled={referenceLoading}
+          >
+            {referenceLoading ? 'Loading…' : 'Load my 2025 details'}
+          </Button>
+          {referenceMessage && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              {referenceMessage}
+            </Typography>
+          )}
         </Grid>
       </Grid>
 
