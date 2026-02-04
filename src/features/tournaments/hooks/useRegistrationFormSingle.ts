@@ -91,17 +91,8 @@ export function useRegistrationFormSingle() {
   const isSectionComplete = (section: SectionName) =>
     isRegistrationSectionComplete(section, formData, errors)
 
-  const findNextIncompleteSection = (): SectionName | null =>
-    SECTION_ORDER.find((s) => !isSectionComplete(s)) ?? null
-
-  const handleSectionCompletion = (currentSection: SectionName) => {
-    if (!isSectionComplete(currentSection)) return
-    const next = findNextIncompleteSection()
-    if (next) {
-      setExpandedSections((prev) => ({ ...prev, [next]: true }))
-      const el = document.querySelector(`[data-section="${next}"]`)
-      el?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    }
+  const handleSectionCompletion = (_currentSection: SectionName) => {
+    // No scroll on completion; focus shifts only when user collapses a section
   }
 
   const validateField = (name: keyof RegistrationFormData, value: unknown, nextFormData?: RegistrationFormData): string =>
@@ -242,13 +233,23 @@ export function useRegistrationFormSingle() {
   }
 
   const handleExpandSection = (section: SectionName) => {
-    setExpandedSections((prev) => ({ ...prev, [section]: !prev[section] }))
+    setExpandedSections((prev) => {
+      const willBeExpanded = !prev[section]
+      const next = { ...prev }
+      if (willBeExpanded) {
+        // User is expanding this section: auto-collapse any other section that is complete
+        SECTION_ORDER.forEach((s) => {
+          if (s !== section && prev[s] && isSectionComplete(s)) {
+            next[s] = false
+          }
+        })
+      }
+      next[section] = willBeExpanded
+      return next
+    })
   }
 
-  useEffect(() => {
-    const first = SECTION_ORDER.find((s) => !isSectionComplete(s))
-    if (first) setExpandedSections((prev) => ({ ...prev, [first]: true }))
-  }, [formData, errors])
+  // Do not auto-expand incomplete sections; user expands manually
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
@@ -260,6 +261,11 @@ export function useRegistrationFormSingle() {
     })
     if (Object.keys(validationErrors).length > 0) {
       setErrors(validationErrors)
+      setSnackbar({
+        open: true,
+        message: 'Please fix the errors in the form. Expand each section to see what’s missing.',
+        severity: 'error',
+      })
       return
     }
     if (!rulesAcknowledged || !residencyConfirmed) {

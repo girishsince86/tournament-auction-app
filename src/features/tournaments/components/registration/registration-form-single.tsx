@@ -320,13 +320,109 @@ export function RegistrationFormSingle() {
                   </Box>
                 </Box>
 
-                {/* Registration process overview */}
+                {/* Step 1: Complete your payment — at top */}
+                <Box sx={{ px: { xs: 2, sm: 3 }, py: 3, borderBottom: `1px solid ${theme.palette.divider}` }}>
+                  <Typography variant="h6" sx={{ mb: 2, color: 'primary.main', fontWeight: 700 }}>
+                    Step 1: Complete your payment
+                  </Typography>
+                  <Typography variant="body1" paragraph sx={{ fontWeight: 500 }}>
+                    Registration fee: <strong>INR 750</strong>
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                    Pay to one of the following (UPI or bank transfer):
+                  </Typography>
+                  <Box sx={{ pl: 2, mb: 2 }}>
+                    <Typography variant="body1" sx={{ mb: 0.5 }}>• Vasu Chepuru — 9849521594</Typography>
+                    <Typography variant="body1">• Amit Saxena — 9866674460</Typography>
+                  </Box>
+                  <Alert severity="info" sx={{ mb: 3 }}>
+                    Please complete the payment first. Then confirm below and enter who you paid and your transaction details.
+                  </Alert>
+
+                  {!showTransactionForm ? (
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      size="large"
+                      startIcon={<CheckCircleOutlineIcon />}
+                      onClick={() => setShowTransactionForm(true)}
+                      sx={{ borderRadius: 2 }}
+                    >
+                      I have completed the payment
+                    </Button>
+                  ) : (
+                    <Box sx={{ mt: 2 }}>
+                      <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
+                        Enter transaction details
+                      </Typography>
+                      <Grid container spacing={2}>
+                        <Grid item xs={12}>
+                          <StyledFormControl fullWidth error={!!errors.paid_to} required>
+                            <InputLabel>Payment was made to</InputLabel>
+                            <Select
+                              name="paid_to"
+                              value={formData.paid_to}
+                              label="Payment was made to"
+                              onChange={handleSelectChange}
+                            >
+                              {PAYMENT_RECEIVERS.map((receiver) => (
+                                <MenuItem key={receiver.value} value={receiver.value}>
+                                  {receiver.label}
+                                </MenuItem>
+                              ))}
+                            </Select>
+                            {errors.paid_to && (
+                              <FormHelperText>{errors.paid_to}</FormHelperText>
+                            )}
+                          </StyledFormControl>
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <StyledTextField
+                            required
+                            fullWidth
+                            label="Transaction ID"
+                            value={formData.payment_transaction_id}
+                            onChange={handleChange('payment_transaction_id')}
+                            error={!!errors.payment_transaction_id}
+                            helperText={errors.payment_transaction_id}
+                            placeholder="e.g. UPI reference number"
+                          />
+                        </Grid>
+                        <Grid item xs={12} sm={6}>
+                          <StyledTextField
+                            required
+                            fullWidth
+                            label="UPI ID / Phone number used to pay"
+                            value={formData.payment_upi_id}
+                            onChange={handleChange('payment_upi_id')}
+                            error={!!errors.payment_upi_id}
+                            helperText={errors.payment_upi_id}
+                            placeholder="username@upi or phone number"
+                          />
+                        </Grid>
+                        <Grid item xs={12}>
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            size="large"
+                            onClick={handleProceedAfterPayment}
+                            sx={{ borderRadius: 2 }}
+                          >
+                            Proceed to registration form
+                          </Button>
+                        </Grid>
+                      </Grid>
+                    </Box>
+                  )}
+                </Box>
+
+                {/* How registration works — below Step 1 */}
                 <Box
                   sx={{
                     px: { xs: 2, sm: 3 },
                     py: 2.5,
                     bgcolor: alpha(theme.palette.grey[50], 0.8),
-                    borderBottom: `1px solid ${theme.palette.divider}`,
+                    borderRadius: '0 0 12px 12px',
                   }}
                 >
                   <Typography
@@ -428,101 +524,6 @@ export function RegistrationFormSingle() {
                   >
                     <strong>Returning players:</strong> You can pre-fill the form with your last year’s details using your phone number or email (in the Personal details step), then edit as needed and submit.
                   </Typography>
-                </Box>
-
-                <Box sx={{ px: { xs: 2, sm: 3 }, py: 3 }}>
-                <Typography variant="h6" sx={{ mb: 2, color: 'primary.main', fontWeight: 700 }}>
-                  Step 1: Complete your payment
-                </Typography>
-                <Typography variant="body1" paragraph sx={{ fontWeight: 500 }}>
-                  Registration fee: <strong>INR 750</strong>
-                </Typography>
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                  Pay to one of the following (UPI or bank transfer):
-                </Typography>
-                <Box sx={{ pl: 2, mb: 2 }}>
-                  <Typography variant="body1" sx={{ mb: 0.5 }}>• Vasu Chepuru — 9849521594</Typography>
-                  <Typography variant="body1">• Amit Saxena — 9866674460</Typography>
-                </Box>
-                <Alert severity="info" sx={{ mb: 3 }}>
-                  Please complete the payment first. Then confirm below and enter who you paid and your transaction details.
-                </Alert>
-
-                {!showTransactionForm ? (
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    size="large"
-                    startIcon={<CheckCircleOutlineIcon />}
-                    onClick={() => setShowTransactionForm(true)}
-                    sx={{ borderRadius: 2 }}
-                  >
-                    I have completed the payment
-                  </Button>
-                ) : (
-                  <Box sx={{ mt: 2 }}>
-                    <Typography variant="subtitle1" sx={{ mb: 2, fontWeight: 600 }}>
-                      Enter transaction details
-                    </Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={12}>
-                        <StyledFormControl fullWidth error={!!errors.paid_to} required>
-                          <InputLabel>Payment was made to</InputLabel>
-                          <Select
-                            name="paid_to"
-                            value={formData.paid_to}
-                            label="Payment was made to"
-                            onChange={handleSelectChange}
-                          >
-                            {PAYMENT_RECEIVERS.map((receiver) => (
-                              <MenuItem key={receiver.value} value={receiver.value}>
-                                {receiver.label}
-                              </MenuItem>
-                            ))}
-                          </Select>
-                          {errors.paid_to && (
-                            <FormHelperText>{errors.paid_to}</FormHelperText>
-                          )}
-                        </StyledFormControl>
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <StyledTextField
-                          required
-                          fullWidth
-                          label="Transaction ID"
-                          value={formData.payment_transaction_id}
-                          onChange={handleChange('payment_transaction_id')}
-                          error={!!errors.payment_transaction_id}
-                          helperText={errors.payment_transaction_id}
-                          placeholder="e.g. UPI reference number"
-                        />
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <StyledTextField
-                          required
-                          fullWidth
-                          label="UPI ID / Phone number used to pay"
-                          value={formData.payment_upi_id}
-                          onChange={handleChange('payment_upi_id')}
-                          error={!!errors.payment_upi_id}
-                          helperText={errors.payment_upi_id}
-                          placeholder="username@upi or phone number"
-                        />
-                      </Grid>
-                      <Grid item xs={12}>
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          size="large"
-                          onClick={handleProceedAfterPayment}
-                          sx={{ borderRadius: 2 }}
-                        >
-                          Proceed to registration form
-                        </Button>
-                      </Grid>
-                    </Grid>
-                  </Box>
-                )}
                 </Box>
               </CardContent>
             </Card>

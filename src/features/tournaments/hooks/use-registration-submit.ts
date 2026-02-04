@@ -86,6 +86,7 @@ export function useRegistrationSubmit(): UseRegistrationSubmit {
       
       setError(errorMessage)
       console.error('Registration submission error:', err)
+      throw err
     } finally {
       setIsSubmitting(false)
       console.log(`Total registration process took ${performance.now() - startTime}ms`)
