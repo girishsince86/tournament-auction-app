@@ -6,6 +6,7 @@
 import type { RegistrationFormData } from '../../types/registration'
 import { RegistrationCategory, isYouthCategory } from '../../types/registration'
 import type { SectionName } from './registration-constants'
+import { categoryRequiresDoB, validateDoBForCategory } from './registration-age'
 import {
   LAST_PLAYED_OPTIONS,
   SKILL_LEVELS,
@@ -116,28 +117,12 @@ export function validateRegistrationField(
     case 'profile_image_url':
       return value && str(value).length > 0 ? '' : 'Profile photo is required'
     case 'date_of_birth': {
-      if (isYouthCategory(formData.registration_category)) {
+      if (categoryRequiresDoB(formData.registration_category as RegistrationCategory)) {
         if (!value) return 'Date of birth is required'
-        const dob = new Date(value as string)
-        const cutoff = new Date('2026-04-30')
-        let age = cutoff.getFullYear() - dob.getFullYear()
-        const md = cutoff.getMonth() - dob.getMonth()
-        if (md < 0 || (md === 0 && cutoff.getDate() < dob.getDate())) age--
-        if (formData.registration_category === 'THROWBALL_8_12_MIXED') {
-          if (age < 8) return 'Player must be at least 8 years old as of April 30, 2026'
-          if (age > 12) return 'Player must be under 12 years old as of April 30, 2026'
-        }
-        if (formData.registration_category === 'THROWBALL_13_17_MIXED') {
-          if (age < 13) return 'Player must be at least 13 years old as of April 30, 2026'
-          if (age > 17) return 'Player must be under 17 years old as of April 30, 2026'
-        }
-      } else if (value) {
-        const dob = new Date(value as string)
-        const cutoff = new Date('2026-04-30')
-        let age = cutoff.getFullYear() - dob.getFullYear()
-        const md = cutoff.getMonth() - dob.getMonth()
-        if (md < 0 || (md === 0 && cutoff.getDate() < dob.getDate())) age--
-        if (age < 8) return 'Player must be at least 8 years old as of April 30, 2026'
+        return validateDoBForCategory(
+          value as string,
+          formData.registration_category as RegistrationCategory
+        )
       }
       return ''
     }
@@ -160,6 +145,7 @@ export function isRegistrationSectionComplete(
   const e = (key: keyof RegistrationFormData) => errors[key]
   const vol = () => isVolleyballCategory(formData.registration_category)
   const youth = () => isYouthCategory(formData.registration_category)
+  const needsDoB = () => categoryRequiresDoB(formData.registration_category as RegistrationCategory)
 
   switch (section) {
     case 'category':
@@ -178,16 +164,19 @@ export function isRegistrationSectionComplete(
         !e('phone_number') &&
         !e('flat_number') &&
         !e('profile_image_url')
-      if (youth()) {
-        return (
-          base &&
-          !!v('date_of_birth') &&
-          !!v('parent_name') &&
-          !!v('parent_phone_number') &&
-          !e('date_of_birth') &&
-          !e('parent_name') &&
-          !e('parent_phone_number')
-        )
+      if (needsDoB()) {
+        const doBComplete = !!v('date_of_birth') && !e('date_of_birth')
+        if (youth()) {
+          return (
+            base &&
+            doBComplete &&
+            !!v('parent_name') &&
+            !!v('parent_phone_number') &&
+            !e('parent_name') &&
+            !e('parent_phone_number')
+          )
+        }
+        return base && doBComplete
       }
       return base
     }

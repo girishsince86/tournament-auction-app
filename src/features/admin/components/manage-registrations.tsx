@@ -553,7 +553,7 @@ export function ManageRegistrations() {
       renderCell: (params: GridRenderCellParams<TournamentRegistration>) => {
         if (!params.row.date_of_birth) return '-';
         const dob = new Date(params.row.date_of_birth);
-        const cutoffDate = new Date('2026-04-30');
+        const cutoffDate = new Date('2026-03-01');
         
         // Calculate years
         const yearDiff = cutoffDate.getFullYear() - dob.getFullYear();

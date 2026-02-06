@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerSupabaseClient } from '@/lib/supabase/server'
 import { PostgrestSingleResponse, PostgrestError } from '@supabase/supabase-js'
+import { RegistrationCategory } from '@/features/tournaments/types/registration'
+import { categoryRequiresDoB, validateDoBForCategory } from '@/features/tournaments/components/registration/registration-age'
 
 export const dynamic = 'force-dynamic'
 export const maxDuration = 60; // Set to maximum allowed for hobby plan (60 seconds)
@@ -107,6 +109,24 @@ export async function POST(request: NextRequest) {
         { error: `Missing required fields: ${missingFields.join(', ')}` },
         { status: 400 }
       )
+    }
+
+    // Validate date of birth for categories that require it (youth, VB, TB Women)
+    const category = data.registration_category as RegistrationCategory
+    if (categoryRequiresDoB(category)) {
+      if (!data.date_of_birth) {
+        return NextResponse.json(
+          { error: 'Date of birth is required for this category' },
+          { status: 400 }
+        )
+      }
+      const dobError = validateDoBForCategory(String(data.date_of_birth), category)
+      if (dobError) {
+        return NextResponse.json(
+          { error: dobError },
+          { status: 400 }
+        )
+      }
     }
 
     // Check for existing registration with retry logic

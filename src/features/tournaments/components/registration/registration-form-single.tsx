@@ -56,6 +56,7 @@ import PhotoCameraIcon from '@mui/icons-material/PhotoCamera'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { useRegistrationFormSingle } from '@/features/tournaments/hooks/useRegistrationFormSingle'
 import type { SectionName } from './registration-constants'
+import { categoryRequiresDoB } from './registration-age'
 import { isVolleyballCategory } from './registration-validation'
 import {
   REGISTRATION_CATEGORIES,
@@ -165,8 +166,10 @@ export function RegistrationFormSingle() {
     { label: 'Email', value: formData.email },
     { label: 'Phone', value: formData.phone_number },
     { label: 'Flat Number', value: formData.flat_number },
-    ...(isYouthCategory(formData.registration_category) ? [
+    ...(categoryRequiresDoB(formData.registration_category) ? [
       { label: 'Date of Birth', value: formData.date_of_birth ? new Date(formData.date_of_birth).toLocaleDateString() : '' },
+    ] : []),
+    ...(isYouthCategory(formData.registration_category) ? [
       { label: 'Parent/Guardian Name', value: formData.parent_name },
       { label: 'Parent/Guardian Phone', value: formData.parent_phone_number },
     ] : []),
@@ -977,10 +980,10 @@ export function RegistrationFormSingle() {
                   >
                     <Box>
                       <Typography variant="h6" sx={{ color: 'primary.main', mb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
-                        <EmojiEventsIcon /> New: Team Formation through Auction System!
+                        <EmojiEventsIcon /> Team Formation through Auction System!
                       </Typography>
                       <Typography variant="body1" sx={{ mb: 1, fontWeight: 500 }}>
-                        For the first time in PBEL City Volleyball League, teams will be formed through an exciting auction process!
+                        Like last year, teams will be formed through an auction process!
                       </Typography>
                       <Typography variant="body2">
                         • All registered players will be part of an auction pool<br />
@@ -1217,30 +1220,38 @@ export function RegistrationFormSingle() {
                     />
                   </Grid>
 
-                  {/* Youth-specific fields */}
+                  {/* Date of birth (required for age verification: youth, VB, TB Women) */}
+                  {categoryRequiresDoB(formData.registration_category) && (
+                    <Grid item xs={12} sm={6}>
+                      <StyledTextField
+                        required
+                        fullWidth
+                        label="Date of Birth"
+                        type="date"
+                        value={formData.date_of_birth}
+                        onChange={handleChange('date_of_birth')}
+                        error={!!errors.date_of_birth}
+                        helperText={errors.date_of_birth || (
+                          formData.registration_category === 'THROWBALL_8_12_MIXED'
+                            ? 'Age must be between 8-12 years (as of 1 Mar 2026).'
+                            : formData.registration_category === 'THROWBALL_13_17_MIXED'
+                              ? 'Age must be between 13-21 years (as of 1 Mar 2026).'
+                              : formData.registration_category === 'VOLLEYBALL_OPEN_MEN'
+                                ? 'Must be born on or before 1 March 2014.'
+                                : 'Must be born on or before 1 March 2005.'
+                        )}
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                  )}
+
+                  {/* Youth-only: parent/guardian fields */}
                   {isYouthCategory(formData.registration_category) && (
                     <>
                       <Grid item xs={12}>
                         <Typography variant="subtitle2" color="primary" sx={{ mb: 1, mt: 2 }}>
                           Additional Information Required for Youth Category
                         </Typography>
-                      </Grid>
-                      <Grid item xs={12} sm={6}>
-                        <StyledTextField
-                          required
-                          fullWidth
-                          label="Date of Birth"
-                          type="date"
-                          value={formData.date_of_birth}
-                          onChange={handleChange('date_of_birth')}
-                          error={!!errors.date_of_birth}
-                          helperText={errors.date_of_birth || (
-                            formData.registration_category === 'THROWBALL_8_12_MIXED' 
-                              ? 'Age must be between 8-12 years'
-                              : 'Age must be between 13-17 years'
-                          )}
-                          InputLabelProps={{ shrink: true }}
-                        />
                       </Grid>
                       <Grid item xs={12} sm={6}>
                         <StyledTextField

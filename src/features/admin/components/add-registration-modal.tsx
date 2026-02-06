@@ -24,6 +24,7 @@ import {
 } from '@mui/material'
 import { Close as CloseIcon } from '@mui/icons-material'
 import { RegistrationCategory, TournamentRegistration, LastPlayedStatus } from '@/features/tournaments/types/registration'
+import { categoryRequiresDoB, validateDoBForCategory } from '@/features/tournaments/components/registration/registration-age'
 import toast from 'react-hot-toast'
 
 // Constants for dropdown options
@@ -142,7 +143,7 @@ export function AddRegistrationModal({
       case RegistrationCategory.THROWBALL_WOMEN:
         return 'Throwball - Women'
       case RegistrationCategory.THROWBALL_13_17_MIXED:
-        return 'Throwball - 13-17 Mixed'
+        return 'Throwball - 13-21 Mixed'
       case RegistrationCategory.THROWBALL_8_12_MIXED:
         return 'Throwball - 8-12 Mixed'
       default:
@@ -182,10 +183,13 @@ export function AddRegistrationModal({
 
   // Validate form fields
   const validateField = (name: string, value: any): string => {
-    // Skip validation for optional fields if they're empty
-    if (value === '' && !['first_name', 'last_name', 'email', 'phone_number', 'flat_number', 
-                          'tshirt_size', 'tshirt_name', 'tshirt_number', 'payment_upi_id', 
-                          'payment_transaction_id', 'paid_to'].includes(name)) {
+    const requiredWhenEmpty = ['first_name', 'last_name', 'email', 'phone_number', 'flat_number',
+      'tshirt_size', 'tshirt_name', 'tshirt_number', 'payment_upi_id',
+      'payment_transaction_id', 'paid_to']
+    if (categoryRequiresDoB(formData.registration_category)) {
+      requiredWhenEmpty.push('date_of_birth')
+    }
+    if (value === '' && !requiredWhenEmpty.includes(name)) {
       return ''
     }
 
@@ -202,11 +206,16 @@ export function AddRegistrationModal({
       }
     }
 
-    // For youth categories, validate required youth fields
-    if (isYouthCategory(formData.registration_category)) {
-      if (name === 'date_of_birth' && !value) {
-        return 'Date of birth is required for youth categories'
+    // For categories that require DOB (youth, VB, TB Women)
+    if (categoryRequiresDoB(formData.registration_category)) {
+      if (name === 'date_of_birth') {
+        if (!value) return 'Date of birth is required'
+        return validateDoBForCategory(String(value), formData.registration_category)
       }
+    }
+
+    // For youth categories, validate parent/guardian fields
+    if (isYouthCategory(formData.registration_category)) {
       if (name === 'parent_name' && !value) {
         return 'Parent name is required for youth categories'
       }
@@ -505,25 +514,28 @@ export function AddRegistrationModal({
             />
           </Grid>
           
-          {/* Youth-specific fields */}
+          {/* Date of birth (required for youth, VB, TB Women) */}
+          {categoryRequiresDoB(category) && (
+            <Grid item xs={12} sm={6}>
+              <TextField
+                required
+                fullWidth
+                label="Date of Birth"
+                type="date"
+                value={formData.date_of_birth}
+                onChange={handleChange('date_of_birth')}
+                error={!!errors.date_of_birth}
+                helperText={errors.date_of_birth}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+              />
+            </Grid>
+          )}
+
+          {/* Youth-only: parent/guardian fields */}
           {isYouthCategory(category) && (
             <>
-              <Grid item xs={12} sm={6}>
-                <TextField
-                  required
-                  fullWidth
-                  label="Date of Birth"
-                  type="date"
-                  value={formData.date_of_birth}
-                  onChange={handleChange('date_of_birth')}
-                  error={!!errors.date_of_birth}
-                  helperText={errors.date_of_birth}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                />
-              </Grid>
-              
               <Grid item xs={12} sm={6}>
                 <TextField
                   required

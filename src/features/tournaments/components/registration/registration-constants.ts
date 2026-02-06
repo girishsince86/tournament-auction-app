@@ -45,7 +45,7 @@ export const TSHIRT_SIZES = [
 export const REGISTRATION_CATEGORIES = [
   { value: 'VOLLEYBALL_OPEN_MEN', label: 'Volleyball - Open' },
   { value: 'THROWBALL_WOMEN', label: 'Throwball - Women' },
-  { value: 'THROWBALL_13_17_MIXED', label: 'Throwball - 13-17 Mixed' },
+  { value: 'THROWBALL_13_17_MIXED', label: 'Throwball - 13-21 Mixed' },
   { value: 'THROWBALL_8_12_MIXED', label: 'Throwball - 8-12 Mixed' },
 ] as const
 
@@ -53,10 +53,11 @@ export const TOURNAMENT_RULES = [
   {
     title: 'Categories & Registration',
     rules: [
-      'Categories: Volleyball - Open, Women\'s Throwball, Throwball 8-12 Mixed, Throwball 13-17 Mixed',
+      'Categories: Volleyball - Open, Throwball Open Category Women, Throwball 8-12 Mixed, Throwball 13-21 Mixed',
       'Only PBEL City residents can participate',
       'Individual registrations only (no team registrations)',
-      'Players can register for only one category',
+      'A player can register in both TB and VB but not in 2 TB categories. Min age for VB registration is 13 years complete.',
+      'Players registering for both Volleyball and Throwball have to register twice.',
       'Registration fee: INR 750 per player',
       'Registration deadline strictly enforced',
       'No late registrations accepted',
@@ -65,9 +66,12 @@ export const TOURNAMENT_RULES = [
   {
     title: 'Age Requirements',
     rules: [
-      'Throwball 8-12 Mixed: Must be born on or after May 1, 2012',
-      'Throwball 13-17 Mixed: Must be born on or after May 1, 2008',
-      'Parent/Guardian information required for youth categories',
+      'Age as of 1 March 2026 (tournament start)',
+      'Throwball 8-12 Mixed: Born between 2 March 2014 and 1 March 2018 (inclusive)',
+      'Throwball 13-21 Mixed: Born between 2 March 2005 and 1 March 2014 (inclusive)',
+      'Volleyball - Open: Born on or before 1 March 2014',
+      'Throwball - Women: Born on or before 1 March 2005',
+      'Parent/Guardian information required for youth categories (8-12 and 13-21)',
       'Age verification may be required during the tournament',
     ],
   },
@@ -103,8 +107,8 @@ export const TOURNAMENT_RULES = [
   {
     title: 'Medical & Safety',
     rules: [
-      'Basic first aid will be available at venue',
-      'Players participate at their own risk',
+      'Basic first aid will be available at the venue.',
+      'Sports sometimes are susceptible to injuries. While reasonable measures will be taken by the organizing committee to mitigate risk of injuries to players, players understand that individual safety is completely one\'s own responsibility.',
       'Report any injuries to tournament officials immediately',
     ],
   },
@@ -112,7 +116,6 @@ export const TOURNAMENT_RULES = [
     title: 'Communication & Administration',
     rules: [
       'Official WhatsApp group for tournament updates',
-      'Schedule changes will be notified 24 hours in advance',
       'Team captains responsible for relay of information',
       'Organizing Committee reserves rights to verify residency, modify rules, take disciplinary action, and adjust schedule',
       'All decisions by the organizing committee are final',

@@ -15,6 +15,7 @@ import {
   SKILL_LEVELS,
   PLAYING_POSITIONS,
 } from '../components/registration/registration-constants'
+import { categoryRequiresDoB } from '../components/registration/registration-age'
 import {
   validateRegistrationField,
   isRegistrationSectionComplete,
@@ -114,16 +115,23 @@ export function useRegistrationFormSingle() {
       if (section) handleSectionCompletion(section)
     }, 100)
     if (field === 'registration_category') {
-      const isYouth = isYouthCategory(value as RegistrationCategory)
-      if (isYouth) {
-        ;['date_of_birth', 'parent_name', 'parent_phone_number'].forEach((youthField) => {
-          const err = validateField(
-            youthField as keyof RegistrationFormData,
-            formData[youthField as keyof RegistrationFormData],
-            formData
-          )
-          setErrors((prev) => ({ ...prev, [youthField]: err }))
-        })
+      const newCategory = value as RegistrationCategory
+      const needsDoB = categoryRequiresDoB(newCategory)
+      const isYouth = isYouthCategory(newCategory)
+      if (needsDoB) {
+        const nextData = { ...formData, registration_category: newCategory }
+        const dobErr = validateField('date_of_birth', formData.date_of_birth, nextData)
+        setErrors((prev) => ({ ...prev, date_of_birth: dobErr }))
+        if (isYouth) {
+          ;['parent_name', 'parent_phone_number'].forEach((youthField) => {
+            const err = validateField(
+              youthField as keyof RegistrationFormData,
+              formData[youthField as keyof RegistrationFormData],
+              nextData
+            )
+            setErrors((prev) => ({ ...prev, [youthField]: err }))
+          })
+        }
       } else {
         setFormData((prev) => ({
           ...prev,
@@ -306,9 +314,11 @@ export function useRegistrationFormSingle() {
           { label: 'Email', value: formData.email },
           { label: 'Phone Number', value: formData.phone_number },
           { label: 'Flat Number', value: formData.flat_number },
+          ...(categoryRequiresDoB(formData.registration_category)
+            ? [{ label: 'Date of Birth', value: formData.date_of_birth ? new Date(formData.date_of_birth).toLocaleDateString() : '' }]
+            : []),
           ...(isYouthCategory(formData.registration_category)
             ? [
-                { label: 'Date of Birth', value: formData.date_of_birth ? new Date(formData.date_of_birth).toLocaleDateString() : '' },
                 { label: 'Parent/Guardian Name', value: formData.parent_name },
                 { label: 'Parent/Guardian Phone', value: formData.parent_phone_number },
               ]

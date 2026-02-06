@@ -61,7 +61,7 @@ export async function GET() {
       .select('date_of_birth')
       .not('date_of_birth', 'is', null)
 
-    const cutoffDate = new Date('2026-04-30')
+    const cutoffDate = new Date('2026-03-01')
     const ageDistributionMap = new Map<number, number>()
 
     registrationsWithDOB?.forEach(registration => {
@@ -89,7 +89,7 @@ export async function GET() {
 
     const ageDistributionByCategory = {
       '8-12': 0,
-      '13-17': 0,
+      '13-21': 0,
       byCategory: {
         'THROWBALL_8_12_MIXED': { within: 0, outside: 0 },
         'THROWBALL_13_17_MIXED': { within: 0, outside: 0 }
@@ -100,8 +100,8 @@ export async function GET() {
       const dob = new Date(registration.date_of_birth)
       const age = cutoffDate.getFullYear() - dob.getFullYear()
       const monthDiff = cutoffDate.getMonth() - dob.getMonth()
-      const finalAge = monthDiff < 0 || (monthDiff === 0 && cutoffDate.getDate() < dob.getDate()) 
-        ? age - 1 
+      const finalAge = monthDiff < 0 || (monthDiff === 0 && cutoffDate.getDate() < dob.getDate())
+        ? age - 1
         : age
 
       if (finalAge >= 8 && finalAge <= 12) {
@@ -111,8 +111,8 @@ export async function GET() {
         } else {
           ageDistributionByCategory.byCategory['THROWBALL_8_12_MIXED'].outside++
         }
-      } else if (finalAge >= 13 && finalAge <= 17) {
-        ageDistributionByCategory['13-17']++
+      } else if (finalAge >= 13 && finalAge <= 21) {
+        ageDistributionByCategory['13-21']++
         if (registration.registration_category === 'THROWBALL_13_17_MIXED') {
           ageDistributionByCategory.byCategory['THROWBALL_13_17_MIXED'].within++
         } else {
