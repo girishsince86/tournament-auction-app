@@ -160,6 +160,9 @@ export function useRegistrationFormSingle() {
   const handleProfileImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    if (profileImagePreviewUrl?.startsWith('blob:')) {
+      URL.revokeObjectURL(profileImagePreviewUrl)
+    }
     // Show local preview immediately
     const objectUrl = URL.createObjectURL(file)
     setProfileImagePreviewUrl(objectUrl)
@@ -172,8 +175,6 @@ export function useRegistrationFormSingle() {
       const res = await fetch('/api/tournaments/register/upload-image', { method: 'POST', body: form })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Upload failed')
-      URL.revokeObjectURL(objectUrl)
-      setProfileImagePreviewUrl(null)
       setFormData((prev) => ({ ...prev, profile_image_url: data.imageUrl }))
       setTimeout(() => handleSectionCompletion('personal'), 100)
     } catch (err) {
