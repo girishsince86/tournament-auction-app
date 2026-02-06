@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import {
   Box,
   Button,
@@ -53,6 +53,7 @@ import ReceiptLongIcon from '@mui/icons-material/ReceiptLong'
 import DoneAllIcon from '@mui/icons-material/DoneAll'
 import StraightenIcon from '@mui/icons-material/Straighten'
 import PhotoCameraIcon from '@mui/icons-material/PhotoCamera'
+import PhotoLibraryIcon from '@mui/icons-material/PhotoLibrary'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { useRegistrationFormSingle } from '@/features/tournaments/hooks/useRegistrationFormSingle'
 import type { SectionName } from './registration-constants'
@@ -78,6 +79,8 @@ import {
 
 export function RegistrationFormSingle() {
   const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const profileImageGalleryInputRef = useRef<HTMLInputElement>(null)
   const {
     formData,
     setFormData,
@@ -120,7 +123,6 @@ export function RegistrationFormSingle() {
 
   const [paymentGateComplete, setPaymentGateComplete] = useState(false)
   const [showTransactionForm, setShowTransactionForm] = useState(false)
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
   const [prefillCardExpanded, setPrefillCardExpanded] = useState(false)
   useEffect(() => {
     if (!isMobile) setPrefillCardExpanded(true)
@@ -1108,7 +1110,15 @@ export function RegistrationFormSingle() {
                         capture="environment"
                         onChange={handleProfileImageChange}
                         style={{ display: 'none' }}
-                        aria-label="Upload profile photo"
+                        aria-label="Take profile photo"
+                      />
+                      <input
+                        ref={profileImageGalleryInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleProfileImageChange}
+                        style={{ display: 'none' }}
+                        aria-label="Upload profile photo from gallery"
                       />
                       {(profileImagePreviewUrl || formData.profile_image_url) ? (
                         <>
@@ -1135,15 +1145,38 @@ export function RegistrationFormSingle() {
                             </Button>
                           </Box>
                         </>
+                      ) : isMobile ? (
+                        <>
+                          <Button
+                            type="button"
+                            variant="outlined"
+                            {...({ component: 'span' } as const)}
+                            startIcon={profileImageUploading ? <CircularProgress size={20} /> : <PhotoCameraIcon />}
+                            disabled={profileImageUploading}
+                            onClick={() => profileImageInputRef.current?.click()}
+                          >
+                            {profileImageUploading ? 'Uploading…' : 'Take photo'}
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="outlined"
+                            {...({ component: 'span' } as const)}
+                            startIcon={<PhotoLibraryIcon />}
+                            disabled={profileImageUploading}
+                            onClick={() => profileImageGalleryInputRef.current?.click()}
+                          >
+                            Upload from gallery
+                          </Button>
+                        </>
                       ) : (
-<Button
-                              type="button"
-                              variant="outlined"
-                              {...({ component: 'span' } as const)}
-                              startIcon={profileImageUploading ? <CircularProgress size={20} /> : <PhotoCameraIcon />}
-                              disabled={profileImageUploading}
-                              onClick={() => profileImageInputRef.current?.click()}
-                            >
+                        <Button
+                          type="button"
+                          variant="outlined"
+                          {...({ component: 'span' } as const)}
+                          startIcon={profileImageUploading ? <CircularProgress size={20} /> : <PhotoCameraIcon />}
+                          disabled={profileImageUploading}
+                          onClick={() => profileImageGalleryInputRef.current?.click()}
+                        >
                           {profileImageUploading ? 'Uploading…' : 'Take or upload photo'}
                         </Button>
                       )}
@@ -1154,7 +1187,9 @@ export function RegistrationFormSingle() {
                       </FormHelperText>
                     )}
                     <Typography variant="caption" display="block" color="text.secondary" sx={{ mt: 0.5 }}>
-                      Use camera or choose from gallery. Max 5MB; JPEG, PNG or WebP.
+                      {isMobile
+                        ? 'Take a new photo or upload from gallery. Max 5MB; JPEG, PNG or WebP.'
+                        : 'Use camera or choose from gallery. Max 5MB; JPEG, PNG or WebP.'}
                     </Typography>
                   </Grid>
                   <Grid item xs={12} sm={6}>
