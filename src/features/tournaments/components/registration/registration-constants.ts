@@ -44,7 +44,6 @@ export const TSHIRT_SIZES = [
 
 export const REGISTRATION_CATEGORIES = [
   { value: 'VOLLEYBALL_OPEN_MEN', label: 'Volleyball - Open' },
-  { value: 'THROWBALL_WOMEN', label: 'Throwball - Women' },
   { value: 'THROWBALL_13_17_MIXED', label: 'Throwball - 13-21 Mixed' },
   { value: 'THROWBALL_8_12_MIXED', label: 'Throwball - 8-12 Mixed' },
 ] as const
@@ -53,7 +52,7 @@ export const TOURNAMENT_RULES = [
   {
     title: 'Categories & Registration',
     rules: [
-      'Categories: Volleyball - Open, Throwball Open Category Women, Throwball 8-12 Mixed, Throwball 13-21 Mixed',
+      'Categories: Volleyball - Open, Throwball 8-12 Mixed, Throwball 13-21 Mixed',
       'Only PBEL City residents can participate',
       'Individual registrations only (no team registrations)',
       'A player can register in both TB and VB but not in 2 TB categories. Min age for VB registration is 13 years complete.',
@@ -70,7 +69,6 @@ export const TOURNAMENT_RULES = [
       'Throwball 8-12 Mixed: Born between 21 March 2014 and 20 March 2018 (inclusive)',
       'Throwball 13-21 Mixed: Born between 21 March 2005 and 20 March 2014 (inclusive)',
       'Volleyball - Open: Born on or before 20 March 2013',
-      'Throwball - Women: Born on or before 20 March 2005',
       'Parent/Guardian information required for youth categories (8-12 and 13-21)',
       'Age verification may be required during the tournament',
     ],

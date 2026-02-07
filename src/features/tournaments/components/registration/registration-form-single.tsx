@@ -954,8 +954,18 @@ export function RegistrationFormSingle() {
               Declaration
             </DialogTitle>
             <DialogContent dividers>
-              <Typography variant="body1">
-                All the information provided is accurate to the best of my knowledge and when needed for verification, I will provide the necessary proof to justify the same.
+              <Typography variant="body1" component="div" sx={{ '& ul': { pl: 2.5, m: 0 }, '& li': { mb: 1.5 } }}>
+                <ul>
+                  <li>
+                    All the information provided is accurate to the best of my knowledge and when needed for verification, I will provide the necessary proof to justify the same.
+                  </li>
+                  <li>
+                    In the event of registering for both Volleyball and Throwball, I understand that I may have to play back to back matches with short time interval between two matches.
+                  </li>
+                  <li>
+                    Sports and games are prone to injuries. While the organizers would make reasonable arrangements to ensure safety of the players, I understand that I am fully responsible for my own safety during the play and the venue.
+                  </li>
+                </ul>
               </Typography>
             </DialogContent>
             <DialogActions>
