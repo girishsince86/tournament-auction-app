@@ -66,11 +66,11 @@ export const TOURNAMENT_RULES = [
   {
     title: 'Age Requirements',
     rules: [
-      'Age as of 1 March 2026 (tournament start)',
-      'Throwball 8-12 Mixed: Born between 2 March 2014 and 1 March 2018 (inclusive)',
-      'Throwball 13-21 Mixed: Born between 2 March 2005 and 1 March 2014 (inclusive)',
-      'Volleyball - Open: Born on or before 1 March 2014',
-      'Throwball - Women: Born on or before 1 March 2005',
+      'Age as of 20 March 2026 (tournament start)',
+      'Throwball 8-12 Mixed: Born between 21 March 2014 and 20 March 2018 (inclusive)',
+      'Throwball 13-21 Mixed: Born between 21 March 2005 and 20 March 2014 (inclusive)',
+      'Volleyball - Open: Born on or before 20 March 2013',
+      'Throwball - Women: Born on or before 20 March 2005',
       'Parent/Guardian information required for youth categories (8-12 and 13-21)',
       'Age verification may be required during the tournament',
     ],

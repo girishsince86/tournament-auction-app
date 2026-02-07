@@ -81,6 +81,7 @@ export function useRegistrationFormSingle() {
   const [rulesAcknowledged, setRulesAcknowledged] = useState(false)
   const [residencyConfirmed, setResidencyConfirmed] = useState(false)
   const [rulesDialogOpen, setRulesDialogOpen] = useState(false)
+  const [consentDialogOpen, setConsentDialogOpen] = useState(false)
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [registrationId, setRegistrationId] = useState('')
   const [sizeChartOpen, setSizeChartOpen] = useState(false)
@@ -285,6 +286,13 @@ export function useRegistrationFormSingle() {
       })
       return
     }
+    // Require consent via dialog before submitting
+    setConsentDialogOpen(true)
+    return
+  }
+
+  const confirmConsentAndSubmit = async () => {
+    setConsentDialogOpen(false)
     try {
       setIsSubmitting(true)
       await submitForm(formData)
@@ -372,6 +380,9 @@ export function useRegistrationFormSingle() {
     setResidencyConfirmed,
     rulesDialogOpen,
     setRulesDialogOpen,
+    consentDialogOpen,
+    setConsentDialogOpen,
+    confirmConsentAndSubmit,
     showSuccessDialog,
     setShowSuccessDialog,
     registrationId,

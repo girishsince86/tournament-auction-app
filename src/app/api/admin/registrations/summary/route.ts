@@ -61,7 +61,7 @@ export async function GET() {
       .select('date_of_birth')
       .not('date_of_birth', 'is', null)
 
-    const cutoffDate = new Date('2026-03-01')
+    const cutoffDate = new Date('2026-03-20')
     const ageDistributionMap = new Map<number, number>()
 
     registrationsWithDOB?.forEach(registration => {

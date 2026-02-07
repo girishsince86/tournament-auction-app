@@ -97,6 +97,9 @@ export function RegistrationFormSingle() {
     setResidencyConfirmed,
     rulesDialogOpen,
     setRulesDialogOpen,
+    consentDialogOpen,
+    setConsentDialogOpen,
+    confirmConsentAndSubmit,
     showSuccessDialog,
     setShowSuccessDialog,
     registrationId,
@@ -940,6 +943,29 @@ export function RegistrationFormSingle() {
             </DialogActions>
           </Dialog>
 
+          {/* Consent / Declaration Dialog */}
+          <Dialog
+            open={consentDialogOpen}
+            onClose={() => setConsentDialogOpen(false)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', gap: 1 }}>
+              Declaration
+            </DialogTitle>
+            <DialogContent dividers>
+              <Typography variant="body1">
+                All the information provided is accurate to the best of my knowledge and when needed for verification, I will provide the necessary proof to justify the same.
+              </Typography>
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setConsentDialogOpen(false)}>Cancel</Button>
+              <Button variant="contained" onClick={confirmConsentAndSubmit}>
+                I agree
+              </Button>
+            </DialogActions>
+          </Dialog>
+
           {/* Category Selection */}
           <Card sx={{ mb: 2 }} data-section="category">
             <CardHeader
@@ -1268,12 +1294,12 @@ export function RegistrationFormSingle() {
                         error={!!errors.date_of_birth}
                         helperText={errors.date_of_birth || (
                           formData.registration_category === 'THROWBALL_8_12_MIXED'
-                            ? 'Age must be between 8-12 years (as of 1 Mar 2026).'
+                            ? 'Age 8-12 as of 20 Mar 2026: 21 Mar 2014 – 20 Mar 2018.'
                             : formData.registration_category === 'THROWBALL_13_17_MIXED'
-                              ? 'Age must be between 13-21 years (as of 1 Mar 2026).'
+                              ? 'Age 13-21 as of 20 Mar 2026: 21 Mar 2005 – 20 Mar 2014.'
                               : formData.registration_category === 'VOLLEYBALL_OPEN_MEN'
-                                ? 'Must be born on or before 1 March 2014.'
-                                : 'Must be born on or before 1 March 2005.'
+                                ? 'Must be born on or before 20 March 2013.'
+                                : 'Must be born on or before 20 March 2005.'
                         )}
                         InputLabelProps={{ shrink: true }}
                       />
