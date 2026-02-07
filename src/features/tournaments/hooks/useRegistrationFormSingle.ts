@@ -220,17 +220,25 @@ export function useRegistrationFormSingle() {
         return
       }
       if (json.reference) {
-        setFormData((prev) => ({
-          ...prev,
-          first_name: json.reference.first_name ?? prev.first_name,
-          last_name: json.reference.last_name ?? prev.last_name,
-          email: json.reference.email ?? prev.email,
-          phone_number: json.reference.phone_number ?? prev.phone_number,
-          date_of_birth: json.reference.date_of_birth ?? prev.date_of_birth,
-          registration_category: (json.reference.registration_category ?? prev.registration_category) as RegistrationCategory,
-          tshirt_size: (json.reference.tshirt_size ?? prev.tshirt_size) as RegistrationFormData['tshirt_size'],
-          tshirt_number: json.reference.tshirt_number ?? prev.tshirt_number,
-        }))
+        const merged: RegistrationFormData = {
+          ...formData,
+          first_name: json.reference.first_name ?? formData.first_name,
+          last_name: json.reference.last_name ?? formData.last_name,
+          email: json.reference.email ?? formData.email,
+          phone_number: json.reference.phone_number ?? formData.phone_number,
+          date_of_birth: json.reference.date_of_birth ?? formData.date_of_birth,
+          registration_category: (json.reference.registration_category ?? formData.registration_category) as RegistrationCategory,
+          tshirt_size: (json.reference.tshirt_size ?? formData.tshirt_size) as RegistrationFormData['tshirt_size'],
+          tshirt_number: json.reference.tshirt_number ?? formData.tshirt_number,
+        }
+        setFormData(merged)
+        // Re-run full validation so progress bar and section statuses are accurate
+        const validationErrors: Partial<Record<keyof RegistrationFormData, string>> = {}
+        ;(Object.keys(merged) as (keyof RegistrationFormData)[]).forEach((key) => {
+          const err = validateField(key, merged[key], merged)
+          if (err) validationErrors[key] = err
+        })
+        setErrors(validationErrors)
         setReferenceMessage('Pre-filled from 2025 registration.')
       } else {
         setReferenceMessage('No 2025 registration found for this email or phone.')

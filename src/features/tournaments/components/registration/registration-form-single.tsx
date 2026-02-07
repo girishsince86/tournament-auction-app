@@ -641,18 +641,23 @@ export function RegistrationFormSingle() {
                   alignSelf: 'center',
                   bgcolor: 'white',
                   borderRadius: '50%',
-                  p: 3,
                   boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                  display: { xs: 'none', sm: 'block' },
+                  display: { xs: 'none', sm: 'flex' },
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  overflow: 'hidden',
+                  p: 1.5,
                 }}
               >
-                <Image
-                  src="/images/pbel-volleyball-logo.png"
-                  alt="PBEL City Volleyball Club"
-                  fill
-                  style={{ objectFit: 'contain' }}
-                  priority
-                />
+                <Box sx={{ position: 'relative', width: '100%', height: '100%' }}>
+                  <Image
+                    src="/images/pbel-volleyball-logo.png"
+                    alt="PBEL City Volleyball Club"
+                    fill
+                    style={{ objectFit: 'contain' }}
+                    priority
+                  />
+                </Box>
               </Box>
             </Box>
           </Box>

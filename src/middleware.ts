@@ -145,6 +145,16 @@ const authRoutes = [
 export async function middleware(request: NextRequest) {
   try {
     const { pathname } = request.nextUrl;
+
+    // Redirect malformed registration URL (e.g. WhatsApp copy-paste appends 📅 emoji after the link)
+    const registerBase = '/tournaments/register';
+    if (
+      pathname.startsWith(registerBase) &&
+      pathname !== registerBase &&
+      !pathname.startsWith(registerBase + '/')
+    ) {
+      return NextResponse.redirect(new URL(registerBase, request.url));
+    }
     
     // Skip middleware for static files, API routes, and public routes
     if (
