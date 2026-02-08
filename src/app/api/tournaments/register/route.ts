@@ -19,14 +19,14 @@ async function performDatabaseOperation<T>(
   timeoutMs: number = 8000
 ): Promise<PostgrestSingleResponse<T | null>> {
   let lastError: any;
-  
+
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
       console.log(`Attempt ${attempt} of ${maxRetries}...`)
-      
+
       const result = await Promise.race([
         operation(),
-        new Promise((_, reject) => 
+        new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Database operation timed out')), timeoutMs)
         )
       ]) as PostgrestSingleResponse<T | null>
@@ -39,7 +39,7 @@ async function performDatabaseOperation<T>(
     } catch (error) {
       lastError = error
       console.error(`Attempt ${attempt} failed:`, error)
-      
+
       if (attempt < maxRetries) {
         // Exponential backoff
         const backoffTime = Math.min(1000 * Math.pow(2, attempt - 1), 4000)
@@ -83,7 +83,7 @@ function sanitizeRegistrationPayload(data: Record<string, unknown>): Record<stri
 export async function POST(request: NextRequest) {
   console.log('Starting registration process...')
   const startTime = Date.now()
-  
+
   try {
     const supabase = createServerSupabaseClient()
     if (!supabase) {
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
     // Validate required fields first
     const requiredFields = ['email', 'registration_category', 'first_name', 'last_name']
     const missingFields = requiredFields.filter(field => !data[field])
-    
+
     if (missingFields.length > 0) {
       return NextResponse.json(
         { error: `Missing required fields: ${missingFields.join(', ')}` },
@@ -129,37 +129,8 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Check for existing registration with retry logic
-    console.log('Checking for existing registration...')
-    try {
-      const existingRegistration = await performDatabaseOperation<RegistrationResponse>(
-        async () => {
-          return await supabase
-            .from('tournament_registrations')
-            .select('id, registration_category')
-            .eq('email', data.email)
-            .eq('registration_category', data.registration_category)
-            .maybeSingle()
-        },
-        3, // 3 retries
-        5000 // 5 second timeout
-      )
+    // Check for existing registration skipped - allowing multiple registrations with same email
 
-      if (existingRegistration.data?.id) {
-        return NextResponse.json(
-          { error: 'A registration with this email already exists for this category' },
-          { status: 400 }
-        )
-      }
-    } catch (error) {
-      if (error instanceof PostgrestError) {
-        if (error.code !== 'PGRST116') { // Not found error is expected
-          throw error
-        }
-      } else {
-        throw error
-      }
-    }
 
     // Insert new registration with retry logic (sanitize so empty strings don't break timestamp columns)
     const insertPayload = sanitizeRegistrationPayload(data)
@@ -233,7 +204,7 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url)
-    
+
     // Check registration status
     if (searchParams.has('registration_id')) {
       const registrationId = searchParams.get('registration_id')

@@ -85,6 +85,7 @@ export function useRegistrationFormSingle() {
   const [showSuccessDialog, setShowSuccessDialog] = useState(false)
   const [registrationId, setRegistrationId] = useState('')
   const [sizeChartOpen, setSizeChartOpen] = useState(false)
+  const [showReviewStep, setShowReviewStep] = useState(false)
   const [referenceLoading, setReferenceLoading] = useState(false)
   const [referenceMessage, setReferenceMessage] = useState<string | null>(null)
   const [profileImageUploading, setProfileImageUploading] = useState(false)
@@ -234,10 +235,10 @@ export function useRegistrationFormSingle() {
         setFormData(merged)
         // Re-run full validation so progress bar and section statuses are accurate
         const validationErrors: Partial<Record<keyof RegistrationFormData, string>> = {}
-        ;(Object.keys(merged) as (keyof RegistrationFormData)[]).forEach((key) => {
-          const err = validateField(key, merged[key], merged)
-          if (err) validationErrors[key] = err
-        })
+          ; (Object.keys(merged) as (keyof RegistrationFormData)[]).forEach((key) => {
+            const err = validateField(key, merged[key], merged)
+            if (err) validationErrors[key] = err
+          })
         setErrors(validationErrors)
         setReferenceMessage('Pre-filled from 2025 registration.')
       } else {
@@ -269,6 +270,25 @@ export function useRegistrationFormSingle() {
 
   // Do not auto-expand incomplete sections; user expands manually
 
+  const handleBackToEdit = (section?: SectionName) => {
+    setShowReviewStep(false)
+    if (section) {
+      // Expand the target section and collapse others
+      setExpandedSections((prev) => {
+        const next: Record<SectionName, boolean> = { ...prev }
+        SECTION_ORDER.forEach((s) => {
+          next[s] = s === section
+        })
+        return next
+      })
+      // Scroll to section after a brief delay to allow render
+      setTimeout(() => {
+        const el = document.querySelector(`[data-section="${section}"]`)
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      }, 100)
+    }
+  }
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault()
     const validationErrors: Record<string, string> = {}
@@ -294,7 +314,13 @@ export function useRegistrationFormSingle() {
       })
       return
     }
-    // Require consent via dialog before submitting
+    // If not in review step, show review first
+    if (!showReviewStep) {
+      setShowReviewStep(true)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
+    // In review step - show consent dialog before submitting
     setConsentDialogOpen(true)
     return
   }
@@ -336,9 +362,9 @@ export function useRegistrationFormSingle() {
             : []),
           ...(isYouthCategory(formData.registration_category)
             ? [
-                { label: 'Parent/Guardian Name', value: formData.parent_name },
-                { label: 'Parent/Guardian Phone', value: formData.parent_phone_number },
-              ]
+              { label: 'Parent/Guardian Name', value: formData.parent_name },
+              { label: 'Parent/Guardian Phone', value: formData.parent_phone_number },
+            ]
             : []),
         ],
       },
@@ -397,6 +423,9 @@ export function useRegistrationFormSingle() {
     setRegistrationId,
     sizeChartOpen,
     setSizeChartOpen,
+    showReviewStep,
+    setShowReviewStep,
+    handleBackToEdit,
     referenceLoading,
     referenceMessage,
     profileImageUploading,

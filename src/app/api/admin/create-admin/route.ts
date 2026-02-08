@@ -1,26 +1,24 @@
-import { createServerClient } from '@supabase/ssr'
-import { cookies } from 'next/headers'
 import { NextResponse } from 'next/server'
-import { Database } from '@/lib/supabase/types/supabase'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = cookies()
-    
-    const supabase = createServerClient<Database>(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          get(name: string) {
-            return cookieStore.get(name)?.value
-          },
-        },
-      }
-    )
-    
+    const supabase = createAdminClient()
+
     const { email, password } = await request.json()
 
+    if (!email?.trim()) {
+      return NextResponse.json(
+        { error: 'Email is required' },
+        { status: 400 }
+      )
+    }
+    if (!password?.trim()) {
+      return NextResponse.json(
+        { error: 'Password is required' },
+        { status: 400 }
+      )
+    }
     if (!email.endsWith('@pbel.in')) {
       return NextResponse.json(
         { error: 'Only @pbel.in email addresses are allowed' },
@@ -29,15 +27,15 @@ export async function POST(request: Request) {
     }
 
     const { data, error } = await supabase.auth.admin.createUser({
-      email,
-      password,
+      email: email.trim(),
+      password: password.trim(),
       email_confirm: true,
     })
 
     if (error) {
       console.error('Error creating admin:', error)
       return NextResponse.json(
-        { error: 'Failed to create admin user' },
+        { error: error.message || 'Failed to create admin user' },
         { status: 500 }
       )
     }
