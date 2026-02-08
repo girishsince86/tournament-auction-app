@@ -87,9 +87,9 @@ export function validateRegistrationField(
     case 'skill_level':
       return value && SKILL_LEVELS.some((l) => l.value === value) ? '' : 'Please select your skill level'
     case 'playing_positions':
-      return isVolleyballCategory(formData.registration_category) &&
-        Array.isArray(value) &&
-        value.length > 0
+      // Only required for volleyball categories
+      if (!isVolleyballCategory(formData.registration_category)) return ''
+      return Array.isArray(value) && value.length > 0
         ? ''
         : 'Please select at least one playing position'
     case 'tshirt_size':
