@@ -55,83 +55,83 @@ const getNavigationItems = async (supabase: any, userEmail: string | undefined, 
   
   // Base items for all authenticated users
   const items = [
-    { 
-      text: 'Players', 
-      icon: <SportsVolleyballIcon />, 
-      href: '/players' 
-    },
-    { 
-      text: 'Registration Summary', 
-      icon: <DashboardIcon />, 
-      href: '/registration-summary' 
+    // {
+    //   text: 'Players',
+    //   icon: <SportsVolleyballIcon />,
+    //   href: '/players'
+    // },
+    {
+      text: 'Registration Summary',
+      icon: <DashboardIcon />,
+      href: '/registration-summary'
     }
   ];
 
   // Add My Profile for team owners
-  if (isTeamOwner) {
-    items.push({
-      text: 'My Profile',
-      icon: <PersonIcon />,
-      href: '/team-owner/profile'
-    });
+  // if (isTeamOwner) {
+  //   items.push({
+  //     text: 'My Profile',
+  //     icon: <PersonIcon />,
+  //     href: '/team-owner/profile'
+  //   });
 
-    // Fetch team ID for team owner
-    if (userEmail) {
-      const { data: teamOwner } = await supabase
-        .from('team_owners')
-        .select('team_id')
-        .eq('email', userEmail)
-        .single();
+  //   // Fetch team ID for team owner
+  //   if (userEmail) {
+  //     const { data: teamOwner } = await supabase
+  //       .from('team_owners')
+  //       .select('team_id')
+  //       .eq('email', userEmail)
+  //       .single();
 
-      if (teamOwner?.team_id) {
-        // Add team management for team owners
-        items.push({
-          text: 'Team Management',
-          icon: <GroupsIcon />,
-          href: `/teams/${teamOwner.team_id}/management`
-        });
-      }
-    }
-  }
+  //     if (teamOwner?.team_id) {
+  //       // Add team management for team owners
+  //       items.push({
+  //         text: 'Team Management',
+  //         icon: <GroupsIcon />,
+  //         href: `/teams/${teamOwner.team_id}/management`
+  //       });
+  //     }
+  //   }
+  // }
 
   // Additional items for admin users only
   if (isFullAdmin) {
     items.push(
-      { 
-        text: 'Manage Registrations', 
-        icon: <ManageSearchIcon />, 
-        href: '/admin/manage-registrations' 
-      },
       {
-        text: 'Manage Players',
-        icon: <SportsVolleyballIcon />,
-        href: '/manage-players'
-      },
-      {
-        text: 'Player Categories',
-        icon: <CategoryIcon />,
-        href: '/admin/player-categories'
-      },
-      {
-        text: 'Team Owner Profiles',
-        icon: <PersonIcon />,
-        href: '/team-owner/profile'
-      },
-      {
-        text: 'Auction Control',
-        icon: <GavelIcon />,
-        href: currentTournament ? `/auction/${currentTournament.id}/control` : '/admin/auction'
-      },
-      {
-        text: 'Team Budgets',
-        icon: <AccountBalanceWalletIcon />,
-        href: '/admin/team-budgets'
-      },
-      {
-        text: 'Team Management',
-        icon: <GroupsIcon />,
-        href: '/admin/teams'
+        text: 'Manage Registrations',
+        icon: <ManageSearchIcon />,
+        href: '/admin/manage-registrations'
       }
+      // {
+      //   text: 'Manage Players',
+      //   icon: <SportsVolleyballIcon />,
+      //   href: '/manage-players'
+      // },
+      // {
+      //   text: 'Player Categories',
+      //   icon: <CategoryIcon />,
+      //   href: '/admin/player-categories'
+      // },
+      // {
+      //   text: 'Team Owner Profiles',
+      //   icon: <PersonIcon />,
+      //   href: '/team-owner/profile'
+      // },
+      // {
+      //   text: 'Auction Control',
+      //   icon: <GavelIcon />,
+      //   href: currentTournament ? `/auction/${currentTournament.id}/control` : '/admin/auction'
+      // },
+      // {
+      //   text: 'Team Budgets',
+      //   icon: <AccountBalanceWalletIcon />,
+      //   href: '/admin/team-budgets'
+      // },
+      // {
+      //   text: 'Team Management',
+      //   icon: <GroupsIcon />,
+      //   href: '/admin/teams'
+      // }
     );
   }
 
