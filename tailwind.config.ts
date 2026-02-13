@@ -75,13 +75,13 @@ const config: Config = {
           900: '#14532D',
         },
         background: {
-          primary: '#F8FAFC',
-          secondary: '#F1F5F9',
-          tertiary: '#E2E8F0',
+          primary: '#0a0e17',
+          secondary: '#111827',
+          tertiary: '#1a2234',
         },
         text: {
-          primary: '#0F172A',
-          secondary: '#334155',
+          primary: '#ffffff',
+          secondary: '#94a3b8',
           tertiary: '#64748B',
         },
         status: {

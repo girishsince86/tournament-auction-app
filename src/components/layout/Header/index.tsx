@@ -18,8 +18,18 @@ export function Header({ onMenuClick, isSidebarOpen }: HeaderProps) {
       position="fixed"
       sx={{
         zIndex: (theme) => theme.zIndex.drawer + 1,
-        backgroundColor: 'white',
-        color: 'text.primary',
+        background: 'linear-gradient(135deg, #0a0e17 0%, #1a2234 100%)',
+        color: '#ffffff',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+        '&::after': {
+          content: '""',
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          height: '2px',
+          background: 'linear-gradient(90deg, #0ea5e9, #f97316)',
+        },
       }}
     >
       <Toolbar sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
@@ -33,11 +43,11 @@ export function Header({ onMenuClick, isSidebarOpen }: HeaderProps) {
         </IconButton>
 
         {/* Logo */}
-        <Box 
-          sx={{ 
+        <Box
+          sx={{
             position: 'relative',
-            width: 40,
-            height: 40,
+            width: 48,
+            height: 48,
             display: { xs: 'none', sm: 'block' }
           }}
         >
@@ -50,32 +60,26 @@ export function Header({ onMenuClick, isSidebarOpen }: HeaderProps) {
           />
         </Box>
 
-        <Typography 
-          variant="h6" 
-          noWrap 
-          component="div" 
-          sx={{ 
+        <Typography
+          variant="h6"
+          noWrap
+          component="div"
+          sx={{
             flexGrow: 1,
+            fontFamily: 'var(--font-sports-display), Oswald, sans-serif',
             fontWeight: 600,
-            fontSize: { xs: '1rem', sm: '1.25rem' }
+            fontSize: { xs: '1rem', sm: '1.25rem' },
+            letterSpacing: '0.02em',
+            textTransform: 'uppercase',
           }}
         >
-          League Auction App
+          Pbel City Volley Ball and Throw Ball 2026 League
         </Typography>
 
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-          <Button
-            component={Link}
-            href="/players"
-            color="primary"
-            startIcon={<VolleyballIcon />}
-            sx={{ display: { xs: 'none', sm: 'flex' } }}
-          >
-            Players
-          </Button>
           <UserMenu />
         </Box>
       </Toolbar>
     </AppBar>
   )
-} 
+}

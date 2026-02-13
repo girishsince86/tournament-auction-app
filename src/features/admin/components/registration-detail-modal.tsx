@@ -56,12 +56,14 @@ export function RegistrationDetailModal({
     title: string;
     children: React.ReactNode;
   }) => (
-    <Paper 
-      elevation={0} 
-      sx={{ 
-        p: 1.5, 
+    <Paper
+      elevation={0}
+      sx={{
+        p: 1.5,
         mb: 1.5,
-        border: `1px solid ${theme.palette.divider}`,
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        borderLeft: '3px solid',
+        borderImage: 'linear-gradient(to bottom, #0ea5e9, #f97316) 1',
         '&:hover': {
           borderColor: theme.palette.primary.main,
           transition: 'border-color 0.3s ease',
@@ -124,11 +126,14 @@ export function RegistrationDetailModal({
       label={verified ? 'Verified' : 'Pending'}
       color={verified ? 'success' : 'warning'}
       size={size}
-      sx={{ 
+      sx={{
         fontWeight: 500,
         '& .MuiChip-label': {
           px: 2,
         },
+        ...(verified && {
+          boxShadow: '0 0 8px rgba(16, 185, 129, 0.4)',
+        }),
       }}
     />
   );

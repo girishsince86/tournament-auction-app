@@ -24,18 +24,35 @@ export function SidebarItem({ icon, text, href, onClick }: SidebarItemProps) {
         onClick={onClick}
         sx={{
           '&.Mui-selected': {
-            backgroundColor: 'primary.light',
+            backgroundColor: 'rgba(14, 165, 233, 0.12)',
+            borderLeft: '3px solid #0ea5e9',
             '&:hover': {
-              backgroundColor: 'primary.light',
+              backgroundColor: 'rgba(14, 165, 233, 0.18)',
             },
+          },
+          '&:hover': {
+            backgroundColor: 'rgba(255, 255, 255, 0.04)',
           },
         }}
       >
-        <ListItemIcon sx={{ color: isActive ? 'primary.main' : 'inherit' }}>
+        <ListItemIcon
+          sx={{
+            color: isActive ? '#0ea5e9' : '#94a3b8',
+            filter: isActive ? 'drop-shadow(0 0 4px rgba(14, 165, 233, 0.4))' : 'none',
+          }}
+        >
           {icon}
         </ListItemIcon>
-        <ListItemText primary={text} />
+        <ListItemText
+          primary={text}
+          sx={{
+            '& .MuiListItemText-primary': {
+              color: isActive ? '#ffffff' : '#94a3b8',
+              fontWeight: isActive ? 600 : 400,
+            },
+          }}
+        />
       </ListItemButton>
     </ListItem>
   )
-} 
+}

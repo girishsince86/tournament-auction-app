@@ -47,8 +47,6 @@ export default function RootLayout({
     )}>
       <body suppressHydrationWarning className={cn(
         'min-h-screen',
-        'bg-background-primary',
-        'text-text-primary',
         'antialiased',
         'font-body'
       )}>
@@ -58,10 +56,14 @@ export default function RootLayout({
               {children}
             </main>
             <PoweredByJulley standalone />
-            <Toaster 
+            <Toaster
               position="top-right"
               toastOptions={{
-                className: 'bg-background-secondary text-text-primary',
+                style: {
+                  background: '#1a2234',
+                  color: '#ffffff',
+                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                },
                 duration: 4000,
               }}
             />

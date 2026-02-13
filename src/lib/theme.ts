@@ -1,5 +1,5 @@
 import { createTheme } from '@mui/material/styles'
-import { Poppins, DM_Sans } from 'next/font/google'
+import { Poppins, DM_Sans, Oswald } from 'next/font/google'
 
 const poppins = Poppins({
   weight: ['400', '500', '600', '700'],
@@ -9,6 +9,12 @@ const poppins = Poppins({
 
 const dmSans = DM_Sans({
   weight: ['400', '500', '700'],
+  subsets: ['latin'],
+  display: 'swap',
+})
+
+const oswald = Oswald({
+  weight: ['400', '500', '600', '700'],
   subsets: ['latin'],
   display: 'swap',
 })
@@ -34,7 +40,7 @@ const sportsPalette = {
 
 export const theme = createTheme({
   palette: {
-    mode: 'light',
+    mode: 'dark',
     primary: {
       main: sportsPalette.accent.blue,
       light: sportsPalette.accent.blueBright,
@@ -84,38 +90,40 @@ export const theme = createTheme({
       900: '#111827',
     },
     background: {
-      default: '#ffffff',
-      paper: '#ffffff',
+      default: '#0a0e17',
+      paper: '#111827',
     },
     text: {
-      primary: '#111827',
-      secondary: '#4b5563',
-      disabled: '#9ca3af',
+      primary: '#ffffff',
+      secondary: '#94a3b8',
+      disabled: '#475569',
     },
-    divider: '#e5e7eb',
+    divider: 'rgba(255, 255, 255, 0.08)',
   },
   typography: {
     fontFamily: poppins.style.fontFamily,
     h1: {
-      fontFamily: dmSans.style.fontFamily,
+      fontFamily: oswald.style.fontFamily,
       fontSize: '3.5rem',
       fontWeight: 700,
       lineHeight: 1.2,
+      textTransform: 'uppercase',
     },
     h2: {
-      fontFamily: dmSans.style.fontFamily,
+      fontFamily: oswald.style.fontFamily,
       fontSize: '3rem',
       fontWeight: 700,
       lineHeight: 1.2,
+      textTransform: 'uppercase',
     },
     h3: {
-      fontFamily: dmSans.style.fontFamily,
+      fontFamily: oswald.style.fontFamily,
       fontSize: '2.25rem',
       fontWeight: 600,
       lineHeight: 1.2,
     },
     h4: {
-      fontFamily: dmSans.style.fontFamily,
+      fontFamily: oswald.style.fontFamily,
       fontSize: '1.875rem',
       fontWeight: 600,
       lineHeight: 1.2,
@@ -193,8 +201,70 @@ export const theme = createTheme({
       styleOverrides: {
         root: {
           backgroundImage: 'none',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+        },
+      },
+    },
+    MuiDrawer: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: '#111827',
+          borderRight: '1px solid rgba(255, 255, 255, 0.08)',
+        },
+      },
+    },
+    MuiDialog: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: '#1a2234',
+          backgroundImage: 'none',
+        },
+      },
+    },
+    MuiChip: {
+      styleOverrides: {
+        root: {
+          fontWeight: 500,
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          '& .MuiOutlinedInput-root': {
+            '& fieldset': {
+              borderColor: 'rgba(255, 255, 255, 0.12)',
+            },
+            '&:hover fieldset': {
+              borderColor: 'rgba(255, 255, 255, 0.2)',
+            },
+          },
+        },
+      },
+    },
+    MuiTooltip: {
+      styleOverrides: {
+        tooltip: {
+          backgroundColor: '#1a2234',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+          fontSize: '0.75rem',
+        },
+      },
+    },
+    MuiMenu: {
+      styleOverrides: {
+        paper: {
+          backgroundColor: '#1a2234',
+          border: '1px solid rgba(255, 255, 255, 0.08)',
+        },
+      },
+    },
+    MuiDivider: {
+      styleOverrides: {
+        root: {
+          borderColor: 'rgba(255, 255, 255, 0.08)',
         },
       },
     },
   },
-}) 
+})

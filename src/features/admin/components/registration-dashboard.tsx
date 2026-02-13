@@ -51,7 +51,7 @@ import {
   LabelList,
 } from 'recharts'
 
-const COLORS = ['#2196f3', '#4caf50', '#ff9800', '#e91e63', '#9c27b0']
+const COLORS = ['#0ea5e9', '#f97316', '#10b981', '#ef4444', '#9c27b0']
 
 // Category display names mapping
 const CATEGORY_DISPLAY_NAMES: Record<string, string> = {
@@ -82,6 +82,16 @@ interface CategoryCount {
   category: string;
   count: number;
 }
+
+// Dark Recharts tooltip styles
+const darkTooltipStyle = {
+  backgroundColor: '#1a2234',
+  border: '1px solid rgba(255,255,255,0.08)',
+  borderRadius: 8,
+  color: '#ffffff',
+}
+const darkTooltipLabelStyle = { color: '#ffffff' }
+const darkTooltipItemStyle = { color: '#94a3b8' }
 
 export function RegistrationDashboard() {
   const [summary, setSummary] = useState<RegistrationSummary>({
@@ -173,19 +183,19 @@ export function RegistrationDashboard() {
     const date = new Date(registration.created_at).toLocaleDateString()
     const existingDate = acc.find(item => item.date === date)
     const categoryName = CATEGORY_DISPLAY_NAMES[registration.registration_category]
-    
+
     if (existingDate) {
       existingDate[categoryName] = (existingDate[categoryName] || 0) + 1
       existingDate.total = (existingDate.total || 0) + 1
     } else {
-      const newDate = { 
+      const newDate = {
         date,
         [categoryName]: 1,
         total: 1
       }
       acc.push(newDate)
     }
-    
+
     return acc
   }, []).sort((a: Record<string, any>, b: Record<string, any>) => new Date(a.date).getTime() - new Date(b.date).getTime())
 
@@ -196,18 +206,18 @@ export function RegistrationDashboard() {
   const totalParticipants = summary.totalRegistrations
   const youthPercentage = ((summary.youth8To12Count + summary.youth13To17Count) / totalParticipants * 100).toFixed(1)
   const mostPopularCategory = {
-    ...summary.categoryDistribution.reduce((prev, current) => 
+    ...summary.categoryDistribution.reduce((prev, current) =>
       (current.count > prev.count) ? current : prev
     ),
-    name: CATEGORY_DISPLAY_NAMES[summary.categoryDistribution.reduce((prev, current) => 
+    name: CATEGORY_DISPLAY_NAMES[summary.categoryDistribution.reduce((prev, current) =>
       (current.count > prev.count) ? current : prev
     ).name]
   }
   const mostPopularSize = {
-    ...summary.jerseySizes.reduce((prev, current) => 
+    ...summary.jerseySizes.reduce((prev, current) =>
       (current.count > prev.count) ? current : prev
     ),
-    size: TSHIRT_SIZE_DISPLAY[summary.jerseySizes.reduce((prev, current) => 
+    size: TSHIRT_SIZE_DISPLAY[summary.jerseySizes.reduce((prev, current) =>
       (current.count > prev.count) ? current : prev
     ).size]
   }
@@ -234,24 +244,24 @@ export function RegistrationDashboard() {
     }).format(amount)
   }
 
-  const ChartContainer = ({ 
+  const ChartContainer = ({
     id,
     title,
-    children 
-  }: { 
+    children
+  }: {
     id: string,
     title: string,
-    children: React.ReactNode 
+    children: React.ReactNode
   }) => {
     const isExpanded = expandedCharts[id]
-    
+
     return (
       <>
         <Paper sx={{ p: 3 }}>
-          <Box 
-            display="flex" 
-            alignItems="center" 
-            justifyContent="space-between" 
+          <Box
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
             sx={{ cursor: 'pointer' }}
             onClick={() => toggleChart(id)}
           >
@@ -294,16 +304,17 @@ export function RegistrationDashboard() {
                 transform: 'translate(-50%, -50%)',
                 width: '90vw',
                 height: '90vh',
-                bgcolor: 'background.paper',
+                bgcolor: '#1a2234',
                 boxShadow: 24,
                 p: 4,
                 borderRadius: 1,
+                border: '1px solid rgba(255, 255, 255, 0.08)',
               }}
             >
-              <Box 
-                display="flex" 
-                alignItems="center" 
-                justifyContent="space-between" 
+              <Box
+                display="flex"
+                alignItems="center"
+                justifyContent="space-between"
                 mb={2}
               >
                 <Typography variant="h6">
@@ -328,23 +339,27 @@ export function RegistrationDashboard() {
   return (
     <Box sx={{ p: 3 }}>
       <Box mb={4}>
-        <Paper sx={{ p: 2, bgcolor: 'primary.light', color: 'primary.contrastText' }}>
+        <Paper sx={{
+          p: 2,
+          background: 'linear-gradient(135deg, rgba(14, 165, 233, 0.12) 0%, rgba(249, 115, 22, 0.08) 100%)',
+          border: '1px solid rgba(14, 165, 233, 0.2)',
+        }}>
           <Grid container spacing={2}>
             <Grid item xs={12}>
               <Box display="flex" alignItems="center" justifyContent="space-between">
                 <Box display="flex" alignItems="center" gap={1}>
-                  <TrendingUpIcon />
+                  <TrendingUpIcon sx={{ color: '#0ea5e9' }} />
                   <Typography variant="h6">Quick Insights</Typography>
                 </Box>
                 <Box display="flex" alignItems="center" gap={1}>
-                  <Typography variant="body2" sx={{ opacity: 0.8 }}>
+                  <Typography variant="body2" sx={{ color: '#94a3b8' }}>
                     Last updated: {lastUpdate.toLocaleTimeString()}
                   </Typography>
                   <Tooltip title="Refresh Data">
-                    <IconButton 
+                    <IconButton
                       onClick={fetchSummary}
                       disabled={loading}
-                      sx={{ color: 'primary.contrastText' }}
+                      sx={{ color: '#94a3b8' }}
                     >
                       <RefreshIcon />
                     </IconButton>
@@ -354,11 +369,23 @@ export function RegistrationDashboard() {
             </Grid>
             <Grid item xs={12} md={4}>
               <Box>
-                <Typography variant="subtitle2" sx={{ opacity: 0.9 }}>
+                <Typography variant="subtitle2" sx={{ color: '#94a3b8' }}>
                   Registration Status
                 </Typography>
                 <Typography variant="body2">
-                  {totalParticipants} total registrations across {Object.keys(CATEGORY_DISPLAY_NAMES).length} categories
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontFamily: 'var(--font-sports-display), Oswald, sans-serif',
+                      fontWeight: 700,
+                      fontSize: '1.25rem',
+                      color: '#0ea5e9',
+                      mr: 0.5,
+                    }}
+                  >
+                    {totalParticipants}
+                  </Typography>
+                  total registrations across {Object.keys(CATEGORY_DISPLAY_NAMES).length} categories
                 </Typography>
                 <Typography variant="body2" sx={{ mt: 0.5 }}>
                   Most popular: {mostPopularCategory.name} ({mostPopularCategory.count} players)
@@ -367,11 +394,23 @@ export function RegistrationDashboard() {
             </Grid>
             <Grid item xs={12} md={4}>
               <Box>
-                <Typography variant="subtitle2" sx={{ opacity: 0.9 }}>
+                <Typography variant="subtitle2" sx={{ color: '#94a3b8' }}>
                   Youth Participation
                 </Typography>
                 <Typography variant="body2">
-                  {summary.youth8To12Count + summary.youth13To17Count} youth players
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontFamily: 'var(--font-sports-display), Oswald, sans-serif',
+                      fontWeight: 700,
+                      fontSize: '1.25rem',
+                      color: '#f97316',
+                      mr: 0.5,
+                    }}
+                  >
+                    {summary.youth8To12Count + summary.youth13To17Count}
+                  </Typography>
+                  youth players
                 </Typography>
                 <Typography variant="body2" sx={{ mt: 0.5 }}>
                   {youthPercentage}% of total registrations
@@ -380,11 +419,23 @@ export function RegistrationDashboard() {
             </Grid>
             <Grid item xs={12} md={4}>
               <Box>
-                <Typography variant="subtitle2" sx={{ opacity: 0.9 }}>
+                <Typography variant="subtitle2" sx={{ color: '#94a3b8' }}>
                   Payment Overview
                 </Typography>
                 <Typography variant="body2">
-                  {formatCurrency(totalCollections)} total collections
+                  <Typography
+                    component="span"
+                    sx={{
+                      fontFamily: 'var(--font-sports-display), Oswald, sans-serif',
+                      fontWeight: 700,
+                      fontSize: '1.25rem',
+                      color: '#10b981',
+                      mr: 0.5,
+                    }}
+                  >
+                    {formatCurrency(totalCollections)}
+                  </Typography>
+                  total collections
                 </Typography>
                 <Typography variant="body2" sx={{ mt: 0.5 }}>
                   {((totalVerified / totalCollections) * 100).toFixed(1)}% payments verified
@@ -393,36 +444,36 @@ export function RegistrationDashboard() {
               </Box>
             </Grid>
             <Grid item xs={12}>
-              <Divider sx={{ my: 1, borderColor: 'primary.contrastText', opacity: 0.2 }} />
+              <Divider sx={{ my: 1, borderColor: 'rgba(255, 255, 255, 0.08)' }} />
               <Box display="flex" gap={2} alignItems="center">
-                <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                <Typography variant="body2" sx={{ color: '#94a3b8' }}>
                   <strong>Key Trends:</strong>
                 </Typography>
                 <Stack direction="row" spacing={2}>
-                  <Chip 
+                  <Chip
                     size="small"
                     label={`Most common size: ${mostPopularSize.size}`}
-                    sx={{ 
-                      bgcolor: 'primary.main',
-                      color: 'primary.contrastText',
+                    sx={{
+                      bgcolor: 'rgba(14, 165, 233, 0.15)',
+                      color: '#38bdf8',
                       '& .MuiChip-label': { fontSize: '0.75rem' }
                     }}
                   />
-                  <Chip 
+                  <Chip
                     size="small"
                     label={`${summary.throwballCount} Throwball players`}
-                    sx={{ 
-                      bgcolor: 'primary.main',
-                      color: 'primary.contrastText',
+                    sx={{
+                      bgcolor: 'rgba(249, 115, 22, 0.15)',
+                      color: '#fb923c',
                       '& .MuiChip-label': { fontSize: '0.75rem' }
                     }}
                   />
-                  <Chip 
+                  <Chip
                     size="small"
                     label={`${summary.volleyballCount} Volleyball players`}
-                    sx={{ 
-                      bgcolor: 'primary.main',
-                      color: 'primary.contrastText',
+                    sx={{
+                      bgcolor: 'rgba(14, 165, 233, 0.15)',
+                      color: '#38bdf8',
                       '& .MuiChip-label': { fontSize: '0.75rem' }
                     }}
                   />
@@ -442,10 +493,18 @@ export function RegistrationDashboard() {
           <Grid item xs={12} md={6}>
             <Paper sx={{ p: 2 }}>
               <Box display="flex" alignItems="center" gap={2}>
-                <PeopleIcon color="primary" />
+                <PeopleIcon sx={{ color: '#0ea5e9' }} />
                 <Box>
                   <Typography variant="body2" color="text.secondary">Total Registrations</Typography>
-                  <Typography variant="h6">{totalParticipants}</Typography>
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontFamily: 'var(--font-sports-display), Oswald, sans-serif',
+                      fontWeight: 700,
+                    }}
+                  >
+                    {totalParticipants}
+                  </Typography>
                 </Box>
               </Box>
             </Paper>
@@ -453,10 +512,16 @@ export function RegistrationDashboard() {
           <Grid item xs={12} md={6}>
             <Paper sx={{ p: 2 }}>
               <Box display="flex" alignItems="center" gap={2}>
-                <RupeeIcon color="primary" />
+                <RupeeIcon sx={{ color: '#10b981' }} />
                 <Box>
                   <Typography variant="body2" color="text.secondary">Total Collections</Typography>
-                  <Typography variant="h6">
+                  <Typography
+                    variant="h6"
+                    sx={{
+                      fontFamily: 'var(--font-sports-display), Oswald, sans-serif',
+                      fontWeight: 700,
+                    }}
+                  >
                     {formatCurrency(totalCollections)}
                     <Typography component="span" variant="body2" color="text.secondary" sx={{ ml: 1 }}>
                       ({formatCurrency(totalVerified)} verified)
@@ -481,7 +546,11 @@ export function RegistrationDashboard() {
                   cx="50%"
                   cy="50%"
                   labelLine={false}
-                  label={({ name, value, percent }) => `${value} (${(percent * 100).toFixed(0)}%)`}
+                  label={({ x, y, value, percent }) => (
+                    <text x={x} y={y} fill="#94a3b8" textAnchor="middle" dominantBaseline="central" fontSize={12}>
+                      {`${value} (${(percent * 100).toFixed(0)}%)`}
+                    </text>
+                  )}
                   outerRadius={80}
                   fill="#8884d8"
                   dataKey="value"
@@ -490,10 +559,13 @@ export function RegistrationDashboard() {
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
                 </Pie>
-                <RechartsTooltip 
+                <RechartsTooltip
+                  contentStyle={darkTooltipStyle}
+                  labelStyle={darkTooltipLabelStyle}
+                  itemStyle={darkTooltipItemStyle}
                   formatter={(value, name) => [`${value} registrations`, name]}
                 />
-                <Legend />
+                <Legend wrapperStyle={{ color: '#94a3b8' }} />
               </PieChart>
             </ResponsiveContainer>
           </ChartContainer>
@@ -503,31 +575,36 @@ export function RegistrationDashboard() {
         <Grid item xs={12} md={6}>
           <ChartContainer id="jersey" title="Jersey Size Distribution">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
+              <BarChart
                 data={jerseyChartData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
               >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="name" 
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                <XAxis
+                  dataKey="name"
                   angle={-45}
                   textAnchor="end"
                   height={60}
                   interval={0}
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
                 />
-                <YAxis />
-                <RechartsTooltip 
+                <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                <RechartsTooltip
+                  contentStyle={darkTooltipStyle}
+                  labelStyle={darkTooltipLabelStyle}
+                  itemStyle={darkTooltipItemStyle}
                   formatter={(value) => [`${value} requests`]}
                 />
-                <Legend 
+                <Legend
                   verticalAlign="top"
                   height={36}
+                  wrapperStyle={{ color: '#94a3b8' }}
                 />
                 <Bar dataKey="value" name="Count" fill="#8884d8">
                   {jerseyChartData.map((entry, index) => (
                     <Cell key={`cell-${index}`} fill={entry.color} />
                   ))}
-                  <LabelList dataKey="value" position="top" />
+                  <LabelList dataKey="value" position="top" fill="#94a3b8" />
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -538,26 +615,31 @@ export function RegistrationDashboard() {
         <Grid item xs={12}>
           <ChartContainer id="timeline" title="Registration Timeline">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
+              <BarChart
                 data={timelineData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
               >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="date" 
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                <XAxis
+                  dataKey="date"
                   angle={-45}
                   textAnchor="end"
                   height={60}
                   interval={0}
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
                 />
-                <YAxis />
-                <RechartsTooltip 
+                <YAxis tick={{ fill: '#94a3b8', fontSize: 12 }} />
+                <RechartsTooltip
+                  contentStyle={darkTooltipStyle}
+                  labelStyle={darkTooltipLabelStyle}
+                  itemStyle={darkTooltipItemStyle}
                   formatter={(value, name) => [`${value} registrations`, name]}
                   labelFormatter={(label) => `Date: ${label}`}
                 />
-                <Legend 
+                <Legend
                   verticalAlign="top"
                   height={36}
+                  wrapperStyle={{ color: '#94a3b8' }}
                 />
                 {uniqueCategories.map((category: string, index: number) => (
                   <Bar
@@ -567,8 +649,8 @@ export function RegistrationDashboard() {
                     fill={COLORS[index % COLORS.length]}
                     name={category}
                   >
-                    <LabelList 
-                      dataKey={category} 
+                    <LabelList
+                      dataKey={category}
                       position="center"
                       fill="#fff"
                       formatter={(value: number) => (value > 0 ? value : '')}
@@ -583,33 +665,39 @@ export function RegistrationDashboard() {
 
         {/* Payment Collections Chart */}
         <Grid item xs={12}>
-          <ChartContainer 
-            id="payment" 
+          <ChartContainer
+            id="payment"
             title={`Payment Collections by Receiver (${formatCurrency(totalCollections)} total)`}
           >
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart 
+              <BarChart
                 data={paymentChartData}
                 margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                 barSize={60}
               >
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis 
-                  dataKey="name" 
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                <XAxis
+                  dataKey="name"
                   angle={-45}
                   textAnchor="end"
                   height={60}
                   interval={0}
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
                 />
-                <YAxis 
-                  label={{ 
-                    value: 'Amount (₹)', 
-                    angle: -90, 
+                <YAxis
+                  tick={{ fill: '#94a3b8', fontSize: 12 }}
+                  label={{
+                    value: 'Amount (₹)',
+                    angle: -90,
                     position: 'insideLeft',
-                    offset: -5
+                    offset: -5,
+                    fill: '#94a3b8',
                   }}
                 />
                 <RechartsTooltip
+                  contentStyle={darkTooltipStyle}
+                  labelStyle={darkTooltipLabelStyle}
+                  itemStyle={darkTooltipItemStyle}
                   formatter={(value, name) => {
                     const formattedValue = formatCurrency(value as number)
                     if (name === 'verified') return [`${formattedValue} verified`, 'Verified']
@@ -618,34 +706,35 @@ export function RegistrationDashboard() {
                   }}
                   labelFormatter={(label) => `Receiver: ${label}`}
                 />
-                <Legend 
+                <Legend
                   verticalAlign="top"
                   height={36}
+                  wrapperStyle={{ color: '#94a3b8' }}
                 />
-                <Bar 
-                  dataKey="verified" 
-                  name="Verified" 
-                  stackId="a" 
-                  fill="#4caf50"
+                <Bar
+                  dataKey="verified"
+                  name="Verified"
+                  stackId="a"
+                  fill="#10b981"
                   minPointSize={5}
                 >
-                  <LabelList 
-                    dataKey="verified" 
+                  <LabelList
+                    dataKey="verified"
                     position="center"
                     fill="#fff"
                     formatter={(value: number) => (value > 0 ? `₹${value}` : '')}
                     style={{ fontSize: '11px' }}
                   />
                 </Bar>
-                <Bar 
-                  dataKey="pending" 
-                  name="Pending" 
-                  stackId="a" 
-                  fill="#ff9800"
+                <Bar
+                  dataKey="pending"
+                  name="Pending"
+                  stackId="a"
+                  fill="#f97316"
                   minPointSize={5}
                 >
-                  <LabelList 
-                    dataKey="pending" 
+                  <LabelList
+                    dataKey="pending"
                     position="center"
                     fill="#fff"
                     formatter={(value: number) => (value > 0 ? `₹${value}` : '')}
@@ -659,4 +748,4 @@ export function RegistrationDashboard() {
       </Grid>
     </Box>
   )
-} 
+}

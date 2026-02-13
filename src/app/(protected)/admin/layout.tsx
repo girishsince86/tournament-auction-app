@@ -95,6 +95,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   return (
     <QueryClientProvider client={queryClient}>
       <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        {/* Admin Dashboard nav bar - commented out, will be re-enabled later
         <AppBar position="static" color="default" elevation={1}>
           <Toolbar>
             <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
@@ -115,9 +116,10 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             </Box>
           </Toolbar>
         </AppBar>
-        <Container maxWidth="lg" sx={{ flex: 1, py: 4 }}>
+        */}
+        <Box sx={{ flex: 1, px: { xs: 1, sm: 2 }, py: 1 }}>
           {children}
-        </Container>
+        </Box>
       </Box>
     </QueryClientProvider>
   );

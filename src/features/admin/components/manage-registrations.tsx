@@ -440,7 +440,7 @@ export function ManageRegistrations() {
           '& .MuiIconButton-root': {
             transition: 'all 0.2s',
             '&:hover': {
-              backgroundColor: 'primary.lighter',
+              backgroundColor: 'rgba(14, 165, 233, 0.12)',
               color: 'primary.main',
             },
           }
@@ -464,8 +464,8 @@ export function ManageRegistrations() {
                 sx={{ 
                   color: 'success.main',
                   '&:hover': {
-                    backgroundColor: 'success.lighter',
-                    color: 'success.dark',
+                    backgroundColor: 'rgba(16, 185, 129, 0.12)',
+                    color: 'success.light',
                   }
                 }}
               >
@@ -622,8 +622,8 @@ export function ManageRegistrations() {
         return (
           <Box
             sx={{
-              backgroundColor: `${color}.lighter`,
-              color: `${color}.dark`,
+              backgroundColor: isVolleyball ? 'rgba(14, 165, 233, 0.15)' : 'rgba(249, 115, 22, 0.15)',
+              color: isVolleyball ? '#38bdf8' : '#fb923c',
               py: 0.5,
               px: 1,
               borderRadius: 1,
@@ -646,8 +646,8 @@ export function ManageRegistrations() {
       renderCell: (params) => (
         <Box
           sx={{
-            backgroundColor: 'grey.100',
-            color: 'grey.800',
+            backgroundColor: 'rgba(255, 255, 255, 0.08)',
+            color: '#94a3b8',
             py: 0.5,
             px: 1,
             borderRadius: 1,
@@ -689,8 +689,8 @@ export function ManageRegistrations() {
       renderCell: (params: GridRenderCellParams<TournamentRegistration>) => (
         <Box
           sx={{
-            backgroundColor: params.value ? 'success.lighter' : 'warning.lighter',
-            color: params.value ? 'success.dark' : 'warning.dark',
+            backgroundColor: params.value ? 'rgba(16, 185, 129, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+            color: params.value ? '#34d399' : '#fbbf24',
             py: 0.5,
             px: 1.5,
             borderRadius: 1,
@@ -859,15 +859,15 @@ export function ManageRegistrations() {
   }, [])
 
   return (
-    <Box sx={{ height: '100%', width: '100%', p: 3 }}>
-      <Paper 
+    <Box sx={{ height: '100%', width: '100%', maxWidth: '100%', overflow: 'hidden', p: { xs: 1, sm: 1.5 } }}>
+      <Paper
         elevation={0}
-        sx={{ 
-          p: 3, 
-          mb: 3,
+        sx={{
+          p: { xs: 1.5, sm: 2 },
+          mb: 1.5,
           borderRadius: 2,
           border: `1px solid ${theme.palette.divider}`,
-          background: `linear-gradient(45deg, ${theme.palette.background.paper} 30%, ${theme.palette.grey[50]} 90%)`,
+          background: `linear-gradient(135deg, #111827 0%, #1a2234 100%)`,
         }}
       >
         <Box sx={{ 
@@ -915,16 +915,16 @@ export function ManageRegistrations() {
               </Tooltip>
             </Box>
 
-            {/* Add Registration Buttons */}
-            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
+            {/* Add Registration Buttons - hidden for now */}
+            {/* <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, mb: 2 }}>
               <Button
-                variant="outlined"
+                variant="contained"
                 color="primary"
                 size="small"
                 startIcon={<AddIcon />}
                 endIcon={<VolleyballIcon />}
                 onClick={() => handleAddRegistration(RegistrationCategory.VOLLEYBALL_OPEN_MEN)}
-                sx={{ 
+                sx={{
                   borderRadius: 2,
                   textTransform: 'none',
                   fontWeight: 500,
@@ -932,17 +932,16 @@ export function ManageRegistrations() {
               >
                 Add Volleyball Registration
               </Button>
-              
-              {/* Add the new button for adding to tournament players */}
+
               <Button
-                variant="outlined"
+                variant="contained"
                 color="primary"
                 size="small"
                 startIcon={<PersonAddIcon />}
                 endIcon={<VolleyballIcon />}
                 onClick={fetchAddToTournamentStats}
                 disabled={addToTournamentLoading}
-                sx={{ 
+                sx={{
                   borderRadius: 2,
                   textTransform: 'none',
                   fontWeight: 500,
@@ -950,15 +949,15 @@ export function ManageRegistrations() {
               >
                 {addToTournamentLoading ? 'Processing...' : 'Add to Tournament Players'}
               </Button>
-              
+
               <Button
-                variant="outlined"
+                variant="contained"
                 color="secondary"
                 size="small"
                 startIcon={<AddIcon />}
                 endIcon={<ThrowballIcon />}
                 onClick={() => handleAddRegistration(RegistrationCategory.THROWBALL_WOMEN)}
-                sx={{ 
+                sx={{
                   borderRadius: 2,
                   textTransform: 'none',
                   fontWeight: 500,
@@ -967,13 +966,13 @@ export function ManageRegistrations() {
                 Add Throwball Women
               </Button>
               <Button
-                variant="outlined"
+                variant="contained"
                 color="info"
                 size="small"
                 startIcon={<AddIcon />}
                 endIcon={<ThrowballIcon />}
                 onClick={() => handleAddRegistration(RegistrationCategory.THROWBALL_13_17_MIXED)}
-                sx={{ 
+                sx={{
                   borderRadius: 2,
                   textTransform: 'none',
                   fontWeight: 500,
@@ -982,13 +981,13 @@ export function ManageRegistrations() {
                 Add Throwball 13-17
               </Button>
               <Button
-                variant="outlined"
+                variant="contained"
                 color="success"
                 size="small"
                 startIcon={<AddIcon />}
                 endIcon={<ThrowballIcon />}
                 onClick={() => handleAddRegistration(RegistrationCategory.THROWBALL_8_12_MIXED)}
-                sx={{ 
+                sx={{
                   borderRadius: 2,
                   textTransform: 'none',
                   fontWeight: 500,
@@ -996,7 +995,7 @@ export function ManageRegistrations() {
               >
                 Add Throwball 8-12
               </Button>
-            </Box>
+            </Box> */}
 
             <Collapse in={isHeaderExpanded} timeout={300}>
               <Box>
@@ -1014,7 +1013,7 @@ export function ManageRegistrations() {
                     transition: 'all 0.2s',
                     '&:hover': {
                       borderColor: theme.palette.primary.main,
-                      bgcolor: 'primary.lighter',
+                      bgcolor: 'rgba(14, 165, 233, 0.08)',
                     }
                   }}
                 >
@@ -1023,10 +1022,10 @@ export function ManageRegistrations() {
                     <Grid item xs={12} md={4}>
                       <Stack spacing={2}>
                         <Stack direction="row" alignItems="center" spacing={1.5}>
-                          <Box sx={{ 
-                            p: 1, 
-                            borderRadius: 1, 
-                            bgcolor: 'primary.lighter',
+                          <Box sx={{
+                            p: 1,
+                            borderRadius: 1,
+                            bgcolor: 'rgba(14, 165, 233, 0.15)',
                             color: 'primary.main',
                             display: 'flex',
                           }}>
@@ -1074,10 +1073,10 @@ export function ManageRegistrations() {
                           return (
                             <Grid item xs={12} sm={6} key={item.name}>
                               <Stack direction="row" alignItems="center" spacing={1}>
-                                <Box sx={{ 
-                                  p: 0.5, 
-                                  borderRadius: 1, 
-                                  bgcolor: isVolleyball ? 'info.lighter' : 'secondary.lighter',
+                                <Box sx={{
+                                  p: 0.5,
+                                  borderRadius: 1,
+                                  bgcolor: isVolleyball ? 'rgba(59, 130, 246, 0.15)' : 'rgba(249, 115, 22, 0.15)',
                                   color: isVolleyball ? 'info.main' : 'secondary.main',
                                   display: 'flex',
                                 }}>
@@ -1140,24 +1139,36 @@ export function ManageRegistrations() {
                                   bottom: 25,
                                 }}
                               >
-                                <CartesianGrid strokeDasharray="3 3" />
-                                <XAxis 
-                                  dataKey="age" 
-                                  label={{ 
-                                    value: 'Age (as of Apr 30, 2026)', 
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.06)" />
+                                <XAxis
+                                  dataKey="age"
+                                  tick={{ fill: '#94a3b8', fontSize: 12 }}
+                                  label={{
+                                    value: 'Age (as of Apr 30, 2026)',
                                     position: 'bottom',
-                                    offset: 15
+                                    offset: 15,
+                                    fill: '#94a3b8',
                                   }}
                                 />
                                 <YAxis
-                                  label={{ 
-                                    value: 'Number of Players', 
-                                    angle: -90, 
+                                  tick={{ fill: '#94a3b8', fontSize: 12 }}
+                                  label={{
+                                    value: 'Number of Players',
+                                    angle: -90,
                                     position: 'insideLeft',
-                                    offset: 0
+                                    offset: 0,
+                                    fill: '#94a3b8',
                                   }}
                                 />
                                 <RechartsTooltip
+                                  contentStyle={{
+                                    backgroundColor: '#1a2234',
+                                    border: '1px solid rgba(255,255,255,0.08)',
+                                    borderRadius: 8,
+                                    color: '#ffffff',
+                                  }}
+                                  labelStyle={{ color: '#ffffff' }}
+                                  itemStyle={{ color: '#94a3b8' }}
                                   formatter={(value: number, name: string) => [
                                     `${value} player${value !== 1 ? 's' : ''}`,
                                     'Count'
@@ -1198,7 +1209,7 @@ export function ManageRegistrations() {
       <Paper 
         elevation={0}
         sx={{ 
-          height: isHeaderExpanded ? 'calc(100vh - 250px)' : 'calc(100vh - 150px)',
+          height: isHeaderExpanded ? 'calc(100vh - 220px)' : 'calc(100vh - 120px)',
           border: `1px solid ${theme.palette.divider}`,
           borderRadius: 2,
           overflow: 'hidden',
@@ -1344,40 +1355,44 @@ export function ManageRegistrations() {
                 flex: 1,
               },
               '& .MuiDataGrid-row': {
+                '&:nth-of-type(even)': {
+                  backgroundColor: 'rgba(255, 255, 255, 0.02)',
+                },
                 '&:hover': {
-                  backgroundColor: 'primary.lighter',
+                  backgroundColor: 'rgba(14, 165, 233, 0.08)',
                 },
                 '&.Mui-selected': {
-                  backgroundColor: 'primary.lighter',
+                  backgroundColor: 'rgba(14, 165, 233, 0.12)',
                   '&:hover': {
-                    backgroundColor: 'primary.lighter',
+                    backgroundColor: 'rgba(14, 165, 233, 0.16)',
                   },
                 },
               },
               '& .MuiDataGrid-columnHeaders': {
-                backgroundColor: 'background.paper',
+                backgroundColor: '#1a2234',
                 color: 'text.primary',
                 fontWeight: 600,
-                borderBottom: `1px solid ${theme.palette.divider}`,
+                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
               },
               '& .MuiDataGrid-cell': {
-                borderColor: theme.palette.divider,
+                borderColor: 'rgba(255, 255, 255, 0.04)',
               },
               '& .MuiDataGrid-footerContainer': {
-                borderTop: `1px solid ${theme.palette.divider}`,
+                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
                 visibility: 'visible',
                 position: 'sticky',
                 bottom: 0,
-                bgcolor: 'background.paper',
+                bgcolor: '#1a2234',
                 zIndex: 2,
               },
               '& .MuiDataGrid-virtualScroller': {
-                backgroundColor: theme.palette.background.paper,
+                backgroundColor: '#111827',
                 flex: 1,
                 minHeight: 200,
               },
               '& .MuiTablePagination-root': {
                 visibility: 'visible',
+                color: '#94a3b8',
               },
             }}
             getRowHeight={() => 'auto'}
