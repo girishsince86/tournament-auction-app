@@ -76,6 +76,7 @@ const PUBLIC_ROUTES = [
   '/players',
   '/team-owners',
   '/tournaments/register',
+  '/consent',
 ]
 
 const ADMIN_ROUTES = [
@@ -155,7 +156,7 @@ export async function middleware(request: NextRequest) {
     ) {
       return NextResponse.redirect(new URL(registerBase, request.url));
     }
-    
+
     // Skip middleware for static files, API routes, and public routes
     if (
       pathname.startsWith('/_next') ||
@@ -166,30 +167,30 @@ export async function middleware(request: NextRequest) {
     ) {
       return NextResponse.next();
     }
-    
+
     // Create a Supabase client for the middleware
     const res = NextResponse.next();
     const supabase = createMiddlewareClient<Database>({ req: request, res });
-    
+
     // Check if the user is authenticated
     const {
       data: { session },
       error: authError
     } = await supabase.auth.getSession();
-    
+
     if (authError) {
       console.error('Auth session error in middleware:', authError);
       // Continue to the page, but the page itself should handle auth errors
       return NextResponse.next();
     }
-    
+
     // If the user is not authenticated and trying to access a protected route
     const isPublicRoute = PUBLIC_ROUTES.some(route => pathname === route || pathname.startsWith(`${route}/`));
-    
+
     // Only check protected routes if it's not a public route
     if (!isPublicRoute) {
       const isProtectedRoute = PROTECTED_ROUTES.some(route => pathname === route || pathname.startsWith(`${route}/`));
-      
+
       if (!session && isProtectedRoute) {
         // Redirect to login page with a return URL
         const redirectUrl = new URL(ROUTES.auth.login, request.url);
@@ -197,13 +198,13 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(redirectUrl);
       }
     }
-    
+
     // If the user is authenticated and trying to access an auth page
     if (session && isAuthPath(pathname)) {
       // Redirect to the default page after login
       return NextResponse.redirect(new URL(ROUTES.defaultRedirect, request.url));
     }
-    
+
     // For admin routes, check if the user has admin privileges
     if (pathname.startsWith('/admin') && session) {
       const userEmail = session.user?.email;
@@ -212,7 +213,7 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL(ROUTES.defaultRedirect, request.url));
       }
     }
-    
+
     // For team owner routes, check if the user has team owner or admin privileges
     if (pathname.startsWith('/team-owner') && session) {
       const userEmail = session.user?.email;
@@ -221,35 +222,35 @@ export async function middleware(request: NextRequest) {
         return NextResponse.redirect(new URL(ROUTES.defaultRedirect, request.url));
       }
     }
-    
+
     // Create a response object from the incoming request
     const response = NextResponse.next();
-    
+
     // Set headers to force dynamic rendering and prevent caching
     response.headers.set('x-middleware-cache', 'no-cache');
     response.headers.set('Cache-Control', 'no-store, max-age=0');
     response.headers.set('Pragma', 'no-cache');
     response.headers.set('Expires', '0');
-    
+
     return response;
   } catch (err) {
     console.error('Middleware error:', err);
-    
+
     // For API routes, return a JSON error response
     if (request.nextUrl.pathname.startsWith('/api/')) {
       return new NextResponse(
-        JSON.stringify({ 
+        JSON.stringify({
           error: 'Internal Server Error',
           message: 'An unexpected error occurred in the middleware',
           path: request.nextUrl.pathname
         }),
-        { 
+        {
           status: 500,
           headers: { 'Content-Type': 'application/json' }
         }
       );
     }
-    
+
     // For non-API routes, continue to the page and let the error boundary handle it
     return NextResponse.next();
   }
