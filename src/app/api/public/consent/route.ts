@@ -6,6 +6,19 @@ export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 /**
+ * Normalize a phone number to a plain 10-digit Indian format.
+ * Handles: +91XXXXXXXXXX, 0091XXXXXXXXXX, 91XXXXXXXXXX (11 digits), or bare 10 digits.
+ */
+function normalizePhone(raw: string): string {
+  // Strip all non-digit characters
+  let digits = raw.replace(/\D/g, '');
+  // Remove leading country code variants
+  if (digits.startsWith('0091')) digits = digits.slice(4);
+  else if (digits.startsWith('91') && digits.length === 12) digits = digits.slice(2);
+  return digits;
+}
+
+/**
  * GET /api/public/consent?phone=XXX or ?email=XXX
  * Looks up a TB Women player by phone or email and returns existing consent if any.
  */
@@ -34,7 +47,9 @@ export async function GET(request: NextRequest) {
       .eq('registration_category', 'THROWBALL_WOMEN');
 
     if (phone) {
-      query = query.eq('phone_number', phone);
+      const normalized = normalizePhone(phone);
+      // Try exact match first, then also match with/without country code stored in DB
+      query = query.or(`phone_number.eq.${normalized},phone_number.eq.+91${normalized},phone_number.eq.91${normalized}`);
     } else if (email) {
       query = query.ilike('email', email);
     }
@@ -130,7 +145,8 @@ export async function POST(request: NextRequest) {
       .eq('registration_category', 'THROWBALL_WOMEN');
 
     if (phone) {
-      query = query.eq('phone_number', phone.trim());
+      const normalized = normalizePhone(phone.trim());
+      query = query.or(`phone_number.eq.${normalized},phone_number.eq.+91${normalized},phone_number.eq.91${normalized}`);
     } else if (email) {
       query = query.ilike('email', email.trim().toLowerCase());
     }
