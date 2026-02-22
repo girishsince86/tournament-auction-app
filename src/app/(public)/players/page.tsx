@@ -1,17 +1,17 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { 
-  Container, 
-  Typography, 
-  Box, 
-  Grid, 
-  Paper, 
-  FormControl, 
-  InputLabel, 
-  Select, 
-  MenuItem, 
-  TextField, 
+import {
+  Container,
+  Typography,
+  Box,
+  Grid,
+  Paper,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
+  TextField,
   InputAdornment,
   Skeleton,
   Alert,
@@ -31,7 +31,7 @@ import {
   alpha,
   Button
 } from '@mui/material';
-import { 
+import {
   Search as SearchIcon,
   FilterList as FilterListIcon,
   ViewModule as GridViewIcon,
@@ -69,10 +69,10 @@ interface CategoryWithStats extends Category {
 
 // Define the skill level options
 const SKILL_LEVELS = [
-  { value: 'RECREATIONAL_C', label: 'Recreational (C)' },
-  { value: 'INTERMEDIATE_B', label: 'Intermediate (B)' },
-  { value: 'UPPER_INTERMEDIATE_BB', label: 'Upper Intermediate (BB)' },
-  { value: 'COMPETITIVE_A', label: 'Competitive (A)' },
+  { value: 'RECREATIONAL', label: 'Recreational' },
+  { value: 'COMPETITIVE_C', label: 'Intermediate' },
+  { value: 'COMPETITIVE_B', label: 'Upper Intermediate' },
+  { value: 'COMPETITIVE_A', label: 'Competitive' },
 ];
 
 // Define the position options
@@ -92,34 +92,34 @@ export default function PlayersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  
+
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPosition, setSelectedPosition] = useState('');
   const [selectedSkillLevel, setSelectedSkillLevel] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  
+
   // Hardcoded tournament ID
-  const tournamentId = '11111111-1111-1111-1111-111111111111';
-  
+  const tournamentId = 'dd0f011f-116d-4546-8cbf-2acc3d68312d';
+
   // Fetch players and categories when component mounts
   useEffect(() => {
     const fetchPlayersAndCategories = async (retryCount = 0) => {
       setLoading(true);
       setError(null);
-      
+
       try {
         // Add timestamp as cache-busting parameter
         const timestamp = Date.now();
-        
+
         // Fetch players
         console.log(`Fetching players data (attempt ${retryCount + 1})...`);
         const playersResponse = await fetch(`/api/public/players?tournamentId=${tournamentId}&_t=${timestamp}`);
-        
+
         if (!playersResponse.ok) {
           const errorText = await playersResponse.text();
           console.error(`Players API error (${playersResponse.status}):`, errorText);
-          
+
           // Try to parse the error response
           let errorDetails = 'Unknown error';
           try {
@@ -129,22 +129,22 @@ export default function PlayersPage() {
             // If parsing fails, use the raw text
             errorDetails = errorText;
           }
-          
+
           throw new Error(`Failed to fetch players: ${errorDetails}`);
         }
-        
+
         const playersData = await playersResponse.json();
         console.log(`Successfully fetched ${playersData.players?.length || 0} players`);
         setPlayers(playersData.players || []);
-        
+
         // Fetch categories with the same timestamp
         console.log(`Fetching categories data (attempt ${retryCount + 1})...`);
         const categoriesResponse = await fetch(`/api/public/categories?tournamentId=${tournamentId}&_t=${timestamp}`);
-        
+
         if (!categoriesResponse.ok) {
           const errorText = await categoriesResponse.text();
           console.error(`Categories API error (${categoriesResponse.status}):`, errorText);
-          
+
           // Try to parse the error response
           let errorDetails = 'Unknown error';
           try {
@@ -154,23 +154,23 @@ export default function PlayersPage() {
             // If parsing fails, use the raw text
             errorDetails = errorText;
           }
-          
+
           throw new Error(`Failed to fetch categories: ${errorDetails}`);
         }
-        
+
         const categoriesData = await categoriesResponse.json();
         console.log(`Successfully fetched ${categoriesData.categories?.length || 0} categories`);
         setCategories(categoriesData.categories || []);
       } catch (err) {
         console.error('Error fetching data:', err);
-        
+
         // Implement retry logic (up to 3 attempts)
         if (retryCount < 2) {
           console.log(`Retrying fetch (attempt ${retryCount + 2} of 3)...`);
           setTimeout(() => fetchPlayersAndCategories(retryCount + 1), 1000 * (retryCount + 1));
           return;
         }
-        
+
         // After all retries failed, show error to user
         const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
         setError(`Failed to load player data: ${errorMessage}. Please try again later.`);
@@ -178,20 +178,20 @@ export default function PlayersPage() {
         setLoading(false);
       }
     };
-    
+
     fetchPlayersAndCategories();
   }, [tournamentId]);
-  
+
   // Function to manually retry loading data
   const handleRetryFetch = () => {
     console.log('Manually retrying data fetch...');
     setLoading(true);
     setError(null);
-    
+
     // Add a small delay before retrying
     setTimeout(() => {
       const timestamp = Date.now();
-      
+
       // Fetch players and categories again
       fetch(`/api/public/players?tournamentId=${tournamentId}&_t=${timestamp}`)
         .then(response => {
@@ -205,7 +205,7 @@ export default function PlayersPage() {
         .then(data => {
           console.log(`Successfully fetched ${data.players?.length || 0} players`);
           setPlayers(data.players || []);
-          
+
           // Now fetch categories
           return fetch(`/api/public/categories?tournamentId=${tournamentId}&_t=${timestamp}`);
         })
@@ -229,29 +229,29 @@ export default function PlayersPage() {
         });
     }, 500);
   };
-  
+
   // Function to run diagnostics
   const handleRunDiagnostics = async () => {
     try {
       setLoading(true);
       setError('Running diagnostics...');
-      
+
       // Call the diagnostics endpoint
       const response = await fetch('/api/diagnostics/supabase');
       if (!response.ok) {
         throw new Error('Failed to run diagnostics');
       }
-      
+
       const diagnosticData = await response.json();
       console.log('Diagnostic results:', diagnosticData);
-      
+
       // Format diagnostic results for display
       const isHealthy = diagnosticData.supabaseConnection.isHealthy;
       const schemaValid = diagnosticData.databaseSchema.isValid;
       const envVarsPresent = Object.values(diagnosticData.environmentVariables).every(Boolean);
-      
+
       let diagnosticMessage = '';
-      
+
       if (!envVarsPresent) {
         diagnosticMessage = 'Missing environment variables. Please check your .env file.';
       } else if (!isHealthy) {
@@ -264,7 +264,7 @@ export default function PlayersPage() {
         handleRetryFetch();
         return;
       }
-      
+
       setError(`${diagnosticMessage} Please contact support if the issue persists.`);
     } catch (err) {
       console.error('Error running diagnostics:', err);
@@ -273,47 +273,47 @@ export default function PlayersPage() {
       setLoading(false);
     }
   };
-  
+
   // Filter players based on search and filter criteria
   const filteredPlayers = players.filter(player => {
     // Filter by search query (name)
     if (searchQuery && !player.name.toLowerCase().includes(searchQuery.toLowerCase())) {
       return false;
     }
-    
+
     // Filter by position
     if (selectedPosition && player.player_position !== selectedPosition) {
       return false;
     }
-    
+
     // Filter by skill level
     if (selectedSkillLevel && player.skill_level !== selectedSkillLevel) {
       return false;
     }
-    
+
     // Filter by category - modified to remove special handling for null category
     if (selectedCategory && selectedCategory !== '') {
       return player.category_id === selectedCategory;
     }
-    
+
     return true;
   });
-  
+
   // Calculate category statistics
   const categoryStats: CategoryWithStats[] = categories.map(category => {
     const playersInCategory = players.filter(player => player.category_id === category.id).length;
     const percentage = players.length > 0 ? Math.round((playersInCategory / players.length) * 100) : 0;
-    
+
     return {
       ...category,
       playerCount: playersInCategory,
       percentage
     };
   });
-  
+
   // Sort categories by player count (descending)
   const sortedCategoryStats = [...categoryStats].sort((a, b) => b.playerCount - a.playerCount);
-  
+
   const handleViewModeChange = (
     event: React.MouseEvent<HTMLElement>,
     newViewMode: 'grid' | 'list' | null,
@@ -322,7 +322,7 @@ export default function PlayersPage() {
       setViewMode(newViewMode);
     }
   };
-  
+
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* PBL League Banner */}
@@ -360,7 +360,7 @@ export default function PlayersPage() {
             </Typography>
           </Box>
         </Box>
-        
+
         <Button
           component={Link}
           href="/sponsors"
@@ -368,7 +368,7 @@ export default function PlayersPage() {
           color="primary"
           size="small"
           startIcon={<HandshakeIcon />}
-          sx={{ 
+          sx={{
             borderRadius: 2,
             px: 2
           }}
@@ -376,13 +376,13 @@ export default function PlayersPage() {
           View Sponsors
         </Button>
       </Paper>
-      
+
       <Box sx={{ mb: 4, textAlign: 'center' }}>
-        <Typography 
-          variant="h3" 
-          component="h1" 
+        <Typography
+          variant="h3"
+          component="h1"
           gutterBottom
-          sx={{ 
+          sx={{
             fontWeight: 700,
             background: `linear-gradient(45deg, ${theme.palette.primary.main}, ${theme.palette.secondary.main})`,
             backgroundClip: 'text',
@@ -393,10 +393,10 @@ export default function PlayersPage() {
         >
           Volleyball Players
         </Typography>
-        <Typography 
-          variant="h6" 
+        <Typography
+          variant="h6"
           color="text.secondary"
-          sx={{ 
+          sx={{
             maxWidth: '700px',
             mx: 'auto',
             mb: 2,
@@ -407,24 +407,24 @@ export default function PlayersPage() {
         </Typography>
         <Divider sx={{ width: '100px', mx: 'auto', mb: 2, borderColor: theme.palette.primary.main }} />
       </Box>
-      
+
       {error && (
-        <Alert 
-          severity="error" 
+        <Alert
+          severity="error"
           sx={{ mb: 4 }}
           action={
             <Box sx={{ display: 'flex', gap: 1 }}>
-              <Button 
-                color="inherit" 
-                size="small" 
+              <Button
+                color="inherit"
+                size="small"
                 onClick={handleRunDiagnostics}
                 disabled={loading}
               >
                 Diagnose
               </Button>
-              <Button 
-                color="inherit" 
-                size="small" 
+              <Button
+                color="inherit"
+                size="small"
                 onClick={handleRetryFetch}
                 disabled={loading}
               >
@@ -436,12 +436,12 @@ export default function PlayersPage() {
           {error}
         </Alert>
       )}
-      
-      <Paper 
-        elevation={3} 
-        sx={{ 
-          p: 3, 
-          mb: 4, 
+
+      <Paper
+        elevation={3}
+        sx={{
+          p: 3,
+          mb: 4,
           borderRadius: 2,
           background: alpha(theme.palette.background.paper, 0.8),
           backdropFilter: 'blur(10px)',
@@ -453,7 +453,7 @@ export default function PlayersPage() {
             Filters
           </Typography>
           <Divider sx={{ mb: 3 }} />
-          
+
           <Grid container spacing={2}>
             <Grid item xs={12} md={4}>
               <FormControl fullWidth size="small">
@@ -473,7 +473,7 @@ export default function PlayersPage() {
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12} md={4}>
               <FormControl fullWidth size="small">
                 <InputLabel id="skill-level-select-label">Skill Level</InputLabel>
@@ -492,7 +492,7 @@ export default function PlayersPage() {
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12} md={4}>
               <FormControl fullWidth size="small">
                 <InputLabel id="category-select-label">Category</InputLabel>
@@ -511,7 +511,7 @@ export default function PlayersPage() {
                 </Select>
               </FormControl>
             </Grid>
-            
+
             <Grid item xs={12}>
               <TextField
                 fullWidth
@@ -530,20 +530,20 @@ export default function PlayersPage() {
             </Grid>
           </Grid>
         </Box>
-        
+
         {/* Category statistics */}
         <Box sx={{ mb: 3 }}>
           <Typography variant="h6" gutterBottom>
             Player Categories
           </Typography>
-          
+
           <Grid container spacing={2}>
             {sortedCategoryStats.map((category) => (
               <Grid item xs={6} sm={4} md={3} lg={2} key={category.id}>
-                <Paper 
-                  variant="outlined" 
-                  sx={{ 
-                    p: 2, 
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    p: 2,
                     textAlign: 'center',
                     cursor: 'pointer',
                     transition: 'all 0.2s',
@@ -554,12 +554,12 @@ export default function PlayersPage() {
                   }}
                   onClick={() => setSelectedCategory(selectedCategory === category.id ? '' : category.id)}
                 >
-                  <Chip 
+                  <Chip
                     label={category.name}
                     color={
-                      category.category_type === 'LEVEL_1' ? 'primary' : 
-                      category.category_type === 'LEVEL_2' ? 'secondary' : 
-                      'default'
+                      category.category_type === 'LEVEL_1' ? 'primary' :
+                        category.category_type === 'LEVEL_2' ? 'secondary' :
+                          'default'
                     }
                     sx={{ mb: 1 }}
                   />
@@ -575,13 +575,13 @@ export default function PlayersPage() {
           </Grid>
         </Box>
       </Paper>
-      
+
       {/* Results count and view toggle */}
-      <Box 
-        sx={{ 
-          display: 'flex', 
-          justifyContent: 'space-between', 
-          alignItems: 'center', 
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
           mb: 3,
           px: 1
         }}
@@ -589,7 +589,7 @@ export default function PlayersPage() {
         <Typography variant="h6">
           {loading ? 'Loading players...' : `${filteredPlayers.length} Players Found`}
         </Typography>
-        
+
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
           <Typography variant="body2" color="text.secondary">
             View:
@@ -614,7 +614,7 @@ export default function PlayersPage() {
           </ToggleButtonGroup>
         </Box>
       </Box>
-      
+
       {loading ? (
         viewMode === 'grid' ? (
           <Grid container spacing={3}>
