@@ -33,7 +33,7 @@ const getNavigationItems = async (supabase: any, userEmail: string | undefined, 
     'amit@pbel.in',   // Admin
     'vasu@pbel.in'    // Admin
   ]; // Add all admin emails here
-  
+
   // Define explicit list of team owner emails
   const teamOwnerEmails = [
     'naveen@pbel.in',
@@ -46,13 +46,13 @@ const getNavigationItems = async (supabase: any, userEmail: string | undefined, 
     'srinivas@pbel.in',
     'sraveen@pbel.in'
   ];
-  
+
   // Check if user is a full admin (not just a team owner with pbel.in email)
   const isFullAdmin = userEmail ? adminEmails.includes(userEmail) : false;
-  
+
   // Check if user is a team owner (using explicit list)
   const isTeamOwner = userEmail ? teamOwnerEmails.includes(userEmail) : false;
-  
+
   // Base items for all authenticated users
   const items = [
     // {
@@ -101,6 +101,11 @@ const getNavigationItems = async (supabase: any, userEmail: string | undefined, 
         text: 'Manage Registrations',
         icon: <ManageSearchIcon />,
         href: '/admin/manage-registrations'
+      },
+      {
+        text: 'Auction Consent',
+        icon: <GavelIcon />,
+        href: '/admin/consent'
       }
       // {
       //   text: 'Manage Players',
