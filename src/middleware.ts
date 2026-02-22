@@ -118,7 +118,8 @@ const teamOwnerEmails = [
   'praveenraj@pbel.in',
   'romesh@pbel.in',
   'srinivas@pbel.in',
-  'sraveen@pbel.in'
+  'sraveen@pbel.in',
+  'girish@pbel.in'  // Demo team owner
 ];
 
 // Helper function to check if a user is a team owner

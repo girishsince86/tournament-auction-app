@@ -26,7 +26,8 @@ const teamOwnerEmails = [
   'praveenraj@pbel.in',
   'romesh@pbel.in',
   'srinivas@pbel.in',
-  'sraveen@pbel.in'
+  'sraveen@pbel.in',
+  'girish@pbel.in'  // Demo team owner
 ];
 
 // Helper function to check if a user is a team owner
@@ -39,7 +40,7 @@ function validateProfileData(data: TeamOwnerUpdateRequest): { isValid: boolean; 
   if (!data.first_name?.trim() || !data.last_name?.trim()) {
     return { isValid: false, error: 'First name and last name are required' }
   }
-  
+
   if (!data.contact_email?.trim() || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.contact_email)) {
     return { isValid: false, error: 'Valid contact email is required' }
   }
@@ -60,7 +61,7 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       )
     }
-    
+
     if (!session) {
       console.error('No session found')
       return NextResponse.json(
@@ -153,7 +154,7 @@ export async function POST(request: NextRequest) {
     }
 
     const data = await request.json() as TeamOwnerUpdateRequest
-    
+
     // Validate profile data
     const validation = validateProfileData(data)
     if (!validation.isValid) {
@@ -268,7 +269,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const data = await request.json() as TeamOwnerUpdateRequest
-    
+
     // Validate profile data
     const validation = validateProfileData(data)
     if (!validation.isValid) {

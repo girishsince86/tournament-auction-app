@@ -10,32 +10,33 @@ interface UseTeamAccessReturn {
 
 // Helper function to check if a user is a full admin
 const isFullAdmin = (email?: string): boolean => {
-  // Define known admin emails (these will have full admin access)
-  const adminEmails = [
-    'gk@pbel.in', // Super admin
-    'admin@pbel.in',  // Admin
-    'amit@pbel.in',   // Admin
-    'vasu@pbel.in'    // Admin
-  ]; // Add all admin emails here
-  return email ? adminEmails.includes(email) : false;
+    // Define known admin emails (these will have full admin access)
+    const adminEmails = [
+        'gk@pbel.in', // Super admin
+        'admin@pbel.in',  // Admin
+        'amit@pbel.in',   // Admin
+        'vasu@pbel.in'    // Admin
+    ]; // Add all admin emails here
+    return email ? adminEmails.includes(email) : false;
 }
 
 // Define explicit list of team owner emails
 const teamOwnerEmails = [
-  'naveen@pbel.in',
-  'anish@pbel.in',
-  'subhamitra@pbel.in',
-  'raju@pbel.in',
-  'saravana@pbel.in',
-  'praveenraj@pbel.in',
-  'romesh@pbel.in',
-  'srinivas@pbel.in',
-  'sraveen@pbel.in'
+    'naveen@pbel.in',
+    'anish@pbel.in',
+    'subhamitra@pbel.in',
+    'raju@pbel.in',
+    'saravana@pbel.in',
+    'praveenraj@pbel.in',
+    'romesh@pbel.in',
+    'srinivas@pbel.in',
+    'sraveen@pbel.in',
+    'girish@pbel.in'  // Demo team owner
 ];
 
 // Helper function to check if a user is a team owner
 const isTeamOwner = (email?: string): boolean => {
-  return email ? teamOwnerEmails.includes(email) : false;
+    return email ? teamOwnerEmails.includes(email) : false;
 }
 
 export function useTeamAccess(teamId: string): UseTeamAccessReturn {
@@ -50,7 +51,7 @@ export function useTeamAccess(teamId: string): UseTeamAccessReturn {
             try {
                 // Get current session
                 const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-                
+
                 if (sessionError) throw new Error('Authentication error');
                 if (!session) {
                     router.push('/auth/login');
@@ -84,8 +85,8 @@ export function useTeamAccess(teamId: string): UseTeamAccessReturn {
                     if (!teamOwners) throw new Error('Team not found');
 
                     const isOwnerOfThisTeam = teamOwners.team_owners.some(
-                        (owner: { auth_user_id: string; email: string }) => 
-                            owner.auth_user_id === session.user.id || 
+                        (owner: { auth_user_id: string; email: string }) =>
+                            owner.auth_user_id === session.user.id ||
                             owner.email === session.user.email
                     );
 

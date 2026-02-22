@@ -25,7 +25,8 @@ const teamOwnerEmails = [
   'praveenraj@pbel.in',
   'romesh@pbel.in',
   'srinivas@pbel.in',
-  'sraveen@pbel.in'
+  'sraveen@pbel.in',
+  'girish@pbel.in'  // Demo team owner
 ];
 
 // Helper function to check if a user is a team owner
@@ -239,54 +240,54 @@ export async function GET(request: NextRequest, { params }: { params: { teamId: 
 }
 
 export async function PUT(
-    request: NextRequest,
-    { params }: { params: { teamId: string } }
+  request: NextRequest,
+  { params }: { params: { teamId: string } }
 ) {
-    try {
-        const supabase = createRouteHandlerClient<Database>({ cookies });
-        const { teamId } = params;
-        const body = await request.json();
+  try {
+    const supabase = createRouteHandlerClient<Database>({ cookies });
+    const { teamId } = params;
+    const body = await request.json();
 
-        // Validate request body
-        const { requirements } = body;
+    // Validate request body
+    const { requirements } = body;
 
-        // Check authentication
-        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-        if (sessionError) throw new Error('Authentication error');
-        if (!session) throw new Error('Not authenticated');
+    // Check authentication
+    const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw new Error('Authentication error');
+    if (!session) throw new Error('Not authenticated');
 
-        // Check authorization
-        await checkTeamAccess(supabase, teamId, session.user.id, session.user.email || '');
+    // Check authorization
+    await checkTeamAccess(supabase, teamId, session.user.id, session.user.email || '');
 
-        // Update requirements
-        if (requirements) {
-            for (const req of requirements) {
-                await supabase
-                    .from('team_combined_requirements')
-                    .upsert({
-                        team_id: teamId,
-                        position: req.position,
-                        skill_level: req.skill_level,
-                        min_players: req.min_players,
-                        max_players: req.max_players,
-                        points_allocated: req.points_allocated,
-                        updated_at: new Date().toISOString()
-                    });
-            }
-        }
-
-        return NextResponse.json({ success: true });
-
-    } catch (error) {
-        console.error('Team management API error:', error);
-        return new NextResponse(
-            JSON.stringify({
-                error: error instanceof Error ? error.message : 'Internal server error'
-            }),
-            {
-                status: error instanceof Error && error.message.includes('permission') ? 403 : 500,
-                headers: { 'Content-Type': 'application/json' }
-            }
-        );
+    // Update requirements
+    if (requirements) {
+      for (const req of requirements) {
+        await supabase
+          .from('team_combined_requirements')
+          .upsert({
+            team_id: teamId,
+            position: req.position,
+            skill_level: req.skill_level,
+            min_players: req.min_players,
+            max_players: req.max_players,
+            points_allocated: req.points_allocated,
+            updated_at: new Date().toISOString()
+          });
+      }
     }
+
+    return NextResponse.json({ success: true });
+
+  } catch (error) {
+    console.error('Team management API error:', error);
+    return new NextResponse(
+      JSON.stringify({
+        error: error instanceof Error ? error.message : 'Internal server error'
+      }),
+      {
+        status: error instanceof Error && error.message.includes('permission') ? 403 : 500,
+        headers: { 'Content-Type': 'application/json' }
+      }
+    );
+  }
 } 

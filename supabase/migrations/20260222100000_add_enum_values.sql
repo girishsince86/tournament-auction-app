@@ -1,0 +1,12 @@
+-- Add registration position values to player_position enum
+ALTER TYPE player_position ADD VALUE IF NOT EXISTS 'P1_RIGHT_BACK';
+ALTER TYPE player_position ADD VALUE IF NOT EXISTS 'P2_RIGHT_FRONT';
+ALTER TYPE player_position ADD VALUE IF NOT EXISTS 'P3_MIDDLE_FRONT';
+ALTER TYPE player_position ADD VALUE IF NOT EXISTS 'P4_LEFT_FRONT';
+ALTER TYPE player_position ADD VALUE IF NOT EXISTS 'P5_LEFT_BACK';
+ALTER TYPE player_position ADD VALUE IF NOT EXISTS 'P6_MIDDLE_BACK';
+ALTER TYPE player_position ADD VALUE IF NOT EXISTS 'ANY_POSITION';
+
+-- Add missing tshirt sizes
+ALTER TYPE tshirt_size ADD VALUE IF NOT EXISTS '2XL';
+ALTER TYPE tshirt_size ADD VALUE IF NOT EXISTS '3XL';

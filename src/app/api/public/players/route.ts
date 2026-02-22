@@ -13,18 +13,18 @@ export async function GET(request: NextRequest) {
     }
     // Log the request for debugging
     console.log(`API /public/players - Request received at ${new Date().toISOString()}`);
-    
+
     const searchParams = request.nextUrl.searchParams;
     const status = searchParams.get('status');
     const position = searchParams.get('position');
     const skillLevel = searchParams.get('skillLevel');
     const categoryId = searchParams.get('categoryId');
     const timestamp = searchParams.get('_t'); // Get the cache-busting parameter
-    // Use hardcoded tournament ID instead of getting from search params
-    const tournamentId = '11111111-1111-1111-1111-111111111111';
+    // Use the actual active tournament ID
+    const tournamentId = searchParams.get('tournamentId') || 'dd0f011f-116d-4546-8cbf-2acc3d68312d';
 
-    console.log('API /public/players - Query parameters:', { 
-      status, position, skillLevel, categoryId, tournamentId, timestamp 
+    console.log('API /public/players - Query parameters:', {
+      status, position, skillLevel, categoryId, tournamentId, timestamp
     });
     console.log(`API /public/players - Request time: ${new Date().toISOString()}`);
 
@@ -85,75 +85,10 @@ export async function GET(request: NextRequest) {
 
     console.log(`Successfully fetched ${players?.length || 0} players`);
 
-    // Get the marquee players (Level-1 category) separately
-    console.log('Fetching marquee players...');
-    const { data: marqueePlayers, error: marqueeError } = await supabase
-      .from('players')
-      .select(`
-        id,
-        name,
-        player_position,
-        skill_level,
-        base_price,
-        status,
-        profile_image_url,
-        category_id,
-        height,
-        registration_data,
-        categories:player_categories(
-          id,
-          category_type,
-          name,
-          base_points
-        )
-      `)
-      .eq('category_id', 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa')
-      .order('name');
+    // Use all fetched players directly
+    const allPlayers = players || [];
 
-    if (marqueeError) {
-      console.error('Error fetching marquee players:', marqueeError);
-    } else {
-      console.log(`Successfully fetched ${marqueePlayers?.length || 0} marquee players`);
-    }
 
-    // Combine regular players with marquee players, avoiding duplicates
-    const allPlayers = players.slice();
-    if (marqueePlayers && marqueePlayers.length > 0) {
-      console.log(`Found ${marqueePlayers.length} marquee players`);
-      
-      // Add marquee players that aren't already in the list
-      const playerIds = new Set(allPlayers.map(p => p.id));
-      marqueePlayers.forEach(player => {
-        if (!playerIds.has(player.id)) {
-          allPlayers.push(player);
-        }
-      });
-    }
-
-    // Define default categories
-    const defaultCategories = {
-      'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa': {
-        id: 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa',
-        name: 'Marquee',
-        category_type: 'LEVEL_1',
-        base_points: 50000000,
-        tournament_id: tournamentId
-      },
-      'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb': {
-        id: 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb',
-        name: 'Capped',
-        category_type: 'LEVEL_2',
-        base_points: 30000000,
-        tournament_id: tournamentId
-      },
-      'cccccccc-cccc-cccc-cccc-cccccccccccc': {
-        id: 'cccccccc-cccc-cccc-cccc-cccccccccccc',
-        name: 'UnCapped',
-        category_type: 'LEVEL_3',
-        base_points: 10000000,
-        tournament_id: tournamentId
-      }
-    };
 
     // If tournament ID is provided, fetch categories for that tournament
     let categories: Record<string, any> = {};
@@ -163,7 +98,7 @@ export async function GET(request: NextRequest) {
         .from('player_categories')
         .select('*')
         .eq('tournament_id', tournamentId);
-      
+
       if (categoriesError) {
         console.error('Error fetching categories:', categoriesError);
       } else if (tournamentCategories) {
@@ -176,12 +111,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Add default categories if they don't exist
-    Object.keys(defaultCategories).forEach(categoryId => {
-      if (!categories[categoryId]) {
-        categories[categoryId] = defaultCategories[categoryId as keyof typeof defaultCategories];
-      }
-    });
+
 
     console.log(`API /public/players - Found ${allPlayers?.length || 0} players total`);
 
@@ -189,7 +119,7 @@ export async function GET(request: NextRequest) {
     const formattedPlayers = allPlayers.map(player => {
       // Determine category based on player attributes if not already assigned
       let categoryId = player.category_id;
-      
+
       if (!categoryId) {
         // Assign category based on skill level and base price
         if (player.base_price >= 40000000) {
@@ -200,12 +130,12 @@ export async function GET(request: NextRequest) {
           categoryId = 'cccccccc-cccc-cccc-cccc-cccccccccccc'; // UnCapped
         }
       }
-      
+
       // Get the category from our map
-      const category = categoryId && categories[categoryId] 
+      const category = categoryId && categories[categoryId]
         ? categories[categoryId]
         : (player.categories && player.categories.length > 0 ? player.categories[0] : null);
-          
+
       return {
         id: player.id,
         name: player.name,
@@ -228,7 +158,7 @@ export async function GET(request: NextRequest) {
     response.headers.set('Cache-Control', 'no-store, max-age=0');
     response.headers.set('Pragma', 'no-cache');
     response.headers.set('Expires', '0');
-    
+
     return response;
   } catch (error) {
     console.error('Unexpected error in /api/public/players:', error);
@@ -240,7 +170,7 @@ export async function GET(request: NextRequest) {
     errorResponse.headers.set('Cache-Control', 'no-store, max-age=0');
     errorResponse.headers.set('Pragma', 'no-cache');
     errorResponse.headers.set('Expires', '0');
-    
+
     return errorResponse;
   }
 } 

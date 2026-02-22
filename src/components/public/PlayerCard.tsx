@@ -1,17 +1,17 @@
 'use client';
 
 import { useState } from 'react';
-import { 
-  Card, 
-  CardContent, 
-  Box, 
-  Typography, 
-  Chip, 
+import {
+  Card,
+  CardContent,
+  Box,
+  Typography,
+  Chip,
   Button,
   Stack,
   useTheme
 } from '@mui/material';
-import { 
+import {
   Person as PersonIcon,
   SportsVolleyball as SportsVolleyballIcon,
   Star as StarIcon,
@@ -24,10 +24,13 @@ import { formatPointsInCrores } from '@/lib/utils/format';
 
 // Define the skill level display mapping
 const SKILL_LEVEL_MAP = {
-  'RECREATIONAL_C': 'Recreational (C)',
-  'INTERMEDIATE_B': 'Intermediate (B)',
-  'UPPER_INTERMEDIATE_BB': 'Upper Intermediate (BB)',
-  'COMPETITIVE_A': 'Competitive (A)',
+  'RECREATIONAL_C': 'Recreational',
+  'RECREATIONAL': 'Recreational',
+  'INTERMEDIATE_B': 'Intermediate',
+  'COMPETITIVE_C': 'Intermediate',
+  'UPPER_INTERMEDIATE_BB': 'Upper Intermediate',
+  'COMPETITIVE_B': 'Upper Intermediate',
+  'COMPETITIVE_A': 'Competitive',
 };
 
 // Define position display mapping
@@ -82,7 +85,7 @@ export const PlayerCard = ({ player }: PlayerCardProps) => {
 
   // Get the display values for position and skill level
   const positionDisplay = POSITION_MAP[player.player_position as keyof typeof POSITION_MAP] || player.player_position;
-  const skillLevelDisplay = player.skill_level 
+  const skillLevelDisplay = player.skill_level
     ? (SKILL_LEVEL_MAP[player.skill_level as keyof typeof SKILL_LEVEL_MAP] || player.skill_level)
     : 'Not specified';
 
@@ -90,44 +93,44 @@ export const PlayerCard = ({ player }: PlayerCardProps) => {
   const getLastPlayedStatus = () => {
     // Default to "Playing Actively" if no registration data is available
     if (!player.registration_data) {
-      return LAST_PLAYED_OPTIONS.find(opt => 
+      return LAST_PLAYED_OPTIONS.find(opt =>
         opt.value === 'PLAYING_ACTIVELY'
       )?.label || 'Playing Actively';
     }
-    
+
     // Try multiple approaches to get the last played date
     const regData = player.registration_data;
-    
+
     // Try direct access to known field names
-    const lastPlayedValue = 
-      regData.last_played_date || 
+    const lastPlayedValue =
+      regData.last_played_date ||
       regData.last_played ||
       regData.lastPlayed ||
       regData.playing_status;
-        
+
     // If we found a value, look up its label
     if (lastPlayedValue) {
-      const option = LAST_PLAYED_OPTIONS.find(opt => 
+      const option = LAST_PLAYED_OPTIONS.find(opt =>
         opt.value === lastPlayedValue
       );
       if (option) return option.label;
-      
+
       // If the value doesn't match our options but is a string, return it directly
       if (typeof lastPlayedValue === 'string') return lastPlayedValue;
     }
-    
+
     // Default to "Playing Actively" if no value is found
-    return LAST_PLAYED_OPTIONS.find(opt => 
+    return LAST_PLAYED_OPTIONS.find(opt =>
       opt.value === 'PLAYING_ACTIVELY'
     )?.label || 'Playing Actively';
   };
 
   return (
     <>
-      <Card 
-        sx={{ 
-          height: '100%', 
-          display: 'flex', 
+      <Card
+        sx={{
+          height: '100%',
+          display: 'flex',
           flexDirection: 'column',
           transition: 'all 0.3s ease',
           borderRadius: 2,
@@ -139,10 +142,10 @@ export const PlayerCard = ({ player }: PlayerCardProps) => {
           }
         }}
       >
-        <Box 
-          sx={{ 
-            position: 'relative', 
-            width: '100%', 
+        <Box
+          sx={{
+            position: 'relative',
+            width: '100%',
             height: 200,
             backgroundColor: 'grey.100',
             display: 'flex',
@@ -163,32 +166,32 @@ export const PlayerCard = ({ player }: PlayerCardProps) => {
           ) : (
             <PersonIcon sx={{ fontSize: 80, color: 'grey.400' }} />
           )}
-          
+
           {player.category && (
             <Chip
               label={player.category.name}
               color={
-                player.category.category_type === 'LEVEL_1' ? 'primary' : 
-                player.category.category_type === 'LEVEL_2' ? 'secondary' : 
-                'default'
+                player.category.category_type === 'LEVEL_1' ? 'primary' :
+                  player.category.category_type === 'LEVEL_2' ? 'secondary' :
+                    'default'
               }
-              sx={{ 
-                position: 'absolute', 
-                top: 8, 
+              sx={{
+                position: 'absolute',
+                top: 8,
                 right: 8,
                 fontWeight: 'bold'
               }}
             />
           )}
         </Box>
-        
+
         <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', p: 2 }}>
-          <Typography 
-            variant="h6" 
-            component="div" 
-            gutterBottom 
+          <Typography
+            variant="h6"
+            component="div"
+            gutterBottom
             noWrap
-            sx={{ 
+            sx={{
               fontWeight: 600,
               textAlign: 'center',
               mb: 2
@@ -196,8 +199,8 @@ export const PlayerCard = ({ player }: PlayerCardProps) => {
           >
             {player.name}
           </Typography>
-          
-          <Chip 
+
+          <Chip
             label={`${formatPointsInCrores(player.base_price)}`}
             icon={<LeaderboardIcon />}
             sx={{
@@ -208,70 +211,70 @@ export const PlayerCard = ({ player }: PlayerCardProps) => {
               mb: 2
             }}
           />
-          
+
           <Stack spacing={1.5} sx={{ mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" color="text.secondary">
                 Position
               </Typography>
-              <Chip 
+              <Chip
                 label={positionDisplay}
                 icon={<SportsVolleyballIcon />}
                 size="small"
-                sx={{ 
+                sx={{
                   bgcolor: theme.palette.primary.light,
                   color: theme.palette.primary.contrastText,
                   fontWeight: 'medium',
                 }}
               />
             </Box>
-            
+
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" color="text.secondary">
                 Skill Level
               </Typography>
-              <Chip 
+              <Chip
                 label={skillLevelDisplay}
                 icon={<StarIcon />}
                 size="small"
-                sx={{ 
+                sx={{
                   bgcolor: theme.palette.secondary.light,
                   color: theme.palette.secondary.contrastText,
                   fontWeight: 'medium',
                 }}
               />
             </Box>
-            
+
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" color="text.secondary">
                 Height
               </Typography>
               <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                 <HeightIcon fontSize="small" color="action" />
-                {player.height ? `${player.height} m` : 'N/A'}
+                {player.height ? `${player.height} cm` : 'N/A'}
               </Typography>
             </Box>
-            
+
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Typography variant="body2" color="text.secondary">
                 Status
               </Typography>
-              <Chip 
-                label={player.status} 
+              <Chip
+                label={player.status}
                 color={
                   player.status === 'AVAILABLE' ? 'success' :
-                  player.status === 'SOLD' ? 'primary' :
-                  player.status === 'UNSOLD' ? 'warning' :
-                  'default'
+                    player.status === 'SOLD' ? 'primary' :
+                      player.status === 'UNSOLD' ? 'warning' :
+                        'default'
                 }
                 size="small"
               />
             </Box>
           </Stack>
-          
+
           <Box sx={{ mt: 'auto' }}>
-            <Button 
-              variant="contained" 
+            <Button
+              variant="contained"
               fullWidth
               onClick={handleOpenModal}
               sx={{
@@ -287,11 +290,11 @@ export const PlayerCard = ({ player }: PlayerCardProps) => {
           </Box>
         </CardContent>
       </Card>
-      
-      <PlayerProfileModal 
-        player={player} 
-        open={openModal} 
-        onClose={handleCloseModal} 
+
+      <PlayerProfileModal
+        player={player}
+        open={openModal}
+        onClose={handleCloseModal}
       />
     </>
   );

@@ -28,7 +28,8 @@ const teamOwnerEmails = [
   'praveenraj@pbel.in',
   'romesh@pbel.in',
   'srinivas@pbel.in',
-  'sraveen@pbel.in'
+  'sraveen@pbel.in',
+  'girish@pbel.in'  // Demo team owner
 ];
 
 // Helper function to check if a user is a team owner
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
         { status: 401 }
       )
     }
-    
+
     if (!session) {
       console.error('No session found')
       return NextResponse.json(
@@ -63,20 +64,17 @@ export async function GET(request: NextRequest) {
     console.log('Fetching available teams. Is admin:', isAdmin)
 
     try {
-      // Get teams that don't have profiles yet using left join
+      // Get teams owned by this user (or all teams for admin)
       let query = supabase
         .from('teams')
         .select(`
           id,
           name,
           team_owners!inner (
-            auth_user_id
-          ),
-          team_owner_profiles!left (
-            id
+            auth_user_id,
+            email
           )
         `)
-        .is('team_owner_profiles.id', null)
 
       // If not admin, only show teams where the user is the owner
       if (!isAdmin) {

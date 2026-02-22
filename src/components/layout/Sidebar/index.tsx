@@ -44,7 +44,8 @@ const getNavigationItems = async (supabase: any, userEmail: string | undefined, 
     'praveenraj@pbel.in',
     'romesh@pbel.in',
     'srinivas@pbel.in',
-    'sraveen@pbel.in'
+    'sraveen@pbel.in',
+    'girish@pbel.in'  // Demo team owner
   ];
 
   // Check if user is a full admin (not just a team owner with pbel.in email)
@@ -55,11 +56,11 @@ const getNavigationItems = async (supabase: any, userEmail: string | undefined, 
 
   // Base items for all authenticated users
   const items = [
-    // {
-    //   text: 'Players',
-    //   icon: <SportsVolleyballIcon />,
-    //   href: '/players'
-    // },
+    {
+      text: 'Auction Players',
+      icon: <SportsVolleyballIcon />,
+      href: '/players'
+    },
     {
       text: 'Registration Summary',
       icon: <DashboardIcon />,
@@ -67,32 +68,32 @@ const getNavigationItems = async (supabase: any, userEmail: string | undefined, 
     }
   ];
 
-  // Add My Profile for team owners
-  // if (isTeamOwner) {
-  //   items.push({
-  //     text: 'My Profile',
-  //     icon: <PersonIcon />,
-  //     href: '/team-owner/profile'
-  //   });
+  // Add My Profile and Team Management for team owners
+  if (isTeamOwner) {
+    items.push({
+      text: 'My Profile',
+      icon: <PersonIcon />,
+      href: '/team-owner/profile'
+    });
 
-  //   // Fetch team ID for team owner
-  //   if (userEmail) {
-  //     const { data: teamOwner } = await supabase
-  //       .from('team_owners')
-  //       .select('team_id')
-  //       .eq('email', userEmail)
-  //       .single();
+    // Fetch team ID for team owner
+    if (userEmail) {
+      const { data: teamOwner } = await supabase
+        .from('team_owners')
+        .select('team_id')
+        .eq('email', userEmail)
+        .single();
 
-  //     if (teamOwner?.team_id) {
-  //       // Add team management for team owners
-  //       items.push({
-  //         text: 'Team Management',
-  //         icon: <GroupsIcon />,
-  //         href: `/teams/${teamOwner.team_id}/management`
-  //       });
-  //     }
-  //   }
-  // }
+      if (teamOwner?.team_id) {
+        // Add team management for team owners
+        items.push({
+          text: 'Team Management',
+          icon: <GroupsIcon />,
+          href: `/teams/${teamOwner.team_id}/management`
+        });
+      }
+    }
+  }
 
   // Additional items for admin users only
   if (isFullAdmin) {

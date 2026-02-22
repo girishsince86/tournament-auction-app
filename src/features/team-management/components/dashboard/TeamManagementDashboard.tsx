@@ -66,7 +66,8 @@ const teamOwnerEmails = [
     'praveenraj@pbel.in',
     'romesh@pbel.in',
     'srinivas@pbel.in',
-    'sraveen@pbel.in'
+    'sraveen@pbel.in',
+    'girish@pbel.in'  // Demo team owner
 ];
 
 // Helper function to check if a user is a team owner
@@ -78,13 +79,13 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
     const supabase = createClientComponentClient();
 
     // State management hooks
-    const { 
-        loading, 
-        error, 
-        teamData, 
+    const {
+        loading,
+        error,
+        teamData,
         budgetDetails: rawBudgetDetails,
         budgetMetrics: rawBudgetMetrics,
-        refreshTeamData 
+        refreshTeamData
     } = useTeamData(teamId);
 
     // Add initial data logging
@@ -102,14 +103,14 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
     // Convert null to undefined for type compatibility
     const budgetDetails = useMemo(() => {
         if (!rawBudgetDetails) return undefined;
-        
+
         return {
             ...rawBudgetDetails,
-            budget_utilization_percentage: rawBudgetDetails.budget_utilization_percentage ?? 
+            budget_utilization_percentage: rawBudgetDetails.budget_utilization_percentage ??
                 ((rawBudgetDetails.initial_budget - rawBudgetDetails.remaining_budget) / rawBudgetDetails.initial_budget) * 100
         };
     }, [rawBudgetDetails]);
-    
+
     const budgetMetrics = rawBudgetMetrics || undefined;
 
     const {
@@ -142,13 +143,13 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
     // Calculate team composition status
     const teamCompositionAnalysis = useMemo(() => {
         if (!teamData?.players) return null;
-        
+
         // Log raw data
         console.log('Raw team data:', {
             players: teamData.players,
             availablePlayers: teamData.available_players?.filter(p => p.is_preferred)
         });
-        
+
         // Map current squad players to the correct format
         const currentSquadPlayers = teamData.players.map(p => {
             // Enhanced debug logging for raw player data
@@ -199,7 +200,7 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
         // Map preferred players to the correct format
         const allPreferredPlayers = (teamData.available_players || [])
             .filter(p => p.is_preferred);
-        
+
         console.log('All preferred players before filtering:', allPreferredPlayers.map(p => ({
             id: p.id,
             name: p.name,
@@ -212,10 +213,10 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
             .filter(p => !currentSquadPlayers.some(cp => cp.id === p.id))
             .map(p => {
                 // Extract preference data if available
-                const preferenceData = Array.isArray(p.is_preferred) && p.is_preferred.length > 0 
-                    ? p.is_preferred[0] 
+                const preferenceData = Array.isArray(p.is_preferred) && p.is_preferred.length > 0
+                    ? p.is_preferred[0]
                     : null;
-                
+
                 // Log individual player mapping for debugging
                 console.log('Mapping preferred player:', {
                     id: p.id,
@@ -229,7 +230,7 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                         notes: preferenceData.notes
                     } : undefined
                 });
-                
+
                 const player: PlayerWithCategory = {
                     id: p.id,
                     name: p.name,
@@ -279,12 +280,12 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
 
         // Use a Map to deduplicate players by ID
         const playerMap = new Map();
-        
+
         // Process each player and keep only the latest entry for each player ID
         teamData?.players.forEach(p => {
             // Skip if player data is missing
             if (!p.player || !p.player.id) return;
-            
+
             // Log the raw phone number for debugging
             console.log('Processing player for squad:', {
                 name: p.player.name,
@@ -292,7 +293,7 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                 phoneType: typeof p.player.phone_number,
                 playerData: JSON.stringify(p.player, null, 2)
             });
-            
+
             const mappedPlayer: PlayerWithCategory & { final_bid_points?: number; is_preferred: boolean } = {
                 id: p.player.id,
                 name: p.player.name,
@@ -317,17 +318,17 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
 
             playerMap.set(p.player.id, mappedPlayer);
         });
-        
+
         // Convert Map to array
         const mappedPlayers = Array.from(playerMap.values());
-        
+
         // Log the final mapped players for debugging
         console.log('Final mapped squad players:', mappedPlayers.map(p => ({
             name: p.name,
             phone: p.phone_number,
             phoneType: typeof p.phone_number
         })));
-        
+
         return mappedPlayers;
     }, [teamData?.players]);
 
@@ -388,14 +389,14 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
 
     // Check if user is admin
     const [isAdmin, setIsAdmin] = useState(false);
-    
+
     useEffect(() => {
         const checkUserRole = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             const userEmail = session?.user?.email;
             setIsAdmin(isFullAdmin(userEmail));
         };
-        
+
         checkUserRole();
     }, [supabase]);
 
@@ -430,7 +431,7 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
     const handleAddPreferredPlayers = async (selectedPlayers: { player_id: string; max_bid: number }[]) => {
         try {
             console.log('Adding preferred players:', selectedPlayers);
-            
+
             if (!selectedPlayers || selectedPlayers.length === 0) {
                 console.warn('No players selected for adding to preferences');
                 setNotification({
@@ -443,7 +444,7 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
 
             // Refresh the session first
             const { data: { session }, error: refreshError } = await supabase.auth.getSession();
-            
+
             if (refreshError) {
                 console.error('Session refresh error:', refreshError);
                 setNotification({
@@ -510,9 +511,9 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
             // Prepare the request payload
             const player_ids = selectedPlayers.map(p => p.player_id);
             const max_bids = selectedPlayers.map(p => p.max_bid);
-            
+
             console.log('Making API request with:', { player_ids, max_bids });
-            
+
             const response = await fetch(`/api/teams/${teamId}/preferred-players`, {
                 method: 'POST',
                 headers: {
@@ -560,10 +561,10 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
             <Grid container spacing={4}>
                 {/* Team Name Header */}
                 <Grid item xs={12}>
-                    <Paper 
+                    <Paper
                         elevation={3}
-                        sx={{ 
-                            p: 3, 
+                        sx={{
+                            p: 3,
                             background: 'linear-gradient(45deg, primary.dark 30%, primary.main 90%)',
                             color: 'primary.contrastText',
                             borderRadius: 2,
@@ -579,11 +580,11 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                         </Typography>
                         <Box sx={{ ml: 'auto' }}>
                             <Tooltip title="Refresh team data">
-                                <IconButton 
-                                    onClick={refreshTeamData} 
+                                <IconButton
+                                    onClick={refreshTeamData}
                                     color="inherit"
                                     aria-label="refresh data"
-                                    sx={{ 
+                                    sx={{
                                         bgcolor: 'rgba(255, 255, 255, 0.15)',
                                         '&:hover': {
                                             bgcolor: 'rgba(255, 255, 255, 0.25)',
@@ -599,9 +600,9 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
 
                 {/* Budget Overview */}
                 <Grid item xs={12} md={6}>
-                    <Box sx={{ 
+                    <Box sx={{
                         height: '100%',
-                        '& > *': { 
+                        '& > *': {
                             height: '100%',
                             borderRadius: 2,
                             boxShadow: (theme) => `0 8px 32px ${theme.palette.grey[200]}`,
@@ -619,9 +620,9 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
 
                 {/* Team Composition Status */}
                 <Grid item xs={12} md={6}>
-                    <Box sx={{ 
+                    <Box sx={{
                         height: '100%',
-                        '& > *': { 
+                        '& > *': {
                             height: '100%',
                             borderRadius: 2,
                             boxShadow: (theme) => `0 8px 32px ${theme.palette.grey[200]}`,
@@ -629,8 +630,8 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                         }
                     }}>
                         {teamCompositionAnalysis && (
-                            <TeamCompositionStatus 
-                                analysis={teamCompositionAnalysis} 
+                            <TeamCompositionStatus
+                                analysis={teamCompositionAnalysis}
                                 playerCounts={teamData?.player_counts}
                             />
                         )}
@@ -638,9 +639,9 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                 </Grid>
 
                 <Grid item xs={12}>
-                    <Paper 
+                    <Paper
                         elevation={2}
-                        sx={{ 
+                        sx={{
                             borderRadius: 2,
                             overflow: 'hidden',
                             background: (theme) => `linear-gradient(145deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[50]} 100%)`,
@@ -650,8 +651,8 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                         <Tabs
                             value={selectedTab}
                             onChange={(_, newValue) => setSelectedTab(newValue)}
-                            sx={{ 
-                                borderBottom: 1, 
+                            sx={{
+                                borderBottom: 1,
                                 borderColor: 'divider',
                                 background: (theme) => theme.palette.grey[50],
                                 '& .MuiTab-root': {
@@ -665,13 +666,13 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                                 }
                             }}
                         >
-                            <Tab 
-                                icon={<GroupsIcon />} 
+                            <Tab
+                                icon={<GroupsIcon />}
                                 label="Current Squad"
                                 sx={{ gap: 1 }}
                             />
-                            <Tab 
-                                icon={<StarOutlineIcon />} 
+                            <Tab
+                                icon={<StarOutlineIcon />}
                                 label="Preferred Players"
                                 sx={{ gap: 1 }}
                             />
@@ -708,8 +709,8 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                                     {!validationResult.isValid && (
                                         <Stack spacing={2} sx={{ mt: 3, mb: 4 }}>
                                             {validationResult.errors.map((error: string, index: number) => (
-                                                <Alert 
-                                                    key={index} 
+                                                <Alert
+                                                    key={index}
                                                     severity="error"
                                                     sx={{
                                                         borderRadius: 2,
@@ -733,7 +734,7 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                                         title="Filter Preferred Players"
                                         showCategoryFilter={true}
                                     />
-                                    <Box sx={{ 
+                                    <Box sx={{
                                         mt: 3,
                                         '& .MuiPaper-root': {
                                             borderRadius: 2,
@@ -783,14 +784,14 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                         onClose={() => setNotification(prev => ({ ...prev, open: false }))}
                         anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
                     >
-                        <Alert 
-                            onClose={() => setNotification(prev => ({ ...prev, open: false }))} 
+                        <Alert
+                            onClose={() => setNotification(prev => ({ ...prev, open: false }))}
                             severity={notification.severity}
-                            sx={{ 
+                            sx={{
                                 width: '100%',
                                 borderRadius: 2,
-                                boxShadow: (theme) => 
-                                    notification.severity === 'success' 
+                                boxShadow: (theme) =>
+                                    notification.severity === 'success'
                                         ? `0 4px 12px ${theme.palette.success.light}25`
                                         : `0 4px 12px ${theme.palette.error.light}25`,
                                 '& .MuiAlert-icon': {

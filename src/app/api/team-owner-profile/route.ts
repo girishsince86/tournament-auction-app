@@ -25,7 +25,8 @@ const teamOwnerEmails = [
   'praveenraj@pbel.in',
   'romesh@pbel.in',
   'srinivas@pbel.in',
-  'sraveen@pbel.in'
+  'sraveen@pbel.in',
+  'girish@pbel.in'  // Demo team owner
 ];
 
 // Helper function to check if a user is a team owner
@@ -39,12 +40,12 @@ const hasTeamOwnerAccess = (userEmail?: string, userId?: string, profileUserId?:
   if (isFullAdmin(userEmail)) {
     return true;
   }
-  
+
   // Team owners can only access their own profile
   if (isTeamOwner(userEmail) && userId === profileUserId) {
     return true;
   }
-  
+
   // Regular users can only access their own profile
   return userId === profileUserId;
 }
@@ -164,10 +165,10 @@ export async function GET(request: Request) {
     // Get user ID from query params if provided (for admins to view other profiles)
     const url = new URL(request.url)
     const queryUserId = url.searchParams.get('userId')
-    
+
     // Determine which user's profile to fetch
     const targetUserId = queryUserId || session.user.id
-    
+
     // Check if user has access to this profile
     if (queryUserId && !hasTeamOwnerAccess(session.user.email, session.user.id, queryUserId)) {
       return NextResponse.json(
