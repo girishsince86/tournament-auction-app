@@ -90,7 +90,7 @@ interface Player {
 export default function PlayerCategoriesPage() {
   const theme = useTheme();
   const { tournaments, currentTournament, isLoading: isLoadingTournaments } = useTournaments();
-  
+
   const [selectedTournament, setSelectedTournament] = useState<string>('');
   const [categories, setCategories] = useState<PlayerCategory[]>([]);
   const [players, setPlayers] = useState<Player[]>([]);
@@ -114,7 +114,7 @@ export default function PlayerCategoriesPage() {
     zeroBasePointsCategories: any[];
     nullBasePointsCategories: any[];
   } | null>(null);
-  
+
   const [isCheckingZeroBasePoints, setIsCheckingZeroBasePoints] = useState(false);
 
   // Set the selected tournament when currentTournament changes
@@ -134,19 +134,19 @@ export default function PlayerCategoriesPage() {
 
   const fetchCategories = useCallback(async () => {
     if (!selectedTournament) return;
-    
+
     try {
       setLoadingCategories(true);
       setError(null);
       setIsRefreshing(true);
-      
+
       const response = await fetch(`/api/admin/players/categories?tournamentId=${selectedTournament}`);
       if (!response.ok) {
         throw new Error('Failed to fetch categories');
       }
-      
+
       const data = await response.json();
-      
+
       // Process the categories to ensure base_points is a number
       const processedCategories = (data.categories || []).map((category: any) => ({
         ...category,
@@ -154,12 +154,12 @@ export default function PlayerCategoriesPage() {
         min_points: category.min_points === null || category.min_points === undefined ? 0 : Number(category.min_points),
         max_points: category.max_points === null ? null : Number(category.max_points),
       }));
-      
+
       // Check if any categories have base_points = 0
       const zeroBasePointsCategories = processedCategories.filter(
         (cat: any) => cat.base_points === 0
       );
-      
+
       // Set categories with processed values
       setCategories(processedCategories);
     } catch (err) {
@@ -174,16 +174,16 @@ export default function PlayerCategoriesPage() {
 
   const fetchPlayers = useCallback(async () => {
     if (!selectedTournament) return;
-    
+
     try {
       setLoadingPlayers(true);
       setError(null);
-      
+
       const response = await fetch(`/api/players?tournamentId=${selectedTournament}`);
       if (!response.ok) {
         throw new Error('Failed to fetch players');
       }
-      
+
       const data = await response.json();
       setPlayers(data.players || []);
     } catch (err) {
@@ -197,7 +197,7 @@ export default function PlayerCategoriesPage() {
 
   const handleCreateCategory = async () => {
     if (!currentCategory || !selectedTournament) return;
-    
+
     // Ensure base_points has a reasonable default value (1 Cr = 10,000,000)
     const categoryToCreate = {
       ...currentCategory,
@@ -205,7 +205,7 @@ export default function PlayerCategoriesPage() {
       min_points: currentCategory.min_points || 0,
       max_points: currentCategory.max_points || null
     };
-    
+
     try {
       const response = await fetch('/api/admin/players/categories', {
         method: 'POST',
@@ -217,11 +217,11 @@ export default function PlayerCategoriesPage() {
           tournament_id: selectedTournament,
         }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to create category');
       }
-      
+
       toast.success('Category created successfully');
       setOpenCategoryDialog(false);
       setCurrentCategory(null);
@@ -234,7 +234,7 @@ export default function PlayerCategoriesPage() {
 
   const handleUpdateCategory = async () => {
     if (!currentCategory || !currentCategory.id) return;
-    
+
     // Ensure base_points and min_points are not null or zero
     const updatedCategory = {
       ...currentCategory,
@@ -242,7 +242,7 @@ export default function PlayerCategoriesPage() {
       min_points: currentCategory.min_points || 0,
       max_points: currentCategory.max_points || null
     };
-    
+
     try {
       const response = await fetch(`/api/admin/players/categories/${currentCategory.id}`, {
         method: 'PUT',
@@ -251,11 +251,11 @@ export default function PlayerCategoriesPage() {
         },
         body: JSON.stringify(updatedCategory),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to update category');
       }
-      
+
       toast.success('Category updated successfully');
       setOpenCategoryDialog(false);
       setCurrentCategory(null);
@@ -269,16 +269,16 @@ export default function PlayerCategoriesPage() {
 
   const handleDeleteCategory = async (id: string) => {
     if (!confirm('Are you sure you want to delete this category?')) return;
-    
+
     try {
       const response = await fetch(`/api/admin/players/categories/${id}`, {
         method: 'DELETE',
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to delete category');
       }
-      
+
       toast.success('Category deleted successfully');
       fetchCategories();
     } catch (err) {
@@ -289,10 +289,10 @@ export default function PlayerCategoriesPage() {
 
   const handleBulkUpdatePlayers = async () => {
     if (!selectedCategoryForBulk || selectedPlayers.length === 0) return;
-    
+
     try {
       setIsBulkUpdating(true);
-      
+
       const response = await fetch('/api/admin/players/update-categories', {
         method: 'POST',
         headers: {
@@ -303,11 +303,11 @@ export default function PlayerCategoriesPage() {
           categoryId: selectedCategoryForBulk,
         }),
       });
-      
+
       if (!response.ok) {
         throw new Error('Failed to update players');
       }
-      
+
       const result = await response.json();
       toast.success(result.message || 'Players updated successfully');
       setOpenBulkUpdateDialog(false);
@@ -376,12 +376,12 @@ export default function PlayerCategoriesPage() {
       headerName: 'Type',
       width: 120,
       renderCell: (params) => (
-        <Chip 
-          label={params.value} 
+        <Chip
+          label={params.value}
           color={
-            params.value === 'LEVEL_1' ? 'primary' : 
-            params.value === 'LEVEL_2' ? 'secondary' : 
-            'default'
+            params.value === 'LEVEL_1' ? 'primary' :
+              params.value === 'LEVEL_2' ? 'secondary' :
+                'default'
           }
           size="small"
         />
@@ -423,7 +423,7 @@ export default function PlayerCategoriesPage() {
       filterable: false,
       renderCell: (params: GridRenderCellParams<PlayerCategory>) => {
         if (!params || !params.row) return null;
-        
+
         return (
           <Stack direction="row" spacing={1}>
             <Tooltip title="Edit Category">
@@ -468,6 +468,30 @@ export default function PlayerCategoriesPage() {
 
   const playerColumns: GridColDef<Player>[] = [
     {
+      field: 'actions',
+      headerName: 'Actions',
+      width: 100,
+      sortable: false,
+      filterable: false,
+      renderCell: (params: GridRenderCellParams<Player>) => {
+        if (!params || !params.row) return null;
+        return (
+          <Tooltip title="Update Category">
+            <IconButton
+              size="small"
+              onClick={() => {
+                setSelectedPlayers([params.row.id]);
+                setOpenBulkUpdateDialog(true);
+              }}
+              color="primary"
+            >
+              <EditIcon fontSize="small" />
+            </IconButton>
+          </Tooltip>
+        );
+      },
+    },
+    {
       field: 'name',
       headerName: 'Name',
       width: 200,
@@ -487,6 +511,7 @@ export default function PlayerCategoriesPage() {
       headerName: 'Base Price',
       width: 120,
       type: 'number',
+      renderCell: (params) => formatPointsInCrores(params.value),
     },
     {
       field: 'category',
@@ -494,41 +519,46 @@ export default function PlayerCategoriesPage() {
       width: 200,
       valueGetter: (params: GridRenderCellParams<Player>) => {
         if (!params || !params.row) return 'None';
-        
+
         // First check if we have a category object
         if (params.row.category) {
           return params.row.category.name || 'None';
         }
-        
+
         // If no category object but we have category_id, find the category by ID
         if (params.row.category_id) {
           const category = categories.find(c => c.id === params.row.category_id);
           return category ? category.name : 'None';
         }
-        
+
         return 'None';
       },
       renderCell: (params: GridRenderCellParams<Player>) => {
         if (!params || !params.row) return <Chip label="None" size="small" />;
-        
+
         // First check if we have a category object
         let category = params.row.category;
-        
+
         // If no category object but we have category_id, find the category by ID
         if (!category && params.row.category_id) {
           category = categories.find(c => c.id === params.row.category_id) || null;
         }
-        
+
         return category ? (
-          <Chip 
-            label={category.name} 
-            color={
-              category.category_type === 'LEVEL_1' ? 'primary' : 
-              category.category_type === 'LEVEL_2' ? 'secondary' : 
-              'default'
-            }
-            size="small"
-          />
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Chip
+              label={category.name}
+              color={
+                category.category_type === 'LEVEL_1' ? 'primary' :
+                  category.category_type === 'LEVEL_2' ? 'secondary' :
+                    'default'
+              }
+              size="small"
+            />
+            <Typography variant="caption" color="text.secondary">
+              ({formatPointsInCrores(category.base_points)})
+            </Typography>
+          </Stack>
         ) : (
           <Chip label="None" size="small" />
         );
@@ -578,8 +608,8 @@ export default function PlayerCategoriesPage() {
               onChange={(e) => setSelectedTournament(e.target.value)}
             >
               {tournaments.map((tournament) => (
-                <MenuItem 
-                  key={tournament.id} 
+                <MenuItem
+                  key={tournament.id}
                   value={tournament.id}
                   sx={tournament.id === currentTournament?.id ? { fontWeight: 'bold' } : {}}
                 >
@@ -623,7 +653,7 @@ export default function PlayerCategoriesPage() {
                 Add Category
               </Button>
             </Box>
-            
+
             <DataGridPro
               rows={categories}
               columns={categoryColumns}
@@ -683,13 +713,13 @@ export default function PlayerCategoriesPage() {
                         } else {
                           // Sort by count
                           const countA = players.filter(
-                            player => 
-                              player.category_id === a.id || 
+                            player =>
+                              player.category_id === a.id ||
                               (player.category && player.category.id === a.id)
                           ).length;
                           const countB = players.filter(
-                            player => 
-                              player.category_id === b.id || 
+                            player =>
+                              player.category_id === b.id ||
                               (player.category && player.category.id === b.id)
                           ).length;
                           return countB - countA; // Descending order
@@ -698,22 +728,22 @@ export default function PlayerCategoriesPage() {
                       .map((category) => {
                         // Count players in this category
                         const playersInCategory = players.filter(
-                          player => 
-                            player.category_id === category.id || 
+                          player =>
+                            player.category_id === category.id ||
                             (player.category && player.category.id === category.id)
                         ).length;
-                        
+
                         // Calculate percentage
-                        const percentage = players.length > 0 
-                          ? Math.round((playersInCategory / players.length) * 100) 
+                        const percentage = players.length > 0
+                          ? Math.round((playersInCategory / players.length) * 100)
                           : 0;
-                        
+
                         return (
                           <Grid item xs={12} sm={6} md={3} key={category.id}>
-                            <Box 
-                              sx={{ 
-                                p: 2, 
-                                borderRadius: 1, 
+                            <Box
+                              sx={{
+                                p: 2,
+                                borderRadius: 1,
                                 bgcolor: 'background.paper',
                                 border: 1,
                                 borderColor: 'divider',
@@ -723,12 +753,12 @@ export default function PlayerCategoriesPage() {
                                 textAlign: 'center'
                               }}
                             >
-                              <Chip 
+                              <Chip
                                 label={category.name}
                                 color={
-                                  category.category_type === 'LEVEL_1' ? 'primary' : 
-                                  category.category_type === 'LEVEL_2' ? 'secondary' : 
-                                  'default'
+                                  category.category_type === 'LEVEL_1' ? 'primary' :
+                                    category.category_type === 'LEVEL_2' ? 'secondary' :
+                                      'default'
                                 }
                                 sx={{ mb: 1 }}
                               />
@@ -739,13 +769,13 @@ export default function PlayerCategoriesPage() {
                                 Players ({percentage}%)
                               </Typography>
                               <Box sx={{ width: '100%', mt: 1 }}>
-                                <LinearProgress 
-                                  variant="determinate" 
-                                  value={percentage} 
+                                <LinearProgress
+                                  variant="determinate"
+                                  value={percentage}
                                   color={
-                                    category.category_type === 'LEVEL_1' ? 'primary' : 
-                                    category.category_type === 'LEVEL_2' ? 'secondary' : 
-                                    'info'
+                                    category.category_type === 'LEVEL_1' ? 'primary' :
+                                      category.category_type === 'LEVEL_2' ? 'secondary' :
+                                        'info'
                                   }
                                   sx={{ height: 8, borderRadius: 4 }}
                                 />
@@ -754,61 +784,61 @@ export default function PlayerCategoriesPage() {
                           </Grid>
                         );
                       })}
-                      
-                      {/* Add a card for players with no category */}
-                      {(() => {
-                        const playersWithNoCategory = players.filter(
-                          player => !player.category_id && (!player.category || !player.category.id)
-                        ).length;
-                        
-                        // Calculate percentage
-                        const percentage = players.length > 0 
-                          ? Math.round((playersWithNoCategory / players.length) * 100) 
-                          : 0;
-                        
-                        return (
-                          <Grid item xs={12} sm={6} md={3}>
-                            <Box 
-                              sx={{ 
-                                p: 2, 
-                                borderRadius: 1, 
-                                bgcolor: 'background.paper',
-                                border: 1,
-                                borderColor: 'divider',
-                                display: 'flex',
-                                flexDirection: 'column',
-                                alignItems: 'center',
-                                textAlign: 'center'
-                              }}
-                            >
-                              <Chip 
-                                label="No Category"
-                                color="default"
-                                sx={{ mb: 1 }}
+
+                    {/* Add a card for players with no category */}
+                    {(() => {
+                      const playersWithNoCategory = players.filter(
+                        player => !player.category_id && (!player.category || !player.category.id)
+                      ).length;
+
+                      // Calculate percentage
+                      const percentage = players.length > 0
+                        ? Math.round((playersWithNoCategory / players.length) * 100)
+                        : 0;
+
+                      return (
+                        <Grid item xs={12} sm={6} md={3}>
+                          <Box
+                            sx={{
+                              p: 2,
+                              borderRadius: 1,
+                              bgcolor: 'background.paper',
+                              border: 1,
+                              borderColor: 'divider',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'center',
+                              textAlign: 'center'
+                            }}
+                          >
+                            <Chip
+                              label="No Category"
+                              color="default"
+                              sx={{ mb: 1 }}
+                            />
+                            <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
+                              {playersWithNoCategory}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              Players ({percentage}%)
+                            </Typography>
+                            <Box sx={{ width: '100%', mt: 1 }}>
+                              <LinearProgress
+                                variant="determinate"
+                                value={percentage}
+                                color="warning"
+                                sx={{ height: 8, borderRadius: 4 }}
                               />
-                              <Typography variant="h4" sx={{ fontWeight: 'bold' }}>
-                                {playersWithNoCategory}
-                              </Typography>
-                              <Typography variant="body2" color="text.secondary">
-                                Players ({percentage}%)
-                              </Typography>
-                              <Box sx={{ width: '100%', mt: 1 }}>
-                                <LinearProgress 
-                                  variant="determinate" 
-                                  value={percentage} 
-                                  color="warning"
-                                  sx={{ height: 8, borderRadius: 4 }}
-                                />
-                              </Box>
                             </Box>
-                          </Grid>
-                        );
-                      })()}
+                          </Box>
+                        </Grid>
+                      );
+                    })()}
                   </Grid>
                 </CardContent>
               </Card>
             </Box>
-            
+
             <Box sx={{ mb: 2, display: 'flex', justifyContent: 'flex-end' }}>
               <Button
                 variant="contained"
@@ -906,9 +936,9 @@ export default function PlayerCategoriesPage() {
                         displayEmpty
                         onChange={(e) => {
                           if (e.target.value) {
-                            setCurrentCategory({ 
-                              ...currentCategory, 
-                              base_points: Number(e.target.value) 
+                            setCurrentCategory({
+                              ...currentCategory,
+                              base_points: Number(e.target.value)
                             });
                           }
                         }}
@@ -960,8 +990,8 @@ export default function PlayerCategoriesPage() {
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseCategoryDialog}>Cancel</Button>
-          <Button 
-            onClick={isEditing ? handleUpdateCategory : handleCreateCategory} 
+          <Button
+            onClick={isEditing ? handleUpdateCategory : handleCreateCategory}
             variant="contained"
             startIcon={isEditing ? <SaveIcon /> : <AddIcon />}
           >
@@ -971,12 +1001,27 @@ export default function PlayerCategoriesPage() {
       </Dialog>
 
       {/* Bulk Update Dialog */}
-      <Dialog open={openBulkUpdateDialog} onClose={() => setOpenBulkUpdateDialog(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Update Players Category</DialogTitle>
+      <Dialog
+        open={openBulkUpdateDialog}
+        onClose={() => {
+          setOpenBulkUpdateDialog(false);
+          // If it was a single update triggered by the action icon, we might want to clear it
+          // but if it was from checkbox selection, we keep it. 
+          // For now, let's just close.
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          {selectedPlayers.length === 1 ? 'Update Player Category' : 'Bulk Update Categories'}
+        </DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
             <Typography variant="body2" gutterBottom>
-              You are about to update {selectedPlayers.length} players. This will update their category and base price.
+              {selectedPlayers.length === 1
+                ? 'Select a new category for this player. This will update their base price accordingly.'
+                : `You are about to update ${selectedPlayers.length} players. This will update their category and base price.`
+              }
             </Typography>
             <FormControl fullWidth sx={{ mt: 2 }}>
               <InputLabel>Select Category</InputLabel>
@@ -998,8 +1043,8 @@ export default function PlayerCategoriesPage() {
           <Button onClick={() => setOpenBulkUpdateDialog(false)} disabled={isBulkUpdating}>
             Cancel
           </Button>
-          <Button 
-            onClick={handleBulkUpdatePlayers} 
+          <Button
+            onClick={handleBulkUpdatePlayers}
             variant="contained"
             disabled={!selectedCategoryForBulk || isBulkUpdating}
             startIcon={isBulkUpdating ? <CircularProgress size={20} /> : <SaveIcon />}

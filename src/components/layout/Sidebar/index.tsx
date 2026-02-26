@@ -107,17 +107,17 @@ const getNavigationItems = async (supabase: any, userEmail: string | undefined, 
         text: 'Auction Consent',
         icon: <GavelIcon />,
         href: '/admin/consent'
+      },
+      {
+        text: 'Player Photos',
+        icon: <SportsVolleyballIcon />,
+        href: '/manage-players'
+      },
+      {
+        text: 'Category Management',
+        icon: <CategoryIcon />,
+        href: '/admin/player-categories'
       }
-      // {
-      //   text: 'Manage Players',
-      //   icon: <SportsVolleyballIcon />,
-      //   href: '/manage-players'
-      // },
-      // {
-      //   text: 'Player Categories',
-      //   icon: <CategoryIcon />,
-      //   href: '/admin/player-categories'
-      // },
       // {
       //   text: 'Team Owner Profiles',
       //   icon: <PersonIcon />,
