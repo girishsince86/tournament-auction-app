@@ -30,6 +30,19 @@ const nextConfig = {
   // Disable ETag generation
   generateEtags: false,
   
+  // Proxy Supabase requests through our domain to bypass ISP DNS issues
+  async rewrites() {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    return supabaseUrl
+      ? [
+          {
+            source: '/supabase-proxy/:path*',
+            destination: `${supabaseUrl}/:path*`,
+          },
+        ]
+      : [];
+  },
+
   // Configure headers to disable caching for all pages
   async headers() {
     return [

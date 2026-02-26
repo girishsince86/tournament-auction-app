@@ -1,4 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr';
+import { getSupabaseUrl } from '@/lib/supabase/url';
 
 /**
  * Helper function to refresh the auth session
@@ -7,7 +8,7 @@ import { createBrowserClient } from '@supabase/ssr';
 export async function refreshSession(): Promise<boolean> {
   try {
     const supabase = createBrowserClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      getSupabaseUrl(),
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     );
     

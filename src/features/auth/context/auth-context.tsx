@@ -7,16 +7,9 @@ import { Database } from '@/lib/supabase/types/supabase'
 import { toast } from 'react-hot-toast'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { getPathname, getOrigin } from '@/lib/utils/browser'
+import { getSupabaseUrl } from '@/lib/supabase/url'
 
-// Initialize Supabase client with environment variables
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-
-// Only create the browser client when window is defined
-const createSupabaseClient = () => {
-  if (typeof window === 'undefined') return null;
-  return createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
-};
 
 interface AuthUser {
   id: string
@@ -57,7 +50,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Initialize Supabase client on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const client = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
+      const client = createBrowserClient<Database>(getSupabaseUrl(), supabaseAnonKey);
       setSupabase(client);
     }
   }, []);
