@@ -13,3 +13,14 @@ export function getSupabaseUrl(): string {
 
   return directUrl;
 }
+
+/**
+ * Returns the auth storage key derived from the direct Supabase URL.
+ * This must be consistent across browser and server clients so that
+ * session cookies set by the browser client are found by the middleware.
+ */
+export function getSupabaseStorageKey(): string {
+  const directUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+  const projectRef = new URL(directUrl).hostname.split('.')[0];
+  return `sb-${projectRef}-auth-token`;
+}

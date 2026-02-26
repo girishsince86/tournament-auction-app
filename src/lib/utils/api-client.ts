@@ -1,5 +1,5 @@
 import { createBrowserClient } from '@supabase/ssr';
-import { getSupabaseUrl } from '@/lib/supabase/url';
+import { getSupabaseUrl, getSupabaseStorageKey } from '@/lib/supabase/url';
 
 /**
  * Helper function to refresh the auth session
@@ -9,7 +9,8 @@ export async function refreshSession(): Promise<boolean> {
   try {
     const supabase = createBrowserClient(
       getSupabaseUrl(),
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      { auth: { storageKey: getSupabaseStorageKey() } } as any
     );
     
     // Get current session and refresh it
