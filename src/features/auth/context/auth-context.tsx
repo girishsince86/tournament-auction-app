@@ -7,8 +7,9 @@ import { Database } from '@/lib/supabase/types/supabase'
 import { toast } from 'react-hot-toast'
 import { SupabaseClient } from '@supabase/supabase-js'
 import { getPathname, getOrigin } from '@/lib/utils/browser'
-import { getSupabaseUrl, getSupabaseStorageKey } from '@/lib/supabase/url'
+import { installSupabaseProxy } from '@/lib/supabase/url'
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
 interface AuthUser {
@@ -50,12 +51,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Initialize Supabase client on mount
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const client = createBrowserClient<Database>(
-        getSupabaseUrl(),
-        supabaseAnonKey,
-        // storageKey must match the direct Supabase URL so cookies align with middleware
-        { auth: { storageKey: getSupabaseStorageKey() } } as any
-      );
+      installSupabaseProxy();
+      const client = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey);
       setSupabase(client);
     }
   }, []);

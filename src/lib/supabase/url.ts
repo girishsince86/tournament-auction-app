@@ -1,26 +1,39 @@
 /**
- * Returns the Supabase URL for browser clients.
- * Uses a proxy path to bypass ISP DNS resolution issues
- * (some ISPs return wrong IPs for supabase.co).
- * Server-side clients use the direct URL since Vercel has proper DNS.
+ * Installs a global fetch interceptor that rewrites Supabase API requests
+ * to go through our /supabase-proxy rewrite, bypassing ISP DNS issues.
+ *
+ * All Supabase clients keep using the real URL (so cookies/storage keys
+ * stay consistent with the middleware). Only the actual HTTP requests
+ * are rerouted through the proxy at the fetch level.
+ *
+ * Call this once at app startup (e.g. in AuthProvider or root layout).
  */
-export function getSupabaseUrl(): string {
-  const directUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+export function installSupabaseProxy(): void {
+  if (typeof window === 'undefined') return;
+  if ((window as any).__supabaseProxyInstalled) return;
 
-  if (typeof window !== 'undefined') {
-    return `${window.location.origin}/supabase-proxy`;
-  }
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl) return;
 
-  return directUrl;
-}
+  const originalFetch = window.fetch.bind(window);
 
-/**
- * Returns the auth storage key derived from the direct Supabase URL.
- * This must be consistent across browser and server clients so that
- * session cookies set by the browser client are found by the middleware.
- */
-export function getSupabaseStorageKey(): string {
-  const directUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const projectRef = new URL(directUrl).hostname.split('.')[0];
-  return `sb-${projectRef}-auth-token`;
+  window.fetch = function (input: RequestInfo | URL, init?: RequestInit) {
+    const url = typeof input === 'string'
+      ? input
+      : input instanceof Request
+        ? input.url
+        : String(input);
+
+    if (url.startsWith(supabaseUrl)) {
+      const proxiedUrl = url.replace(supabaseUrl, `${window.location.origin}/supabase-proxy`);
+      if (input instanceof Request) {
+        return originalFetch(new Request(proxiedUrl, input), init);
+      }
+      return originalFetch(proxiedUrl, init);
+    }
+
+    return originalFetch(input, init);
+  };
+
+  (window as any).__supabaseProxyInstalled = true;
 }

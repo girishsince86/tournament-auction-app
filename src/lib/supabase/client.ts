@@ -1,12 +1,10 @@
 import { createClient } from '@supabase/supabase-js';
-import { getSupabaseUrl, getSupabaseStorageKey } from './url';
 
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
 
-if (!supabaseAnonKey) {
+if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
 
-export const supabase = createClient(getSupabaseUrl(), supabaseAnonKey, {
-  auth: { storageKey: getSupabaseStorageKey() },
-}); 
+export const supabase = createClient(supabaseUrl, supabaseAnonKey); 
