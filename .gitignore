@@ -28,6 +28,12 @@ yarn-error.log*
 
 # local env files
 .env*.local
+.env.local.remote
+.env.local.local
+
+# database dumps
+data_dump.sql
+*.dump
 
 # vercel
 .vercel
