@@ -99,11 +99,6 @@ export function useTeamData(teamId: string): UseTeamDataReturn {
             const teamData = teamManagementData.team;
             const availablePlayers = teamManagementData.available_players || [];
             const categoryRequirements = teamManagementData.categoryRequirements || [];
-            
-            console.log('Team management data:', teamManagementData);
-            console.log(`Fetched ${availablePlayers.length} available players for team ${teamId}`);
-            console.log(`Fetched ${teamData.players.length} current players for team ${teamId}`);
-            console.log('Player counts:', teamData.player_counts);
 
             // Transform current players to match the expected format
             const formattedCurrentPlayers = teamData.players.map((player: any) => ({

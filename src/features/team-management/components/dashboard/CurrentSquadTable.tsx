@@ -25,13 +25,6 @@ interface CurrentSquadTableProps {
 }
 
 export function CurrentSquadTable({ players = [], isLoading }: CurrentSquadTableProps) {
-    // Add debug logging for incoming players
-    console.log('CurrentSquadTable received players:', players.map(p => ({
-        name: p.name,
-        phoneNumber: p.phone_number,
-        rawPhoneNumber: JSON.stringify(p.phone_number)
-    })));
-
     if (isLoading) {
         return (
             <Paper sx={{ p: 3 }}>

@@ -28,7 +28,7 @@ const RequirementsChips = ({ playerCounts }: { playerCounts?: PlayerCounts }) =>
                 label={`${totalPlayers}/8-10 Players`}
                 size="small"
                 sx={{ 
-                    bgcolor: 'grey.100',
+                    bgcolor: 'grey.800',
                     '& .MuiChip-icon': { fontSize: 16 }
                 }}
             />
@@ -37,7 +37,7 @@ const RequirementsChips = ({ playerCounts }: { playerCounts?: PlayerCounts }) =>
                 label={`${marqueePlayers}/1+ Marquee`}
                 size="small"
                 sx={{ 
-                    bgcolor: 'grey.100',
+                    bgcolor: 'grey.800',
                     '& .MuiChip-icon': { fontSize: 16 }
                 }}
             />
@@ -46,7 +46,7 @@ const RequirementsChips = ({ playerCounts }: { playerCounts?: PlayerCounts }) =>
                 label={`${cappedPlayers}/2+ Capped`}
                 size="small"
                 sx={{ 
-                    bgcolor: 'grey.100',
+                    bgcolor: 'grey.800',
                     '& .MuiChip-icon': { fontSize: 16 }
                 }}
             />
@@ -55,7 +55,7 @@ const RequirementsChips = ({ playerCounts }: { playerCounts?: PlayerCounts }) =>
                 label={`${uncappedPlayers}/3+ Uncapped`}
                 size="small"
                 sx={{ 
-                    bgcolor: 'grey.100',
+                    bgcolor: 'grey.800',
                     '& .MuiChip-icon': { fontSize: 16 }
                 }}
             />
@@ -83,18 +83,6 @@ const CategoryRequirementCard = ({ requirement, playerCounts }: { requirement: P
     
     const isValid = actualCount >= requirement.min_players && 
         (!requirement.max_players || actualCount <= requirement.max_players);
-
-    // Add logging to help diagnose the issue
-    console.log('CategoryRequirementCard:', {
-        category_type: requirement.category_type,
-        current_count: requirement.current_count,
-        actual_count: actualCount,
-        min_players: requirement.min_players,
-        max_players: requirement.max_players,
-        isValid,
-        progress,
-        playerCounts
-    });
 
     return (
         <Box sx={{ mb: 2 }}>
@@ -133,20 +121,6 @@ const CompositionStatusContent = ({ status, playerCounts }: { status: TeamCompos
     const totalPlayers = playerCounts?.total || status.total_players;
     const totalProgress = (totalPlayers / status.max_players) * 100;
     const isTotalValid = totalPlayers >= status.min_players && totalPlayers <= status.max_players;
-
-    // Add logging to help diagnose the issue
-    console.log('CompositionStatusContent:', {
-        status,
-        totalProgress,
-        isTotalValid,
-        playerCounts,
-        category_requirements: status.category_requirements.map(req => ({
-            category_type: req.category_type,
-            current_count: req.current_count,
-            min_players: req.min_players,
-            is_valid: req.current_count >= req.min_players
-        }))
-    });
 
     return (
         <Stack spacing={2}>
@@ -198,15 +172,6 @@ export function TeamCompositionStatus({ analysis, playerCounts }: TeamCompositio
 
     const currentStatus = analysis.current_squad;
     const simulatedStatus = analysis.with_preferred;
-
-    // Add logging to help diagnose the issue
-    console.log('TeamCompositionStatus:', {
-        analysis,
-        currentStatus,
-        simulatedStatus,
-        playerCounts,
-        selectedTab
-    });
 
     return (
         <Card>

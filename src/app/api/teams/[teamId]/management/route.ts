@@ -105,20 +105,6 @@ export async function GET(request: NextRequest, { params }: { params: { teamId: 
         tournaments (
           id,
           name
-        ),
-        players:auction_rounds (
-          id,
-          final_points,
-          player:players (
-            id,
-            name,
-            player_position,
-            skill_level,
-            base_price,
-            profile_image_url,
-            phone_number,
-            category:player_categories (*)
-          )
         )
       `)
       .eq('id', teamId)
@@ -133,20 +119,38 @@ export async function GET(request: NextRequest, { params }: { params: { teamId: 
     }
 
     if (!team) {
-      console.error('No team found with ID:', teamId);
       return NextResponse.json(
         { error: 'Team not found' },
         { status: 404 }
       );
     }
 
-    // Transform the players data to a simpler format
-    const players = team.players
-      ?.filter(p => p.player) // Filter out any null player references
-      .map(p => ({
-        ...p.player,
-        final_bid_points: p.final_points
-      })) || [];
+    // Fetch team players directly via current_team_id (consistent with other API routes)
+    const { data: teamPlayers, error: teamPlayersError } = await supabase
+      .from('players')
+      .select(`
+        id, name, player_position, skill_level, base_price,
+        profile_image_url, phone_number,
+        category:player_categories(*),
+        auction_rounds(final_points)
+      `)
+      .eq('current_team_id', teamId);
+
+    if (teamPlayersError) {
+      console.error('Team players fetch error:', teamPlayersError);
+      return NextResponse.json(
+        { error: 'Failed to fetch team players', details: teamPlayersError.message },
+        { status: 500 }
+      );
+    }
+
+    const players = (teamPlayers || []).map(p => {
+      const { auction_rounds, ...playerData } = p;
+      return {
+        ...playerData,
+        final_bid_points: auction_rounds?.[0]?.final_points || p.base_price,
+      };
+    });
 
     // Calculate player counts by category
     let totalPlayers = players.length;

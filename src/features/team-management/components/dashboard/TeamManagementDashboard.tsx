@@ -88,18 +88,6 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
         refreshTeamData
     } = useTeamData(teamId);
 
-    // Add initial data logging
-    console.log('Raw team data received:', {
-        hasPlayers: Boolean(teamData?.players),
-        playerCount: teamData?.players?.length,
-        samplePlayer: teamData?.players?.[0] ? {
-            id: teamData.players[0].player.id,
-            name: teamData.players[0].player.name,
-            rawPhoneNumber: teamData.players[0].player.phone_number,
-            phoneNumberType: typeof teamData.players[0].player.phone_number
-        } : null
-    });
-
     // Convert null to undefined for type compatibility
     const budgetDetails = useMemo(() => {
         if (!rawBudgetDetails) return undefined;
@@ -144,23 +132,8 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
     const teamCompositionAnalysis = useMemo(() => {
         if (!teamData?.players) return null;
 
-        // Log raw data
-        console.log('Raw team data:', {
-            players: teamData.players,
-            availablePlayers: teamData.available_players?.filter(p => p.is_preferred)
-        });
-
         // Map current squad players to the correct format
         const currentSquadPlayers = teamData.players.map(p => {
-            // Enhanced debug logging for raw player data
-            console.log('Raw player data in mapping:', {
-                id: p.player.id,
-                name: p.player.name,
-                rawPhoneNumber: p.player.phone_number,
-                phoneNumberType: typeof p.player.phone_number,
-                fullPlayerData: JSON.stringify(p.player)
-            });
-
             const player: PlayerWithCategory = {
                 id: p.player.id,
                 name: p.player.name,
@@ -172,42 +145,12 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                 status: p.player.status,
                 category: p.player.category || null
             };
-
-            // Log the mapped player with detailed phone number info
-            console.log('Mapped player data:', {
-                id: player.id,
-                name: player.name,
-                mappedPhoneNumber: player.phone_number,
-                phoneNumberType: typeof player.phone_number,
-                isNull: player.phone_number === null,
-                isUndefined: player.phone_number === undefined
-            });
-
             return player;
         });
-
-        // Log the final mapped data
-        console.log('Final mapped current squad players:', currentSquadPlayers.map(p => ({
-            id: p.id,
-            name: p.name,
-            phoneNumber: p.phone_number,
-            phoneNumberType: typeof p.phone_number,
-            isNull: p.phone_number === null,
-            isUndefined: p.phone_number === undefined,
-            stringified: JSON.stringify(p.phone_number)
-        })));
 
         // Map preferred players to the correct format
         const allPreferredPlayers = (teamData.available_players || [])
             .filter(p => p.is_preferred);
-
-        console.log('All preferred players before filtering:', allPreferredPlayers.map(p => ({
-            id: p.id,
-            name: p.name,
-            category: p.category?.category_type,
-            is_preferred: p.is_preferred,
-            raw_is_preferred: JSON.stringify(p.is_preferred)
-        })));
 
         const preferredPlayersNotInSquad = allPreferredPlayers
             .filter(p => !currentSquadPlayers.some(cp => cp.id === p.id))
@@ -216,20 +159,6 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                 const preferenceData = Array.isArray(p.is_preferred) && p.is_preferred.length > 0
                     ? p.is_preferred[0]
                     : null;
-
-                // Log individual player mapping for debugging
-                console.log('Mapping preferred player:', {
-                    id: p.id,
-                    name: p.name,
-                    category: p.category,
-                    is_preferred: p.is_preferred,
-                    raw_is_preferred: JSON.stringify(p.is_preferred),
-                    preferenceData: preferenceData,
-                    preference: preferenceData ? {
-                        max_bid: preferenceData.max_bid,
-                        notes: preferenceData.notes
-                    } : undefined
-                });
 
                 const player: PlayerWithCategory = {
                     id: p.id,
@@ -249,16 +178,6 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                 return player;
             });
 
-        console.log('Mapped preferred players not in squad:', {
-            total: preferredPlayersNotInSquad.length,
-            players: preferredPlayersNotInSquad.map(p => ({
-                id: p.id,
-                name: p.name,
-                category: p.category?.category_type,
-                preference: p.preference
-            }))
-        });
-
         return calculateTeamCompositionStatus(
             currentSquadPlayers,
             preferredPlayersNotInSquad,
@@ -269,15 +188,6 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
 
     // Map players for the current squad table and simulation
     const mappedSquadPlayers = useMemo(() => {
-        // Log raw team data first
-        console.log('Raw team data for squad mapping:', {
-            players: teamData?.players.map(p => ({
-                name: p.player.name,
-                rawPhone: p.player.phone_number,
-                fullPlayer: p.player
-            }))
-        });
-
         // Use a Map to deduplicate players by ID
         const playerMap = new Map();
 
@@ -285,14 +195,6 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
         teamData?.players.forEach(p => {
             // Skip if player data is missing
             if (!p.player || !p.player.id) return;
-
-            // Log the raw phone number for debugging
-            console.log('Processing player for squad:', {
-                name: p.player.name,
-                rawPhone: p.player.phone_number,
-                phoneType: typeof p.player.phone_number,
-                playerData: JSON.stringify(p.player, null, 2)
-            });
 
             const mappedPlayer: PlayerWithCategory & { final_bid_points?: number; is_preferred: boolean } = {
                 id: p.player.id,
@@ -309,25 +211,11 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                 preference: undefined
             };
 
-            // Log the mapped player for debugging
-            console.log('Mapped squad player:', {
-                name: mappedPlayer.name,
-                phone: mappedPlayer.phone_number,
-                phoneType: typeof mappedPlayer.phone_number
-            });
-
             playerMap.set(p.player.id, mappedPlayer);
         });
 
         // Convert Map to array
         const mappedPlayers = Array.from(playerMap.values());
-
-        // Log the final mapped players for debugging
-        console.log('Final mapped squad players:', mappedPlayers.map(p => ({
-            name: p.name,
-            phone: p.phone_number,
-            phoneType: typeof p.phone_number
-        })));
 
         return mappedPlayers;
     }, [teamData?.players]);
@@ -423,15 +311,11 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
     // Apply filters and sorting only to non-preferred available players
     const filteredPlayers = sortPlayers(filterPlayers(availablePlayers));
 
-    console.log('TeamManagementDashboard - Filtered players count:', filteredPlayers.length);
-
     // Get simulation validation results
     const validationResult = validateSimulation();
 
     const handleAddPreferredPlayers = async (selectedPlayers: { player_id: string; max_bid: number }[]) => {
         try {
-            console.log('Adding preferred players:', selectedPlayers);
-
             if (!selectedPlayers || selectedPlayers.length === 0) {
                 console.warn('No players selected for adding to preferences');
                 setNotification({
@@ -512,8 +396,6 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
             const player_ids = selectedPlayers.map(p => p.player_id);
             const max_bids = selectedPlayers.map(p => p.max_bid);
 
-            console.log('Making API request with:', { player_ids, max_bids });
-
             const response = await fetch(`/api/teams/${teamId}/preferred-players`, {
                 method: 'POST',
                 headers: {
@@ -526,7 +408,6 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
             });
 
             const data = await response.json();
-            console.log('API Response:', data);
 
             if (!response.ok) {
                 const errorMessage = data.error || 'Failed to add selected players';
@@ -605,8 +486,8 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                         '& > *': {
                             height: '100%',
                             borderRadius: 2,
-                            boxShadow: (theme) => `0 8px 32px ${theme.palette.grey[200]}`,
-                            background: (theme) => `linear-gradient(145deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[50]} 100%)`,
+                            boxShadow: 'none',
+                            background: (theme) => `linear-gradient(145deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[800]} 100%)`,
                         }
                     }}>
                         <TeamBudget
@@ -625,8 +506,8 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                         '& > *': {
                             height: '100%',
                             borderRadius: 2,
-                            boxShadow: (theme) => `0 8px 32px ${theme.palette.grey[200]}`,
-                            background: (theme) => `linear-gradient(145deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[50]} 100%)`,
+                            boxShadow: 'none',
+                            background: (theme) => `linear-gradient(145deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[800]} 100%)`,
                         }
                     }}>
                         {teamCompositionAnalysis && (
@@ -644,8 +525,8 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                         sx={{
                             borderRadius: 2,
                             overflow: 'hidden',
-                            background: (theme) => `linear-gradient(145deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[50]} 100%)`,
-                            boxShadow: (theme) => `0 8px 32px ${theme.palette.grey[200]}`,
+                            background: (theme) => `linear-gradient(145deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[800]} 100%)`,
+                            boxShadow: 'none',
                         }}
                     >
                         <Tabs
@@ -654,7 +535,7 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                             sx={{
                                 borderBottom: 1,
                                 borderColor: 'divider',
-                                background: (theme) => theme.palette.grey[50],
+                                background: (theme) => theme.palette.grey[900],
                                 '& .MuiTab-root': {
                                     py: 2,
                                     fontSize: '0.95rem',
@@ -738,7 +619,7 @@ export function TeamManagementDashboard({ teamId }: TeamManagementDashboardProps
                                         mt: 3,
                                         '& .MuiPaper-root': {
                                             borderRadius: 2,
-                                            boxShadow: (theme) => `0 4px 20px ${theme.palette.grey[200]}`,
+                                            boxShadow: 'none',
                                             overflow: 'hidden'
                                         }
                                     }}>
