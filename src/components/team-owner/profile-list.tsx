@@ -32,11 +32,11 @@ export function ProfileList() {
       setLoading(true)
       const response = await fetch('/api/team-management/owner-profiles')
       const data = await response.json()
-      
+
       if (data.error) {
         throw new Error(data.error)
       }
-      
+
       setProfiles(data.data || [])
     } catch (error) {
       toast({
@@ -53,7 +53,6 @@ export function ProfileList() {
     fetchProfiles()
   }, [])
 
-  // Add event listener for profile updates
   useEffect(() => {
     const handleProfileUpdate = () => {
       fetchProfiles()
@@ -66,20 +65,17 @@ export function ProfileList() {
   }, [])
 
   const handleEdit = (profile: TeamOwnerProfile) => {
-    // Store the profile data in sessionStorage
     sessionStorage.setItem('editProfile', JSON.stringify(profile))
-    // Scroll to top where the form is
     window.scrollTo({ top: 0, behavior: 'smooth' })
-    // Dispatch event to load profile in form
     window.dispatchEvent(new CustomEvent('edit-profile', { detail: profile }))
   }
 
   if (loading) {
     return (
-      <Box className="flex justify-center items-center h-64 bg-gray-50 rounded-lg animate-pulse">
-        <div className="text-center space-y-4">
-          <SportsVolleyballIcon className="text-primary-400 text-4xl animate-spin" />
-          <Typography className="animate-pulse">Loading profiles...</Typography>
+      <Box className="flex justify-center items-center h-48 bg-gray-50 rounded-lg">
+        <div className="text-center space-y-3">
+          <SportsVolleyballIcon className="text-gray-400 text-3xl" />
+          <Typography className="text-gray-500">Loading profiles...</Typography>
         </div>
       </Box>
     )
@@ -87,22 +83,22 @@ export function ProfileList() {
 
   if (profiles.length === 0) {
     return (
-      <Box className="flex justify-center items-center h-64 bg-gray-50 rounded-lg animate-fadeIn">
-        <div className="text-center space-y-4">
-          <GroupsIcon className="text-gray-400 text-4xl animate-bounce" />
-          <Typography className="text-gray-600">No profiles found</Typography>
+      <Box className="flex justify-center items-center h-48 bg-gray-50 rounded-lg">
+        <div className="text-center space-y-3">
+          <GroupsIcon className="text-gray-300 text-4xl" />
+          <Typography className="text-gray-500">No profiles found</Typography>
         </div>
       </Box>
     )
   }
 
   return (
-    <div className="space-y-6 animate-fadeIn">
-      <div className="bg-white p-6 rounded-lg shadow-sm transition-all duration-300 hover:shadow-md">
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center space-x-3">
-            <SportsVolleyballIcon className="text-primary-600 text-2xl animate-spin-slow" />
-            <Typography variant="h5" className="text-primary-700 font-semibold">
+    <div className="space-y-4">
+      <div className="bg-white p-5 rounded-xl border border-gray-200">
+        <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center space-x-2">
+            <SportsVolleyballIcon className="text-primary-600 text-xl" />
+            <Typography variant="h6" className="text-gray-800 font-semibold">
               Team Owner Profiles
             </Typography>
           </div>
@@ -111,38 +107,36 @@ export function ProfileList() {
             color="primary"
             variant="outlined"
             size="small"
-            className="animate-fadeIn"
           />
         </div>
 
-        <TableContainer component={Paper} className="border rounded-lg overflow-hidden transition-all duration-300">
+        <TableContainer component={Paper} elevation={0} className="border border-gray-100 rounded-lg overflow-hidden">
           <Table>
             <TableHead>
-              <TableRow className="bg-primary-50">
-                <TableCell className="font-semibold text-primary-700">Actions</TableCell>
-                <TableCell className="font-semibold text-primary-700">Profile</TableCell>
-                <TableCell className="font-semibold text-primary-700">Name</TableCell>
-                <TableCell className="font-semibold text-primary-700">Role</TableCell>
-                <TableCell className="font-semibold text-primary-700">Contact</TableCell>
-                <TableCell className="font-semibold text-primary-700">Background</TableCell>
-                <TableCell className="font-semibold text-primary-700">Achievements</TableCell>
+              <TableRow className="bg-gray-50">
+                <TableCell className="font-semibold text-gray-600" sx={{ width: 60 }}>Edit</TableCell>
+                <TableCell className="font-semibold text-gray-600" sx={{ width: 60 }}></TableCell>
+                <TableCell className="font-semibold text-gray-600">Name</TableCell>
+                <TableCell className="font-semibold text-gray-600">Role</TableCell>
+                <TableCell className="font-semibold text-gray-600">Contact</TableCell>
+                <TableCell className="font-semibold text-gray-600">Background</TableCell>
+                <TableCell className="font-semibold text-gray-600">Achievements</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
-              {profiles.map((profile, index) => (
-                <TableRow 
+              {profiles.map((profile) => (
+                <TableRow
                   key={profile.id}
-                  className="hover:bg-gray-50 transition-all duration-300 animate-slideInFromBottom"
-                  style={{ animationDelay: `${index * 100}ms` }}
+                  className="hover:bg-gray-50/50 transition-colors"
                 >
                   <TableCell>
-                    <Tooltip title="Edit Profile" className="animate-fadeIn">
+                    <Tooltip title="Edit Profile">
                       <IconButton
                         onClick={() => handleEdit(profile)}
                         size="small"
-                        className="text-primary-600 hover:text-primary-700 hover:bg-primary-50 transition-all duration-300"
+                        className="text-primary-600 hover:bg-primary-50"
                       >
-                        <EditIcon />
+                        <EditIcon fontSize="small" />
                       </IconButton>
                     </Tooltip>
                   </TableCell>
@@ -150,22 +144,19 @@ export function ProfileList() {
                     <Avatar
                       src={profile.profile_image_url || undefined}
                       alt={`${profile.first_name} ${profile.last_name}`}
-                      sx={{ 
-                        width: 48, 
-                        height: 48,
-                        border: '2px solid white',
-                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                        transition: 'transform 0.3s ease-in-out',
-                        '&:hover': {
-                          transform: 'scale(1.1)',
-                        },
+                      sx={{
+                        width: 40,
+                        height: 40,
+                        border: '2px solid',
+                        borderColor: 'grey.200',
+                        fontSize: '0.875rem',
                       }}
                     >
                       {profile.first_name?.[0]?.toUpperCase()}
                     </Avatar>
                   </TableCell>
                   <TableCell>
-                    <Typography variant="subtitle2" className="font-semibold text-primary-700">
+                    <Typography variant="body2" className="font-medium text-gray-800">
                       {profile.first_name} {profile.last_name}
                     </Typography>
                   </TableCell>
@@ -175,18 +166,18 @@ export function ProfileList() {
                       size="small"
                       color="primary"
                       variant="outlined"
-                      className="font-medium"
+                      sx={{ fontSize: '0.75rem' }}
                     />
                   </TableCell>
                   <TableCell>
-                    <Typography variant="body2" className="text-gray-700">
+                    <Typography variant="body2" className="text-gray-600">
                       {profile.contact_email}
                     </Typography>
                   </TableCell>
                   <TableCell>
                     <Typography
                       variant="body2"
-                      className="max-w-xs truncate text-gray-700"
+                      className="max-w-xs truncate text-gray-600"
                       title={profile.sports_background || ''}
                     >
                       {profile.sports_background || 'N/A'}
@@ -194,13 +185,13 @@ export function ProfileList() {
                   </TableCell>
                   <TableCell>
                     {profile.notable_achievements?.length ? (
-                      <div className="max-h-24 overflow-y-auto">
-                        <ul className="list-disc pl-4 space-y-1">
-                          {profile.notable_achievements.map((achievement, index) => (
-                            <li key={index}>
-                              <Typography 
-                                variant="body2" 
-                                className="truncate max-w-xs text-gray-700" 
+                      <div className="max-h-20 overflow-y-auto">
+                        <ul className="list-disc pl-4 space-y-0.5">
+                          {profile.notable_achievements.map((achievement, idx) => (
+                            <li key={idx}>
+                              <Typography
+                                variant="caption"
+                                className="text-gray-600"
                                 title={achievement}
                               >
                                 {achievement}
@@ -210,7 +201,7 @@ export function ProfileList() {
                         </ul>
                       </div>
                     ) : (
-                      <Typography variant="body2" className="text-gray-500">N/A</Typography>
+                      <Typography variant="body2" className="text-gray-400">N/A</Typography>
                     )}
                   </TableCell>
                 </TableRow>
@@ -221,4 +212,4 @@ export function ProfileList() {
       </div>
     </div>
   )
-} 
+}
