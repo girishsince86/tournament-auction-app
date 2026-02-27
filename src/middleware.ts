@@ -224,16 +224,13 @@ export async function middleware(request: NextRequest) {
       }
     }
 
-    // Create a response object from the incoming request
-    const response = NextResponse.next();
+    // Set headers on the SAME response that Supabase wrote cookies to
+    res.headers.set('x-middleware-cache', 'no-cache');
+    res.headers.set('Cache-Control', 'no-store, max-age=0');
+    res.headers.set('Pragma', 'no-cache');
+    res.headers.set('Expires', '0');
 
-    // Set headers to force dynamic rendering and prevent caching
-    response.headers.set('x-middleware-cache', 'no-cache');
-    response.headers.set('Cache-Control', 'no-store, max-age=0');
-    response.headers.set('Pragma', 'no-cache');
-    response.headers.set('Expires', '0');
-
-    return response;
+    return res;
   } catch (err) {
     console.error('Middleware error:', err);
 
