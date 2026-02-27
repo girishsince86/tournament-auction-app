@@ -34,6 +34,23 @@ const isTeamOwner = (email?: string): boolean => {
   return email ? teamOwnerEmails.includes(email) : false;
 }
 
+// Only keep columns that actually exist in the team_owner_profiles table
+const VALID_PROFILE_COLUMNS = new Set([
+  'user_id', 'team_id', 'first_name', 'last_name', 'sports_background',
+  'notable_achievements', 'team_role', 'contact_email', 'profile_image_url',
+  'bio', 'created_at', 'updated_at',
+])
+
+function sanitizeProfileData(data: Record<string, any>): Record<string, any> {
+  const sanitized: Record<string, any> = {}
+  for (const [key, value] of Object.entries(data)) {
+    if (VALID_PROFILE_COLUMNS.has(key) && value !== undefined) {
+      sanitized[key] = value
+    }
+  }
+  return sanitized
+}
+
 // Helper function to check if user has access to team owner profile
 const hasTeamOwnerAccess = (userEmail?: string, userId?: string, profileUserId?: string): boolean => {
   // Full admins can access any profile
@@ -76,12 +93,12 @@ export async function POST(request: Request) {
 
     const profileData = await request.json()
 
-    // Add user_id to the profile data
-    const data = {
+    // Sanitize and add user_id to the profile data
+    const data = sanitizeProfileData({
       ...profileData,
       user_id: session.user.id,
       updated_at: new Date().toISOString()
-    }
+    })
 
     // Check if profile exists
     const { data: existingProfile } = await supabase

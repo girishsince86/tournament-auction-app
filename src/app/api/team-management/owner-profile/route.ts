@@ -35,6 +35,23 @@ const isTeamOwner = (email?: string): boolean => {
   return email ? teamOwnerEmails.includes(email) : false;
 }
 
+// Only keep columns that actually exist in the team_owner_profiles table
+const VALID_PROFILE_COLUMNS = new Set([
+  'user_id', 'team_id', 'first_name', 'last_name', 'sports_background',
+  'notable_achievements', 'team_role', 'contact_email', 'profile_image_url',
+  'bio', 'created_at', 'updated_at',
+])
+
+function sanitizeProfileData(data: Record<string, any>): Record<string, any> {
+  const sanitized: Record<string, any> = {}
+  for (const [key, value] of Object.entries(data)) {
+    if (VALID_PROFILE_COLUMNS.has(key) && value !== undefined) {
+      sanitized[key] = value
+    }
+  }
+  return sanitized
+}
+
 // Validation function for profile data
 function validateProfileData(data: TeamOwnerUpdateRequest): { isValid: boolean; error?: string } {
   if (!data.first_name?.trim() || !data.last_name?.trim()) {
@@ -207,12 +224,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const profile = {
+    const profile = sanitizeProfileData({
       ...data,
       user_id: session.user.id,
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
-    }
+    })
 
     console.log('Creating profile with data:', profile)
 
@@ -310,10 +327,10 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    const profile = {
+    const profile = sanitizeProfileData({
       ...data,
       updated_at: new Date().toISOString(),
-    }
+    })
 
     const { data: updatedProfile, error } = await supabase
       .from('team_owner_profiles')
