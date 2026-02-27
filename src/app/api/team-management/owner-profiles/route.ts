@@ -75,26 +75,7 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    // Fetch team names for profiles that have team_id
-    const teamIds = (data || []).map(p => p.team_id).filter(Boolean)
-    let teamNames: Record<string, string> = {}
-    if (teamIds.length > 0) {
-      const { data: teams } = await supabase
-        .from('teams')
-        .select('id, name')
-        .in('id', teamIds)
-      if (teams) {
-        teamNames = Object.fromEntries(teams.map(t => [t.id, t.name]))
-      }
-    }
-
-    // Transform the data to include team_name
-    const profiles = (data || []).map(profile => ({
-      ...profile,
-      team_name: profile.team_id ? teamNames[profile.team_id] : undefined,
-    }))
-
-    return NextResponse.json({ data: profiles })
+    return NextResponse.json({ data: data || [] })
   } catch (error) {
     console.error('Profile fetch error:', error)
     return NextResponse.json(

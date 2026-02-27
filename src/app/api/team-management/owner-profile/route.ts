@@ -36,10 +36,11 @@ const isTeamOwner = (email?: string): boolean => {
 }
 
 // Only keep columns that actually exist in the team_owner_profiles table
+// Note: production DB uses the original schema WITHOUT team_id or phone_number
 const VALID_PROFILE_COLUMNS = new Set([
-  'user_id', 'team_id', 'first_name', 'last_name', 'sports_background',
-  'notable_achievements', 'team_role', 'contact_email', 'profile_image_url',
-  'bio', 'created_at', 'updated_at',
+  'user_id', 'first_name', 'last_name', 'sports_background',
+  'notable_achievements', 'team_role', 'contact_email', 'social_media',
+  'profile_image_url', 'bio', 'created_at', 'updated_at',
 ])
 
 function sanitizeProfileData(data: Record<string, any>): Record<string, any> {
@@ -121,27 +122,8 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ data: [] })
       }
 
-      // Fetch team names for profiles that have team_id
-      const teamIds = data.map(p => p.team_id).filter(Boolean)
-      let teamNames: Record<string, string> = {}
-      if (teamIds.length > 0) {
-        const { data: teams } = await supabase
-          .from('teams')
-          .select('id, name')
-          .in('id', teamIds)
-        if (teams) {
-          teamNames = Object.fromEntries(teams.map(t => [t.id, t.name]))
-        }
-      }
-
-      // Transform the data to include team_name
-      const profiles = data.map(profile => ({
-        ...profile,
-        team_name: profile.team_id ? teamNames[profile.team_id] : undefined,
-      }))
-
-      console.log('Successfully fetched profiles:', profiles.length)
-      return NextResponse.json({ data: profiles })
+      console.log('Successfully fetched profiles:', data.length)
+      return NextResponse.json({ data })
     } catch (dbError) {
       console.error('Database operation error:', dbError)
       return NextResponse.json(
@@ -197,29 +179,29 @@ export async function POST(request: NextRequest) {
       const { data: teamOwner, error: teamError } = await supabase
         .from('team_owners')
         .select('*')
-        .eq('team_id', data.team_id)
         .eq('auth_user_id', session.user.id)
+        .limit(1)
         .single()
 
       if (teamError || !teamOwner) {
         console.error('Team ownership verification failed:', teamError)
         return NextResponse.json(
-          { error: 'You do not have permission to create a profile for this team' },
+          { error: 'You do not have permission to create a profile' },
           { status: 403 }
         )
       }
     }
 
-    // Check if a profile already exists for this team
+    // Check if a profile already exists for this user
     const { data: existingProfile, error: existingError } = await supabase
       .from('team_owner_profiles')
       .select('*')
-      .eq('team_id', data.team_id)
+      .eq('user_id', session.user.id)
       .single()
 
     if (existingProfile) {
       return NextResponse.json(
-        { error: 'A profile already exists for this team' },
+        { error: 'A profile already exists for this user' },
         { status: 400 }
       )
     }
@@ -255,23 +237,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Fetch team name
-    let teamName: string | undefined
-    if (savedProfile.team_id) {
-      const { data: team } = await supabase
-        .from('teams')
-        .select('name')
-        .eq('id', savedProfile.team_id)
-        .single()
-      teamName = team?.name
-    }
-
-    const responseProfile = {
-      ...savedProfile,
-      team_name: teamName,
-    }
-
-    return NextResponse.json({ data: responseProfile })
+    return NextResponse.json({ data: savedProfile })
   } catch (error) {
     console.error('Unexpected error in profile creation:', error)
     return NextResponse.json(
@@ -314,8 +280,8 @@ export async function PUT(request: NextRequest) {
       const { data: teamOwner, error: teamError } = await supabase
         .from('team_owners')
         .select('*')
-        .eq('team_id', data.team_id)
         .eq('auth_user_id', session.user.id)
+        .limit(1)
         .single()
 
       if (teamError || !teamOwner) {
@@ -335,7 +301,7 @@ export async function PUT(request: NextRequest) {
     const { data: updatedProfile, error } = await supabase
       .from('team_owner_profiles')
       .update(profile)
-      .eq('team_id', data.team_id)
+      .eq('user_id', session.user.id)
       .select('*')
       .single()
 
@@ -347,23 +313,7 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Fetch team name
-    let teamName: string | undefined
-    if (updatedProfile.team_id) {
-      const { data: team } = await supabase
-        .from('teams')
-        .select('name')
-        .eq('id', updatedProfile.team_id)
-        .single()
-      teamName = team?.name
-    }
-
-    const responseProfile = {
-      ...updatedProfile,
-      team_name: teamName,
-    }
-
-    return NextResponse.json({ data: responseProfile })
+    return NextResponse.json({ data: updatedProfile })
   } catch (error) {
     console.error('Profile update error:', error)
     return NextResponse.json(

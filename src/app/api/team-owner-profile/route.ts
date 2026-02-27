@@ -35,10 +35,11 @@ const isTeamOwner = (email?: string): boolean => {
 }
 
 // Only keep columns that actually exist in the team_owner_profiles table
+// Note: production DB uses the original schema WITHOUT team_id or phone_number
 const VALID_PROFILE_COLUMNS = new Set([
-  'user_id', 'team_id', 'first_name', 'last_name', 'sports_background',
-  'notable_achievements', 'team_role', 'contact_email', 'profile_image_url',
-  'bio', 'created_at', 'updated_at',
+  'user_id', 'first_name', 'last_name', 'sports_background',
+  'notable_achievements', 'team_role', 'contact_email', 'social_media',
+  'profile_image_url', 'bio', 'created_at', 'updated_at',
 ])
 
 function sanitizeProfileData(data: Record<string, any>): Record<string, any> {
