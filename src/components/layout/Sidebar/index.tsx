@@ -12,6 +12,7 @@ import PersonIcon from '@mui/icons-material/Person'
 import SettingsIcon from '@mui/icons-material/Settings'
 import CategoryIcon from '@mui/icons-material/Category'
 import StarIcon from '@mui/icons-material/Star'
+import HowToRegIcon from '@mui/icons-material/HowToReg'
 import { SidebarItem } from './SidebarItem'
 import { useAuth } from '@/features/auth/context/auth-context'
 import { useTournaments } from '@/hooks/useTournaments'
@@ -122,6 +123,11 @@ const getNavigationItems = async (supabase: any, userEmail: string | undefined, 
         text: 'Auction Control',
         icon: <GavelIcon />,
         href: currentTournament ? `/auction/${currentTournament.id}/control` : '/admin/auction'
+      },
+      {
+        text: 'Owner Tracking',
+        icon: <HowToRegIcon />,
+        href: '/admin/owner-tracking'
       }
     );
   }

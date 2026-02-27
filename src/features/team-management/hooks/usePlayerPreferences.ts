@@ -89,13 +89,14 @@ export function usePlayerPreferences(
 
     const handlePreferenceUpdate = async (playerId: string, maxBid: number, notes?: string) => {
         try {
-            const response = await fetch(`/api/teams/${teamId}/preferred-players/${playerId}`, {
+            const response = await fetch(`/api/teams/${teamId}/preferred-players`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',
                 },
                 body: JSON.stringify({
-                    max_bid: maxBid,
+                    player_id: playerId,
+                    max_bid_points: maxBid,
                     notes
                 }),
             });
@@ -113,7 +114,7 @@ export function usePlayerPreferences(
 
     const handleRemovePreference = async (playerId: string) => {
         try {
-            const response = await fetch(`/api/teams/${teamId}/preferred-players/${playerId}`, {
+            const response = await fetch(`/api/teams/${teamId}/preferred-players?playerId=${playerId}`, {
                 method: 'DELETE',
             });
 

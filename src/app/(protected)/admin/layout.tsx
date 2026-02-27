@@ -24,6 +24,7 @@ import {
   Groups as TeamIcon,
   AccountBalance as BudgetIcon,
   SportsVolleyball as PlayerIcon,
+  HowToReg as TrackingIcon,
 } from '@mui/icons-material';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
@@ -84,11 +85,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       icon: <BudgetIcon />,
       description: 'Monitor and adjust team budgets'
     },
-    { 
-      label: 'Player Database', 
+    {
+      label: 'Player Database',
       href: '/manage-players',
       icon: <PlayerIcon />,
       description: 'Manage player profiles and categories'
+    },
+    {
+      label: 'Owner Tracking',
+      href: '/admin/owner-tracking',
+      icon: <TrackingIcon />,
+      description: 'Track team owner setup progress'
     }
   ];
 

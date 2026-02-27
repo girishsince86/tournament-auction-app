@@ -151,7 +151,7 @@ export default function PreferredPlayersPage({ params }: { params: { teamId: str
         if (!deleteConfirmation.playerId) return Promise.resolve();
         
         try {
-            const response = await fetch(`/api/teams/${params.teamId}/preferred-players?player_id=${deleteConfirmation.playerId}`, {
+            const response = await fetch(`/api/teams/${params.teamId}/preferred-players?playerId=${deleteConfirmation.playerId}`, {
                 method: 'DELETE',
             });
             

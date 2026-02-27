@@ -23,6 +23,11 @@ export async function getTeamOwnerProfile(): Promise<ApiResponse<TeamOwnerProfil
       throw new Error(data.error || 'Failed to fetch profile');
     }
 
+    // GET returns { data: [...] } (array), unwrap to single profile
+    if (Array.isArray(data.data)) {
+      return { ...data, data: data.data[0] ?? null };
+    }
+
     return data;
   } catch (error) {
     console.error('Profile fetch error:', error);
