@@ -13,6 +13,7 @@ export async function POST(request: NextRequest) {
         // Get tournament ID from request body
         const body = await request.json();
         const { tournamentId } = body;
+        const sportCategory = body.sportCategory || 'VOLLEYBALL_OPEN_MEN';
 
         if (!tournamentId) {
             return NextResponse.json(
@@ -21,13 +22,14 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        console.log('Clearing queue for tournament:', tournamentId);
+        console.log('Clearing queue for tournament:', tournamentId, 'sport:', sportCategory);
 
-        // Get all unprocessed queue items for the tournament
+        // Get all unprocessed queue items for the tournament and sport
         const { data: queueItems, error: fetchError } = await supabase
             .from('auction_queue')
             .select('id, tournament_id, player_id, queue_position, is_processed')
             .eq('tournament_id', tournamentId)
+            .eq('sport_category', sportCategory)
             .eq('is_processed', false);
 
         if (fetchError) {
@@ -50,6 +52,7 @@ export async function POST(request: NextRequest) {
             .from('auction_queue')
             .delete()
             .eq('tournament_id', tournamentId)
+            .eq('sport_category', sportCategory)
             .eq('is_processed', false);
 
         if (deleteError) {

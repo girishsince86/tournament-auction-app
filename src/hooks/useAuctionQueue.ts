@@ -4,10 +4,11 @@ import { useRouter } from 'next/navigation';
 
 interface UseAuctionQueueProps {
     tournamentId: string;
+    sportCategory?: string;
     enablePolling?: boolean;
 }
 
-export function useAuctionQueue({ tournamentId, enablePolling = false }: UseAuctionQueueProps) {
+export function useAuctionQueue({ tournamentId, sportCategory = 'VOLLEYBALL_OPEN_MEN', enablePolling = false }: UseAuctionQueueProps) {
     const [queue, setQueue] = useState<QueueItemWithPlayer[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -18,7 +19,7 @@ export function useAuctionQueue({ tournamentId, enablePolling = false }: UseAuct
         try {
             console.log('Fetching queue for tournament:', tournamentId);
             setIsLoading(true);
-            const response = await fetch(`/api/auction/queue?tournamentId=${tournamentId}`);
+            const response = await fetch(`/api/auction/queue?tournamentId=${tournamentId}&sportCategory=${sportCategory}`);
             console.log('Queue API response status:', response.status);
             
             // Handle authentication errors
@@ -45,7 +46,7 @@ export function useAuctionQueue({ tournamentId, enablePolling = false }: UseAuct
         } finally {
             setIsLoading(false);
         }
-    }, [tournamentId, router]);
+    }, [tournamentId, sportCategory, router]);
 
     // Initial fetch and setup refresh interval
     useEffect(() => {
@@ -76,6 +77,7 @@ export function useAuctionQueue({ tournamentId, enablePolling = false }: UseAuct
                 body: JSON.stringify({
                     tournamentId,
                     playerId,
+                    sportCategory,
                     // Make position optional - the API will calculate it if not provided
                     ...(position !== undefined ? { position } : {})
                 }),
@@ -112,7 +114,7 @@ export function useAuctionQueue({ tournamentId, enablePolling = false }: UseAuct
             setError(errorMessage);
             throw new Error(errorMessage);
         }
-    }, [tournamentId, fetchQueue]);
+    }, [tournamentId, sportCategory, fetchQueue]);
 
     // Add multiple players to queue using the batch API
     const batchAddToQueueApi = useCallback(async (playerIds: string[]) => {
@@ -126,7 +128,8 @@ export function useAuctionQueue({ tournamentId, enablePolling = false }: UseAuct
                 },
                 body: JSON.stringify({
                     tournamentId,
-                    playerIds
+                    playerIds,
+                    sportCategory
                 }),
             });
 
@@ -154,7 +157,7 @@ export function useAuctionQueue({ tournamentId, enablePolling = false }: UseAuct
             setError(errorMessage);
             throw new Error(errorMessage);
         }
-    }, [tournamentId, fetchQueue]);
+    }, [tournamentId, sportCategory, fetchQueue]);
 
     // Helper function to process players in chunks
     const processInChunks = async (

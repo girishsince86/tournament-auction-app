@@ -55,19 +55,45 @@ export async function POST(request: NextRequest) {
 
     // Parse request body
     const body = await request.json();
-    const { 
-      category = null, 
-      tournamentId = null, 
-      updateExisting = false 
+    const {
+      category = null,
+      tournamentId = null,
+      updateExisting = false,
+      sportCategory = null
     } = body;
 
-    console.log('Loading players from registrations:', { 
-      category, 
-      tournamentId, 
-      updateExisting 
+    console.log('Loading players from registrations:', {
+      category,
+      tournamentId,
+      updateExisting,
+      sportCategory
     });
 
-    // Call the database function
+    // Use the throwball-specific function when loading THROWBALL_WOMEN
+    if (sportCategory === 'THROWBALL_WOMEN' || category === 'THROWBALL_WOMEN') {
+      const { data, error } = await supabase.rpc(
+        'load_throwball_women_players',
+        {
+          p_tournament_id: tournamentId,
+          p_update_existing: updateExisting
+        }
+      );
+
+      if (error) {
+        console.error('Error loading throwball women players:', error);
+        return NextResponse.json(
+          { error: `Failed to load throwball women players: ${error.message}` },
+          { status: 500 }
+        );
+      }
+
+      return NextResponse.json({
+        success: true,
+        data: data[0]
+      });
+    }
+
+    // Call the volleyball database function
     const { data, error } = await supabase.rpc(
       'load_players_from_registrations',
       {

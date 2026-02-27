@@ -20,16 +20,16 @@ const isFullAdmin = (email?: string): boolean => {
 
 // Define explicit list of team owner emails
 const teamOwnerEmails = [
-  'naveen@pbel.in',
-  'anish@pbel.in',
-  'subhamitra@pbel.in',
-  'raju@pbel.in',
-  'saravana@pbel.in',
-  'praveenraj@pbel.in',
+  'bhupinder@pbel.in',
+  'jawid@pbel.in',
+  'surya@pbel.in',
   'romesh@pbel.in',
-  'srinivas@pbel.in',
-  'sraveen@pbel.in',
-  'girish@pbel.in'  // Demo team owner
+  'shiva@pbel.in',
+  'shubhamitra@pbel.in',
+  'vikram@pbel.in',
+  'rajendra@pbel.in',
+  'prateek@pbel.in',
+  'naveen@pbel.in',
 ];
 
 // Helper function to check if a user is a team owner

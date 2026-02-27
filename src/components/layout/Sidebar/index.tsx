@@ -36,16 +36,16 @@ const getNavigationItems = async (supabase: any, userEmail: string | undefined, 
 
   // Define explicit list of team owner emails
   const teamOwnerEmails = [
-    'naveen@pbel.in',
-    'anish@pbel.in',
-    'subhamitra@pbel.in',
-    'raju@pbel.in',
-    'saravana@pbel.in',
-    'praveenraj@pbel.in',
+    'bhupinder@pbel.in',
+    'jawid@pbel.in',
+    'surya@pbel.in',
     'romesh@pbel.in',
-    'srinivas@pbel.in',
-    'sraveen@pbel.in',
-    'girish@pbel.in'  // Demo team owner
+    'shiva@pbel.in',
+    'shubhamitra@pbel.in',
+    'vikram@pbel.in',
+    'rajendra@pbel.in',
+    'prateek@pbel.in',
+    'naveen@pbel.in',
   ];
 
   // Check if user is a full admin (not just a team owner with pbel.in email)
@@ -117,27 +117,12 @@ const getNavigationItems = async (supabase: any, userEmail: string | undefined, 
         text: 'Category Management',
         icon: <CategoryIcon />,
         href: '/admin/player-categories'
+      },
+      {
+        text: 'Auction Control',
+        icon: <GavelIcon />,
+        href: currentTournament ? `/auction/${currentTournament.id}/control` : '/admin/auction'
       }
-      // {
-      //   text: 'Team Owner Profiles',
-      //   icon: <PersonIcon />,
-      //   href: '/team-owner/profile'
-      // },
-      // {
-      //   text: 'Auction Control',
-      //   icon: <GavelIcon />,
-      //   href: currentTournament ? `/auction/${currentTournament.id}/control` : '/admin/auction'
-      // },
-      // {
-      //   text: 'Team Budgets',
-      //   icon: <AccountBalanceWalletIcon />,
-      //   href: '/admin/team-budgets'
-      // },
-      // {
-      //   text: 'Team Management',
-      //   icon: <GroupsIcon />,
-      //   href: '/admin/teams'
-      // }
     );
   }
 

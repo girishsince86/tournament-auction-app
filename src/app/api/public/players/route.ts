@@ -19,12 +19,13 @@ export async function GET(request: NextRequest) {
     const position = searchParams.get('position');
     const skillLevel = searchParams.get('skillLevel');
     const categoryId = searchParams.get('categoryId');
+    const sportCategory = searchParams.get('sportCategory');
     const timestamp = searchParams.get('_t'); // Get the cache-busting parameter
     // Use the actual active tournament ID
     const tournamentId = searchParams.get('tournamentId') || 'dd0f011f-116d-4546-8cbf-2acc3d68312d';
 
     console.log('API /public/players - Query parameters:', {
-      status, position, skillLevel, categoryId, tournamentId, timestamp
+      status, position, skillLevel, categoryId, sportCategory, tournamentId, timestamp
     });
     console.log(`API /public/players - Request time: ${new Date().toISOString()}`);
 
@@ -42,6 +43,7 @@ export async function GET(request: NextRequest) {
         category_id,
         height,
         registration_data,
+        sport_category,
         categories:player_categories(
           id,
           category_type,
@@ -69,6 +71,11 @@ export async function GET(request: NextRequest) {
     if (categoryId) {
       console.log(`Filtering by category ID: ${categoryId}`);
       query = query.eq('category_id', categoryId);
+    }
+
+    if (sportCategory) {
+      console.log(`Filtering by sport category: ${sportCategory}`);
+      query = query.eq('sport_category', sportCategory);
     }
 
     // First get the players
@@ -147,7 +154,8 @@ export async function GET(request: NextRequest) {
         category_id: categoryId,
         category: category,
         height: player.height,
-        registration_data: player.registration_data
+        registration_data: player.registration_data,
+        sport_category: player.sport_category
       };
     });
 

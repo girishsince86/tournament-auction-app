@@ -17,6 +17,7 @@ export async function POST(request: Request) {
         
         const body = await request.json();
         const { tournamentId, playerId, teamId, amount } = body;
+        const sportCategory = body.sportCategory || 'VOLLEYBALL_OPEN_MEN';
 
         // Validate required fields
         const validationErrors: Record<string, string> = {};
@@ -107,6 +108,7 @@ export async function POST(request: Request) {
                         starting_price: player.base_price || 0,
                         winning_team_id: teamId,
                         status: 'COMPLETED',
+                        sport_category: sportCategory,
                         created_at: new Date().toISOString(),
                         updated_at: new Date().toISOString()
                     })

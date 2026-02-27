@@ -5,9 +5,10 @@ import { fetchWithAuth } from '@/lib/utils/api-client';
 
 interface UseAvailablePlayersProps {
     tournamentId: string;
+    sportCategory?: string;
 }
 
-export function useAvailablePlayers({ tournamentId }: UseAvailablePlayersProps) {
+export function useAvailablePlayers({ tournamentId, sportCategory = 'VOLLEYBALL_OPEN_MEN' }: UseAvailablePlayersProps) {
     const [players, setPlayers] = useState<PlayerProfile[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -26,7 +27,7 @@ export function useAvailablePlayers({ tournamentId }: UseAvailablePlayersProps) 
             setIsLoading(true);
             setError(null);
 
-            const data = await fetchWithAuth<{ players: PlayerProfile[] }>(`/api/auction/players/available?tournamentId=${tournamentId}`);
+            const data = await fetchWithAuth<{ players: PlayerProfile[] }>(`/api/auction/players/available?tournamentId=${tournamentId}&sportCategory=${sportCategory}`);
             
             console.log('[useAvailablePlayers] Received players data:', data);
             
@@ -65,7 +66,7 @@ export function useAvailablePlayers({ tournamentId }: UseAvailablePlayersProps) 
         } finally {
             setIsLoading(false);
         }
-    }, [tournamentId, router]);
+    }, [tournamentId, sportCategory, router]);
 
     useEffect(() => {
         fetchPlayers();

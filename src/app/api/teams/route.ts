@@ -9,6 +9,7 @@ export async function GET(request: NextRequest) {
     try {
         const { searchParams } = new URL(request.url);
         const tournamentId = searchParams.get('tournamentId');
+        const sportCategory = searchParams.get('sportCategory') || 'VOLLEYBALL_OPEN_MEN';
 
         if (!tournamentId) {
             return NextResponse.json(
@@ -35,6 +36,7 @@ export async function GET(request: NextRequest) {
                 )
             `)
             .eq('tournament_id', tournamentId)
+            .eq('sport_category', sportCategory)
             .order('name');
 
         if (error) {

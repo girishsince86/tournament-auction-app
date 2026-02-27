@@ -1,6 +1,7 @@
 // Enums and Common Types
 export type UserRole = 'ADMIN' | 'CONDUCTOR' | 'TEAM_OWNER';
-export type PlayerPosition = 'P1_RIGHT_BACK' | 'P2_RIGHT_FRONT' | 'P3_MIDDLE_FRONT' | 'P4_LEFT_FRONT' | 'P5_LEFT_BACK' | 'P6_MIDDLE_BACK';
+export type PlayerPosition = 'P1_RIGHT_BACK' | 'P2_RIGHT_FRONT' | 'P3_MIDDLE_FRONT' | 'P4_LEFT_FRONT' | 'P5_LEFT_BACK' | 'P6_MIDDLE_BACK' | 'ANY_POSITION';
+export type SportCategory = 'VOLLEYBALL_OPEN_MEN' | 'THROWBALL_WOMEN' | 'THROWBALL_13_17_MIXED' | 'THROWBALL_8_12_MIXED';
 export type PlayerStatus = 'AVAILABLE' | 'IN_AUCTION' | 'ALLOCATED' | 'UNALLOCATED';
 export type SkillLevel = 'RECREATIONAL_C' | 'INTERMEDIATE_B' | 'UPPER_INTERMEDIATE_BB' | 'COMPETITIVE_A';
 export type CategoryType = 'LEVEL_1' | 'LEVEL_2' | 'LEVEL_3';
@@ -64,6 +65,7 @@ export interface Player extends BaseEntity {
     category_id?: string;
     registration_data?: any;
     profile_image_url?: string;
+    sport_category?: SportCategory;
 }
 
 export interface PlayerCategory extends BaseEntity {
@@ -102,6 +104,7 @@ export interface Team extends BaseEntity {
     max_players: number;
     tournament_id: string;
     team_owners?: TeamOwner[];
+    sport_category?: SportCategory;
 }
 
 export interface TeamOwner extends BaseEntity {
@@ -156,6 +159,7 @@ export interface AuctionQueue extends BaseEntity {
     player_id: string;
     queue_position: number;
     is_processed: boolean;
+    sport_category?: SportCategory;
 }
 
 export interface AuctionRound extends BaseEntity {
@@ -172,6 +176,7 @@ export interface AuctionRound extends BaseEntity {
     display_sequence?: number;
     auction_date: string;
     tournament_id: string;
+    sport_category?: SportCategory;
 }
 
 export interface AuctionSettings extends BaseEntity {

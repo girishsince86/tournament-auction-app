@@ -110,6 +110,7 @@ export async function GET(request: NextRequest) {
         const supabase = createRouteHandlerClient<Database>({ cookies });
         const searchParams = request.nextUrl.searchParams;
         const tournamentId = searchParams.get('tournamentId');
+        const sportCategory = searchParams.get('sportCategory') || 'VOLLEYBALL_OPEN_MEN';
         const includeProcessed = searchParams.get('includeProcessed') === 'true';
 
         if (!tournamentId) {
@@ -150,6 +151,7 @@ export async function GET(request: NextRequest) {
                 )
             `)
             .eq('tournament_id', tournamentId)
+            .eq('sport_category', sportCategory)
             .eq('is_processed', false)
             .not('players.status', 'eq', 'ALLOCATED')
             .order('created_at', { ascending: true });
@@ -366,6 +368,7 @@ export async function POST(request: NextRequest) {
 
         const body = await request.json();
         const { tournamentId, playerId } = body;
+        const sportCategory = body.sportCategory || 'VOLLEYBALL_OPEN_MEN';
         // Position is now optional in the request
         const requestedPosition = body.position;
 
@@ -427,7 +430,8 @@ export async function POST(request: NextRequest) {
                     tournament_id: tournamentId,
                     player_id: playerId,
                     queue_position: nextPosition,
-                    is_processed: false
+                    is_processed: false,
+                    sport_category: sportCategory
                 })
                 .select(`
                     id,

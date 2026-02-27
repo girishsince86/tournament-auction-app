@@ -29,14 +29,18 @@ import {
   TableCell,
   Tooltip,
   alpha,
-  Button
+  Button,
+  Tabs,
+  Tab
 } from '@mui/material';
 import {
   Search as SearchIcon,
   FilterList as FilterListIcon,
   ViewModule as GridViewIcon,
   ViewList as ListViewIcon,
-  Handshake as HandshakeIcon
+  Handshake as HandshakeIcon,
+  SportsVolleyball as SportsVolleyballIcon,
+  SportsHandball as SportsHandballIcon
 } from '@mui/icons-material';
 import { PlayerCard } from '@/components/public/PlayerCard';
 import { PlayerListView } from '@/components/public/PlayerListView';
@@ -67,22 +71,51 @@ interface CategoryWithStats extends Category {
   percentage: number;
 }
 
-// Define the skill level options
-const SKILL_LEVELS = [
+// Sport category config
+const SPORT_CATEGORIES = [
+  { value: 'VOLLEYBALL_OPEN_MEN', label: 'Volleyball', icon: 'volleyball' },
+  { value: 'THROWBALL_WOMEN', label: 'Throwball Women', icon: 'throwball' },
+  { value: 'THROWBALL_13_17_MIXED', label: 'Throwball 13-17', icon: 'throwball' },
+  { value: 'THROWBALL_8_12_MIXED', label: 'Throwball 8-12', icon: 'throwball' },
+];
+
+const isThrowballCategory = (cat: string) => cat !== 'VOLLEYBALL_OPEN_MEN';
+
+// Consent filter options (TB Women only)
+const CONSENT_OPTIONS = [
+  { value: '', label: 'All Players' },
+  { value: 'AUCTION_POOL', label: 'Auction Pool' },
+  { value: 'SPIN_THE_WHEEL', label: 'Spin the Wheel' },
+  { value: 'NO_RESPONSE', label: 'No Response' },
+];
+
+// Skill levels per sport
+const VOLLEYBALL_SKILL_LEVELS = [
   { value: 'RECREATIONAL', label: 'Recreational' },
   { value: 'COMPETITIVE_C', label: 'Intermediate' },
   { value: 'COMPETITIVE_B', label: 'Upper Intermediate' },
   { value: 'COMPETITIVE_A', label: 'Competitive' },
 ];
 
-// Define the position options
-const POSITIONS = [
+const THROWBALL_SKILL_LEVELS = [
+  { value: 'RECREATIONAL_C', label: 'Recreational' },
+  { value: 'INTERMEDIATE_B', label: 'Intermediate' },
+  { value: 'UPPER_INTERMEDIATE_BB', label: 'Upper Intermediate' },
+  { value: 'COMPETITIVE_A', label: 'Competitive' },
+];
+
+// Positions per sport
+const VOLLEYBALL_POSITIONS = [
   { value: 'P1_RIGHT_BACK', label: 'Right Back' },
   { value: 'P2_RIGHT_FRONT', label: 'Right Front' },
   { value: 'P3_MIDDLE_FRONT', label: 'Middle Front' },
   { value: 'P4_LEFT_FRONT', label: 'Left Front' },
   { value: 'P5_LEFT_BACK', label: 'Left Back' },
   { value: 'P6_MIDDLE_BACK', label: 'Middle Back' },
+];
+
+const THROWBALL_POSITIONS = [
+  { value: 'ANY_POSITION', label: 'Any Position' },
 ];
 
 export default function PlayersPage() {
@@ -93,11 +126,19 @@ export default function PlayersPage() {
   const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
+  // Sport category state
+  const [sportCategory, setSportCategory] = useState('VOLLEYBALL_OPEN_MEN');
+
+  // Derive active skill levels and positions based on sport
+  const activeSkillLevels = isThrowballCategory(sportCategory) ? THROWBALL_SKILL_LEVELS : VOLLEYBALL_SKILL_LEVELS;
+  const activePositions = isThrowballCategory(sportCategory) ? THROWBALL_POSITIONS : VOLLEYBALL_POSITIONS;
+
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedPosition, setSelectedPosition] = useState('');
   const [selectedSkillLevel, setSelectedSkillLevel] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedConsent, setSelectedConsent] = useState('');
 
   // Hardcoded tournament ID
   const tournamentId = 'dd0f011f-116d-4546-8cbf-2acc3d68312d';
@@ -114,7 +155,7 @@ export default function PlayersPage() {
 
         // Fetch players
         console.log(`Fetching players data (attempt ${retryCount + 1})...`);
-        const playersResponse = await fetch(`/api/public/players?tournamentId=${tournamentId}&_t=${timestamp}`);
+        const playersResponse = await fetch(`/api/public/players?tournamentId=${tournamentId}&sportCategory=${sportCategory}&_t=${timestamp}`);
 
         if (!playersResponse.ok) {
           const errorText = await playersResponse.text();
@@ -180,7 +221,7 @@ export default function PlayersPage() {
     };
 
     fetchPlayersAndCategories();
-  }, [tournamentId]);
+  }, [tournamentId, sportCategory]);
 
   // Function to manually retry loading data
   const handleRetryFetch = () => {
@@ -193,7 +234,7 @@ export default function PlayersPage() {
       const timestamp = Date.now();
 
       // Fetch players and categories again
-      fetch(`/api/public/players?tournamentId=${tournamentId}&_t=${timestamp}`)
+      fetch(`/api/public/players?tournamentId=${tournamentId}&sportCategory=${sportCategory}&_t=${timestamp}`)
         .then(response => {
           if (!response.ok) {
             return response.text().then(text => {
@@ -293,7 +334,17 @@ export default function PlayersPage() {
 
     // Filter by category - modified to remove special handling for null category
     if (selectedCategory && selectedCategory !== '') {
-      return player.category_id === selectedCategory;
+      if (player.category_id !== selectedCategory) return false;
+    }
+
+    // Filter by consent choice (TB Women only)
+    if (selectedConsent) {
+      const consentChoice = (player as any).registration_data?.consent_choice;
+      if (selectedConsent === 'NO_RESPONSE') {
+        if (consentChoice) return false;
+      } else {
+        if (consentChoice !== selectedConsent) return false;
+      }
     }
 
     return true;
@@ -391,7 +442,7 @@ export default function PlayersPage() {
             mb: 1
           }}
         >
-          Volleyball Players
+          {SPORT_CATEGORIES.find(c => c.value === sportCategory)?.label || 'Players'} Players
         </Typography>
         <Typography
           variant="h6"
@@ -406,6 +457,31 @@ export default function PlayersPage() {
           Browse and discover the talented players participating in our tournaments
         </Typography>
         <Divider sx={{ width: '100px', mx: 'auto', mb: 2, borderColor: theme.palette.primary.main }} />
+
+        {/* Sport category tabs */}
+        <Tabs
+          value={sportCategory}
+          onChange={(_, newValue) => {
+            setSportCategory(newValue);
+            setSelectedPosition('');
+            setSelectedSkillLevel('');
+            setSelectedCategory('');
+            setSelectedConsent('');
+            setSearchQuery('');
+          }}
+          centered
+          sx={{ mb: 1 }}
+        >
+          {SPORT_CATEGORIES.map((cat) => (
+            <Tab
+              key={cat.value}
+              value={cat.value}
+              label={cat.label}
+              icon={cat.icon === 'volleyball' ? <SportsVolleyballIcon /> : <SportsHandballIcon />}
+              iconPosition="start"
+            />
+          ))}
+        </Tabs>
       </Box>
 
       {error && (
@@ -465,7 +541,7 @@ export default function PlayersPage() {
                   onChange={(e) => setSelectedPosition(e.target.value)}
                 >
                   <MenuItem value="">All Positions</MenuItem>
-                  {POSITIONS.map((position) => (
+                  {activePositions.map((position) => (
                     <MenuItem key={position.value} value={position.value}>
                       {position.label}
                     </MenuItem>
@@ -484,7 +560,7 @@ export default function PlayersPage() {
                   onChange={(e) => setSelectedSkillLevel(e.target.value)}
                 >
                   <MenuItem value="">All Skill Levels</MenuItem>
-                  {SKILL_LEVELS.map((level) => (
+                  {activeSkillLevels.map((level) => (
                     <MenuItem key={level.value} value={level.value}>
                       {level.label}
                     </MenuItem>
@@ -511,6 +587,26 @@ export default function PlayersPage() {
                 </Select>
               </FormControl>
             </Grid>
+
+            {sportCategory === 'THROWBALL_WOMEN' && (
+              <Grid item xs={12} md={4}>
+                <FormControl fullWidth size="small">
+                  <InputLabel id="consent-select-label">Consent Status</InputLabel>
+                  <Select
+                    labelId="consent-select-label"
+                    value={selectedConsent}
+                    label="Consent Status"
+                    onChange={(e) => setSelectedConsent(e.target.value)}
+                  >
+                    {CONSENT_OPTIONS.map((opt) => (
+                      <MenuItem key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </Grid>
+            )}
 
             <Grid item xs={12}>
               <TextField

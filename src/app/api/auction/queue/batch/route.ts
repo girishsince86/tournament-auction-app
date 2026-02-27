@@ -73,6 +73,7 @@ export async function POST(request: NextRequest) {
 
         const body = await request.json();
         const { tournamentId, playerIds } = body;
+        const sportCategory = body.sportCategory || 'VOLLEYBALL_OPEN_MEN';
 
         console.log('Batch adding players to queue:', { 
             tournamentId, 
@@ -130,7 +131,8 @@ export async function POST(request: NextRequest) {
             tournament_id: tournamentId,
             player_id: playerId,
             queue_position: currentMaxPosition + index + 1,
-            is_processed: false
+            is_processed: false,
+            sport_category: sportCategory
         }));
 
         // Insert all new players in a single batch operation

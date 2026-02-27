@@ -60,7 +60,7 @@ const nextConfig = {
   
   // Force dynamic rendering for all pages
   reactStrictMode: false,
-  staticPageGenerationTimeout: 1,
+  staticPageGenerationTimeout: 120,
   
   // Use the correct property for dynamic rendering
   images: {

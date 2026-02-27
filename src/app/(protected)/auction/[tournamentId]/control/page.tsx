@@ -98,7 +98,7 @@ interface AuctionControlProps {
 }
 
 // Update positions to match registration form
-const POSITIONS = [
+const VOLLEYBALL_POSITIONS = [
     { value: 'P1_RIGHT_BACK', label: 'Right Back (P1)' },
     { value: 'P2_RIGHT_FRONT', label: 'Right Front (P2)' },
     { value: 'P3_MIDDLE_FRONT', label: 'Middle Front (P3)' },
@@ -106,6 +106,13 @@ const POSITIONS = [
     { value: 'P5_LEFT_BACK', label: 'Left Back (P5)' },
     { value: 'P6_MIDDLE_BACK', label: 'Middle Back (P6)' }
 ];
+
+const THROWBALL_POSITIONS = [
+    { value: 'ANY_POSITION', label: 'Any Position' }
+];
+
+// Combined positions for label lookups across all sports
+const ALL_POSITIONS = [...VOLLEYBALL_POSITIONS, ...THROWBALL_POSITIONS];
 
 // Update skill levels to match registration form
 const SKILL_LEVELS = [
@@ -248,7 +255,7 @@ function SortableQueueItem({ item, currentPlayer, onSelectPlayer, onRemoveFromQu
                             sx={getBasePointsStyling('small')}
                         />
                         <Chip 
-                            label={POSITIONS.find(pos => pos.value === item.player.player_position)?.label}
+                            label={ALL_POSITIONS.find(pos => pos.value === item.player.player_position)?.label || item.player.player_position}
                             size="small"
                             icon={<SportsVolleyballIcon fontSize="small" />}
                             sx={getPositionStyling('small')}
@@ -392,23 +399,27 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
     // Add state for category filter
     const [categoryFilter, setCategoryFilter] = useState<string>('');
 
-    // Fetch teams and queue data
-    const { teams, isLoading: teamsLoading, error: teamsError, fetchTeams } = useTeams({ tournamentId });
-    const { 
-        queue, 
-        isLoading: queueLoading, 
+    // Sport category selector for switching between volleyball and throwball
+    const [sportCategory, setSportCategory] = useState<string>('VOLLEYBALL_OPEN_MEN');
+    const activePositions = sportCategory === 'VOLLEYBALL_OPEN_MEN' ? VOLLEYBALL_POSITIONS : THROWBALL_POSITIONS;
+
+    // Fetch teams and queue data - filtered by sport category
+    const { teams, isLoading: teamsLoading, error: teamsError, fetchTeams } = useTeams({ tournamentId, sportCategory });
+    const {
+        queue,
+        isLoading: queueLoading,
         error: queueError,
         markAsProcessed,
         fetchQueue,
         addToQueue,
         removeFromQueue
-    } = useAuctionQueue({ tournamentId, enablePolling: false });
+    } = useAuctionQueue({ tournamentId, sportCategory, enablePolling: false });
     const {
         players: availablePlayers,
         isLoading: playersLoading,
         error: playersError,
         refetch: fetchPlayers
-    } = useAvailablePlayers({ tournamentId });
+    } = useAvailablePlayers({ tournamentId, sportCategory });
 
     const { showToast } = useToast();
 
@@ -482,6 +493,7 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                     playerId: currentPlayer.id,
                     teamId: selectedTeam,
                     amount: bidAmountInPoints,
+                    sportCategory,
                 }),
             });
 
@@ -844,6 +856,7 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                 },
                 body: JSON.stringify({
                     tournamentId,
+                    sportCategory,
                 }),
             });
 
@@ -920,20 +933,53 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                         animation: 'bounce 2s infinite ease-in-out'
                     }} 
                 />
-                <Typography 
-                    variant="h4" 
-                    component="h1" 
-                    sx={{ 
+                <Typography
+                    variant="h4"
+                    component="h1"
+                    sx={{
                         fontWeight: 700,
                         background: 'linear-gradient(45deg, primary.main, primary.dark)',
                         WebkitBackgroundClip: 'text',
                         color: 'primary.main'
                     }}
                 >
-                    Volleyball Auction Management
+                    {sportCategory === 'VOLLEYBALL_OPEN_MEN' ? 'Volleyball' : 'Throwball Women'} Auction Management
                 </Typography>
-                
-                <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center' }}>
+
+                <Box sx={{ ml: 'auto', display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Tabs
+                        value={sportCategory}
+                        onChange={(_, val) => {
+                            setSportCategory(val);
+                            setCurrentPlayer(null);
+                            setSelectedTeam('');
+                            setFinalBid(0);
+                            setError('');
+                        }}
+                        sx={{
+                            minHeight: 36,
+                            '& .MuiTab-root': { minHeight: 36, py: 0.5, px: 2, fontSize: '0.85rem' },
+                            '& .MuiTabs-indicator': {
+                                backgroundColor: sportCategory === 'THROWBALL_WOMEN' ? '#e91e63' : undefined,
+                            },
+                        }}
+                    >
+                        <Tab
+                            value="VOLLEYBALL_OPEN_MEN"
+                            icon={<SportsVolleyballIcon sx={{ fontSize: 18 }} />}
+                            iconPosition="start"
+                            label="Volleyball"
+                        />
+                        <Tab
+                            value="THROWBALL_WOMEN"
+                            icon={<SportsTennisIcon sx={{ fontSize: 18 }} />}
+                            iconPosition="start"
+                            label="Throwball Women"
+                            sx={{
+                                '&.Mui-selected': { color: '#e91e63' },
+                            }}
+                        />
+                    </Tabs>
                     <Tooltip title="Refresh data">
                         <IconButton 
                             color="primary" 
@@ -1209,7 +1255,7 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                                                                         Position
                                                                     </Typography>
                                                         <Chip 
-                                                            label={POSITIONS.find(pos => pos.value === currentPlayer.player_position)?.label || 'Unknown'}
+                                                            label={ALL_POSITIONS.find(pos => pos.value === currentPlayer.player_position)?.label || 'Unknown'}
                                                             icon={<SportsVolleyballIcon />}
                                                                         size="small"
                                                             sx={getPositionStyling()}
@@ -1766,7 +1812,7 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                                             onChange={(e) => setPositionFilter(e.target.value)}
                                         >
                                             <MenuItem value="">All</MenuItem>
-                                            {POSITIONS.map(pos => (
+                                            {activePositions.map(pos => (
                                                 <MenuItem key={pos.value} value={pos.value}>{pos.label}</MenuItem>
                                             ))}
                                         </Select>
@@ -2007,7 +2053,7 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                                                 </Box>
                                             </TableCell>
                                             <TableCell>
-                                                {POSITIONS.find(pos => pos.value === player.player_position)?.label || 'Unknown'}
+                                                {ALL_POSITIONS.find(pos => pos.value === player.player_position)?.label || 'Unknown'}
                                             </TableCell>
                                             <TableCell>
                                                     <Chip 

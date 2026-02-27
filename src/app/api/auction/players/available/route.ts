@@ -9,7 +9,8 @@ export async function GET(request: Request) {
         console.log('[API] Starting available players fetch');
         const url = new URL(request.url);
         const tournamentId = url.searchParams.get('tournamentId');
-        console.log('[API] Tournament ID:', tournamentId);
+        const sportCategory = url.searchParams.get('sportCategory') || 'VOLLEYBALL_OPEN_MEN';
+        console.log('[API] Tournament ID:', tournamentId, 'Sport Category:', sportCategory);
 
         if (!tournamentId) {
             console.error('[API] Missing tournamentId parameter');
@@ -80,7 +81,7 @@ export async function GET(request: Request) {
         }
 
         // IMPORTANT: Get AVAILABLE players
-        console.log('[API] Fetching AVAILABLE players');
+        console.log('[API] Fetching AVAILABLE players for sport:', sportCategory);
         const { data: availablePlayers, error: availablePlayersError } = await supabase
             .from('players')
             .select(`
@@ -95,7 +96,8 @@ export async function GET(request: Request) {
                 tournament_id
             `)
             .eq('tournament_id', tournamentId)
-            .eq('status', 'AVAILABLE');
+            .eq('status', 'AVAILABLE')
+            .eq('sport_category', sportCategory);
 
         if (availablePlayersError) {
             console.error('[API] Error fetching AVAILABLE players:', availablePlayersError);
@@ -103,7 +105,7 @@ export async function GET(request: Request) {
         }
 
         // IMPORTANT: Get UNALLOCATED players
-        console.log('[API] Fetching UNALLOCATED players');
+        console.log('[API] Fetching UNALLOCATED players for sport:', sportCategory);
         const { data: unallocatedPlayers, error: unallocatedPlayersError } = await supabase
             .from('players')
             .select(`
@@ -118,7 +120,8 @@ export async function GET(request: Request) {
                 tournament_id
             `)
             .eq('tournament_id', tournamentId)
-            .eq('status', 'UNALLOCATED');
+            .eq('status', 'UNALLOCATED')
+            .eq('sport_category', sportCategory);
 
         if (unallocatedPlayersError) {
             console.error('[API] Error fetching UNALLOCATED players:', unallocatedPlayersError);
