@@ -50,6 +50,12 @@ function sanitizeProfileData(data: Record<string, any>): Record<string, any> {
       sanitized[key] = value
     }
   }
+  // Ensure NOT NULL columns have defaults
+  if (!sanitized.team_role) sanitized.team_role = 'Owner'
+  if (!sanitized.sports_background) sanitized.sports_background = ''
+  if (!sanitized.bio) sanitized.bio = ''
+  if (!sanitized.notable_achievements) sanitized.notable_achievements = []
+  if (!sanitized.social_media) sanitized.social_media = {}
   return sanitized
 }
 
