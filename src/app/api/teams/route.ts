@@ -51,6 +51,22 @@ export async function GET(request: NextRequest) {
             return NextResponse.json({ teams: [] });
         }
 
+        // Fetch player categories for the tournament to build a dynamic ID map
+        const { data: playerCategories } = await supabase
+            .from('player_categories')
+            .select('id, category_type')
+            .eq('tournament_id', tournamentId);
+
+        const categoryByType: Record<string, string> = {};
+        if (playerCategories) {
+            for (const cat of playerCategories) {
+                categoryByType[cat.category_type] = cat.id;
+            }
+        }
+        const marqueeId = categoryByType['LEVEL_1'];
+        const cappedId = categoryByType['LEVEL_2'];
+        const uncappedId = categoryByType['LEVEL_3'];
+
         // Get player counts for each team with category breakdown
         const playerDetailsPromises = teams.map(async (team) => {
             // Get all players for the team
@@ -61,7 +77,7 @@ export async function GET(request: NextRequest) {
                     category_id
                 `)
                 .eq('current_team_id', team.id);
-                
+
             if (playersError) {
                 console.error(`Error fetching players for team ${team.id}:`, playersError);
                 return {
@@ -71,20 +87,15 @@ export async function GET(request: NextRequest) {
                     uncapped: 0
                 };
             }
-            
+
             // Count players by category
             const totalPlayers = players?.length || 0;
-            
-            // Define category IDs for marquee, capped, and uncapped players
-            const marqueeId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
-            const cappedId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
-            const uncappedId = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
-            
-            // Count players in each category
-            const marqueeCount = players?.filter(p => p.category_id === marqueeId).length || 0;
-            const cappedCount = players?.filter(p => p.category_id === cappedId).length || 0;
-            const uncappedCount = players?.filter(p => p.category_id === uncappedId).length || 0;
-            
+
+            // Count players in each category using dynamically-looked-up IDs
+            const marqueeCount = marqueeId ? players?.filter(p => p.category_id === marqueeId).length || 0 : 0;
+            const cappedCount = cappedId ? players?.filter(p => p.category_id === cappedId).length || 0 : 0;
+            const uncappedCount = uncappedId ? players?.filter(p => p.category_id === uncappedId).length || 0 : 0;
+
             return {
                 total: totalPlayers,
                 marquee: marqueeCount,

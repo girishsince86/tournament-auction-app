@@ -142,10 +142,10 @@ export const DASHBOARD_TABS = [
 ] as const;
 
 export const INITIAL_FILTER_STATE: FilterState = {
-    position: '',
-    skillLevel: '',
+    position: [],
+    skillLevel: [],
     searchQuery: '',
-    category: ''
+    category: []
 };
 
 export const INITIAL_SORT_STATE: SortState = {

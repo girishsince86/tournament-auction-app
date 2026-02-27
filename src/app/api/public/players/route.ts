@@ -21,8 +21,10 @@ export async function GET(request: NextRequest) {
     const categoryId = searchParams.get('categoryId');
     const sportCategory = searchParams.get('sportCategory');
     const timestamp = searchParams.get('_t'); // Get the cache-busting parameter
-    // Use the actual active tournament ID
-    const tournamentId = searchParams.get('tournamentId') || 'dd0f011f-116d-4546-8cbf-2acc3d68312d';
+    const tournamentId = searchParams.get('tournamentId');
+    if (!tournamentId) {
+      return NextResponse.json({ error: 'tournamentId query parameter is required' }, { status: 400 });
+    }
 
     console.log('API /public/players - Query parameters:', {
       status, position, skillLevel, categoryId, sportCategory, tournamentId, timestamp
@@ -118,6 +120,12 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    // Build a map by category_type for fallback assignment
+    const categoryByType: Record<string, any> = {};
+    for (const cat of Object.values(categories)) {
+      categoryByType[cat.category_type] = cat;
+    }
+
 
 
     console.log(`API /public/players - Found ${allPlayers?.length || 0} players total`);
@@ -128,13 +136,13 @@ export async function GET(request: NextRequest) {
       let categoryId = player.category_id;
 
       if (!categoryId) {
-        // Assign category based on skill level and base price
-        if (player.base_price >= 40000000) {
-          categoryId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa'; // Marquee
-        } else if (player.skill_level === 'COMPETITIVE_A') {
-          categoryId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb'; // Capped
-        } else {
-          categoryId = 'cccccccc-cccc-cccc-cccc-cccccccccccc'; // UnCapped
+        // Assign category based on skill level and base price, using dynamic lookup
+        if (player.base_price >= 40000000 && categoryByType['LEVEL_1']) {
+          categoryId = categoryByType['LEVEL_1'].id;
+        } else if (player.skill_level === 'COMPETITIVE_A' && categoryByType['LEVEL_2']) {
+          categoryId = categoryByType['LEVEL_2'].id;
+        } else if (categoryByType['LEVEL_3']) {
+          categoryId = categoryByType['LEVEL_3'].id;
         }
       }
 

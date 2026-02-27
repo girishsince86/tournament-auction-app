@@ -10,7 +10,11 @@ import {
     Typography,
     Paper,
     IconButton,
-    InputAdornment
+    InputAdornment,
+    Chip,
+    Checkbox,
+    ListItemText,
+    SelectChangeEvent
 } from '@mui/material';
 import ClearIcon from '@mui/icons-material/Clear';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
@@ -35,17 +39,34 @@ export function FilterBar({
     title = 'Filter Players',
     showCategoryFilter = false
 }: FilterBarProps) {
-    const handleFilterChange = (field: keyof FilterState, value: string | number) => {
+    const handleMultiSelectChange = (field: 'position' | 'skillLevel' | 'category') => (event: SelectChangeEvent<string[]>) => {
+        const value = event.target.value;
         onFilterChange({
             ...filterState,
-            [field]: value
+            [field]: typeof value === 'string' ? value.split(',') : value
         });
     };
 
+    const handleSearchChange = (value: string) => {
+        onFilterChange({
+            ...filterState,
+            searchQuery: value
+        });
+    };
+
+    const getLabelForCategory = (val: string) =>
+        CATEGORY_LABELS.find(c => c.value === val)?.label || val;
+
+    const getLabelForPosition = (val: string) =>
+        POSITIONS.find(p => p.value === val)?.label || val;
+
+    const getLabelForSkill = (val: string) =>
+        SKILL_LEVELS.find(s => s.value === val)?.label || val;
+
     return (
-        <Paper 
-            variant="outlined" 
-            sx={{ 
+        <Paper
+            variant="outlined"
+            sx={{
                 p: 3,
                 borderRadius: 2,
                 background: theme => `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.background.default} 100%)`,
@@ -98,25 +119,25 @@ export function FilterBar({
                         <FormControl fullWidth size="small">
                             <InputLabel>Category</InputLabel>
                             <Select
+                                multiple
                                 value={filterState.category}
                                 label="Category"
-                                onChange={(e) => handleFilterChange('category', e.target.value)}
+                                onChange={handleMultiSelectChange('category')}
+                                renderValue={(selected) => (
+                                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                        {selected.map((val) => (
+                                            <Chip key={val} label={getLabelForCategory(val)} size="small" />
+                                        ))}
+                                    </Box>
+                                )}
                             >
-                                <MenuItem value="">All Categories</MenuItem>
                                 {CATEGORY_LABELS.map((cat) => (
-                                    <MenuItem 
-                                        key={cat.value} 
-                                        value={cat.value}
-                                        sx={{
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: 1
-                                        }}
-                                    >
-                                        <Box component="span" sx={{ color: cat.color }}>
-                                            {React.createElement(cat.icon)}
+                                    <MenuItem key={cat.value} value={cat.value}>
+                                        <Checkbox checked={filterState.category.includes(cat.value)} size="small" />
+                                        <Box component="span" sx={{ color: cat.color, mr: 1, display: 'flex' }}>
+                                            {React.createElement(cat.icon, { fontSize: 'small' })}
                                         </Box>
-                                        {cat.label}
+                                        <ListItemText primary={cat.label} />
                                     </MenuItem>
                                 ))}
                             </Select>
@@ -127,25 +148,25 @@ export function FilterBar({
                     <FormControl fullWidth size="small">
                         <InputLabel>Position</InputLabel>
                         <Select
+                            multiple
                             value={filterState.position}
                             label="Position"
-                            onChange={(e) => handleFilterChange('position', e.target.value)}
+                            onChange={handleMultiSelectChange('position')}
+                            renderValue={(selected) => (
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                    {selected.map((val) => (
+                                        <Chip key={val} label={getLabelForPosition(val)} size="small" />
+                                    ))}
+                                </Box>
+                            )}
                         >
-                            <MenuItem value="">All Positions</MenuItem>
                             {POSITIONS.map((pos: PositionConfig) => (
-                                <MenuItem 
-                                    key={pos.value} 
-                                    value={pos.value}
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 1
-                                    }}
-                                >
-                                    <Box component="span" sx={{ color: pos.color }}>
-                                        {React.createElement(pos.icon)}
+                                <MenuItem key={pos.value} value={pos.value}>
+                                    <Checkbox checked={filterState.position.includes(pos.value)} size="small" />
+                                    <Box component="span" sx={{ color: pos.color, mr: 1, display: 'flex' }}>
+                                        {React.createElement(pos.icon, { fontSize: 'small' })}
                                     </Box>
-                                    {pos.label}
+                                    <ListItemText primary={pos.label} />
                                 </MenuItem>
                             ))}
                         </Select>
@@ -155,25 +176,25 @@ export function FilterBar({
                     <FormControl fullWidth size="small">
                         <InputLabel>Skill Level</InputLabel>
                         <Select
+                            multiple
                             value={filterState.skillLevel}
                             label="Skill Level"
-                            onChange={(e) => handleFilterChange('skillLevel', e.target.value)}
+                            onChange={handleMultiSelectChange('skillLevel')}
+                            renderValue={(selected) => (
+                                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                                    {selected.map((val) => (
+                                        <Chip key={val} label={getLabelForSkill(val)} size="small" />
+                                    ))}
+                                </Box>
+                            )}
                         >
-                            <MenuItem value="">All Skill Levels</MenuItem>
                             {SKILL_LEVELS.map((skill: SkillLevelConfig) => (
-                                <MenuItem 
-                                    key={skill.value} 
-                                    value={skill.value}
-                                    sx={{
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 1
-                                    }}
-                                >
-                                    <Box component="span" sx={{ color: skill.color }}>
-                                        {React.createElement(skill.icon)}
+                                <MenuItem key={skill.value} value={skill.value}>
+                                    <Checkbox checked={filterState.skillLevel.includes(skill.value)} size="small" />
+                                    <Box component="span" sx={{ color: skill.color, mr: 1, display: 'flex' }}>
+                                        {React.createElement(skill.icon, { fontSize: 'small' })}
                                     </Box>
-                                    {skill.label}
+                                    <ListItemText primary={skill.label} />
                                 </MenuItem>
                             ))}
                         </Select>
@@ -185,7 +206,7 @@ export function FilterBar({
                         size="small"
                         label="Search Players"
                         value={filterState.searchQuery}
-                        onChange={(e) => handleFilterChange('searchQuery', e.target.value)}
+                        onChange={(e) => handleSearchChange(e.target.value)}
                         InputProps={{
                             startAdornment: (
                                 <InputAdornment position="start">
@@ -196,7 +217,7 @@ export function FilterBar({
                                 <InputAdornment position="end">
                                     <IconButton
                                         size="small"
-                                        onClick={() => handleFilterChange('searchQuery', '')}
+                                        onClick={() => handleSearchChange('')}
                                     >
                                         <ClearIcon />
                                     </IconButton>
@@ -208,4 +229,4 @@ export function FilterBar({
             </Grid>
         </Paper>
     );
-} 
+}

@@ -2,11 +2,11 @@
 export type UserRole = 'ADMIN' | 'CONDUCTOR' | 'TEAM_OWNER';
 export type PlayerPosition = 'P1_RIGHT_BACK' | 'P2_RIGHT_FRONT' | 'P3_MIDDLE_FRONT' | 'P4_LEFT_FRONT' | 'P5_LEFT_BACK' | 'P6_MIDDLE_BACK' | 'ANY_POSITION';
 export type SportCategory = 'VOLLEYBALL_OPEN_MEN' | 'THROWBALL_WOMEN' | 'THROWBALL_13_17_MIXED' | 'THROWBALL_8_12_MIXED';
-export type PlayerStatus = 'AVAILABLE' | 'IN_AUCTION' | 'ALLOCATED' | 'UNALLOCATED';
+export type PlayerStatus = 'AVAILABLE' | 'ALLOCATED' | 'UNALLOCATED';
 export type SkillLevel = 'RECREATIONAL_C' | 'INTERMEDIATE_B' | 'UPPER_INTERMEDIATE_BB' | 'COMPETITIVE_A';
-export type CategoryType = 'LEVEL_1' | 'LEVEL_2' | 'LEVEL_3';
+export type CategoryType = 'LEVEL_1' | 'LEVEL_2' | 'LEVEL_3' | 'THROWBALL_WOMEN' | 'THROWBALL_13_17_MIXED' | 'THROWBALL_8_12_MIXED' | 'VOLLEYBALL_U12_BOYS' | 'VOLLEYBALL_U16_BOYS' | 'VOLLEYBALL_OPEN_MEN';
 export type TshirtSize = 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL';
-export type AuctionStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED';
+export type AuctionStatus = 'NOT_STARTED' | 'IN_PROGRESS' | 'COMPLETED' | 'CANCELLED' | 'UNDONE';
 export type LastPlayedDate = 'LESS_THAN_6_MONTHS' | 'SIX_TO_TWELVE_MONTHS' | 'MORE_THAN_YEAR' | 'NEVER';
 export type RegistrationCategory = 'ADULT' | 'YOUTH';
 export type AchievementType = 'TOURNAMENT_WIN' | 'BEST_PLAYER' | 'MOST_VALUABLE_PLAYER' | 'OTHER';
@@ -63,6 +63,7 @@ export interface Player extends BaseEntity {
     experience?: number;
     tshirt_size?: TshirtSize;
     category_id?: string;
+    tournament_id?: string;
     registration_data?: any;
     profile_image_url?: string;
     sport_category?: SportCategory;
@@ -165,7 +166,6 @@ export interface AuctionQueue extends BaseEntity {
 export interface AuctionRound extends BaseEntity {
     player_id: string;
     starting_price: number;
-    final_price?: number;
     winning_team_id?: string;
     status: AuctionStatus;
     start_time: string;
@@ -179,6 +179,7 @@ export interface AuctionRound extends BaseEntity {
     sport_category?: SportCategory;
 }
 
+/** @deprecated Position-specific min fields (min_setters, etc.) use a different taxonomy than the actual PlayerPosition enum. Never enforced by any code. */
 export interface AuctionSettings extends BaseEntity {
     min_players_per_team: number;
     max_players_per_team: number;
@@ -191,6 +192,7 @@ export interface AuctionSettings extends BaseEntity {
     min_liberos: number;
 }
 
+/** @deprecated Only used by the handle_new_bid trigger on the bids table, which is also dead. Live bidding was abandoned. */
 export interface AuctionState extends BaseEntity {
     status: 'WAITING' | 'IN_PROGRESS' | 'COMPLETED';
     current_player_id?: string;
@@ -199,6 +201,7 @@ export interface AuctionState extends BaseEntity {
     winning_bid_id?: string;
 }
 
+/** @deprecated The bids table exists but is never written to. Live bidding was abandoned in favor of conductor-driven auction rounds. */
 export interface Bid extends BaseEntity {
     round_id: string;
     team_id: string;

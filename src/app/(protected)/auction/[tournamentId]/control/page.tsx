@@ -60,7 +60,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { useTeams } from '@/hooks/useTeams';
 import { useAuctionQueue } from '@/hooks/useAuctionQueue';
 import { useAvailablePlayers } from '@/hooks/useAvailablePlayers';
-import { PlayerProfile, QueueItemWithPlayer } from '@/types/auction';
+import { PlayerProfile, QueueItemWithPlayer, TimerConfig } from '@/types/auction';
 import PersonIcon from '@mui/icons-material/Person';
 import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import AddIcon from '@mui/icons-material/Add';
@@ -316,13 +316,6 @@ const LAST_PLAYED_OPTIONS = [
   { value: 'NOT_PLAYED_IN_FEW_YEARS', label: 'Not played in few years' }
 ];
 
-// Add this helper function after the getBasePointsStyling function
-const getTeamRemainingBalance = (team: any): number => {
-    // Handle both property names (remaining_points from interface, remaining_budget from API)
-    return team.remaining_points !== undefined ? team.remaining_points : 
-           team.remaining_budget !== undefined ? team.remaining_budget : 0;
-};
-
 // Add type definitions for API responses
 interface BidResponse {
     player: {
@@ -399,6 +392,37 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
     // Add state for category filter
     const [categoryFilter, setCategoryFilter] = useState<string>('');
 
+    // Timer config loaded from DB (falls back to DEFAULT_CONFIG)
+    const [timerConfig, setTimerConfig] = useState<TimerConfig>(DEFAULT_CONFIG);
+
+    // Load timer config from auction_display_config table
+    useEffect(() => {
+        async function loadTimerConfig() {
+            try {
+                const res = await fetch(`/api/auction/display-config?tournamentId=${tournamentId}`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.config) {
+                        setTimerConfig({
+                            initialCountdown: data.config.initial_timer_seconds,
+                            subsequentBidTimer: data.config.subsequent_timer_seconds,
+                            automatedCalls: {
+                                firstCall: data.config.first_call_seconds,
+                                secondCall: data.config.second_call_seconds,
+                                finalCall: data.config.final_call_seconds,
+                            },
+                            visualIndicators: data.config.enable_visual_effects,
+                            soundEnabled: data.config.enable_sound,
+                        });
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to load timer config, using defaults:', err);
+            }
+        }
+        loadTimerConfig();
+    }, [tournamentId]);
+
     // Sport category selector for switching between volleyball and throwball
     const [sportCategory, setSportCategory] = useState<string>('VOLLEYBALL_OPEN_MEN');
     const activePositions = sportCategory === 'VOLLEYBALL_OPEN_MEN' ? VOLLEYBALL_POSITIONS : THROWBALL_POSITIONS;
@@ -444,7 +468,7 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
 
         // Convert amount from crores to points for comparison
         const amountInPoints = convertCroresToPoints(amount);
-        const remainingBalance = getTeamRemainingBalance(team);
+        const remainingBalance = team.remaining_budget;
         
         if (amountInPoints > remainingBalance) {
             return `Bid exceeds team's remaining balance (${formatPointsInCrores(remainingBalance)})`;
@@ -598,6 +622,7 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                 },
                 body: JSON.stringify({
                     playerId: currentPlayer.id,
+                    tournamentId,
                 }),
             });
 
@@ -1399,7 +1424,7 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                                     >
                                         <Timer
                                             ref={timerRef}
-                                            config={DEFAULT_CONFIG}
+                                            config={timerConfig}
                                             onPhaseChange={handlePhaseChange}
                                             onComplete={handleTimerComplete}
                                         />
@@ -1469,7 +1494,7 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                                                                 </Typography>
                                                             </Stack>
                                                             <Chip 
-                                                                label={`${formatPointsInCrores(getTeamRemainingBalance(team))} points`}
+                                                                label={`${formatPointsInCrores(team.remaining_budget)} points`}
                                                                 size="small"
                                                                 color="primary"
                                                                 sx={{
@@ -1500,7 +1525,7 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                                                                 </Typography>
                                                             </Stack>
                                                             <Chip 
-                                                                label={`${formatPointsInCrores(getTeamRemainingBalance(team))} points`}
+                                                                label={`${formatPointsInCrores(team.remaining_budget)} points`}
                                                                 size="small"
                                                                 color="primary"
                                                                 sx={{

@@ -14,7 +14,7 @@ export async function POST(request: Request) {
         }
         
         const body = await request.json();
-        const { playerId } = body;
+        const { playerId, tournamentId } = body;
 
         // Validate required fields
         if (!playerId) {
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
                 is_manual_entry: true,
                 conductor_notes: 'Player marked as UNALLOCATED - no bids received',
                 auction_date: new Date().toISOString(),
-                tournament_id: player.tournament_id || null
+                tournament_id: tournamentId || player.tournament_id || null
             });
 
         if (roundError) {

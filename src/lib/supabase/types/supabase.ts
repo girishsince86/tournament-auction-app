@@ -237,7 +237,7 @@ export interface Database {
         | 'P5_LEFT_BACK'
         | 'P6_MIDDLE_BACK'
         | 'ANY_POSITION';
-      player_status: 'AVAILABLE' | 'IN_AUCTION' | 'ALLOCATED' | 'UNALLOCATED';
+      player_status: 'AVAILABLE' | 'ALLOCATED' | 'UNALLOCATED';
       skill_level: 
         | 'RECREATIONAL_C'
         | 'INTERMEDIATE_B'

@@ -12,7 +12,6 @@ export const PlayerPosition = z.enum([
 
 export const PlayerStatus = z.enum([
   'AVAILABLE',
-  'IN_AUCTION',
   'ALLOCATED',
   'UNALLOCATED',
 ]);

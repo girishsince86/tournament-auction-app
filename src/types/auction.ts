@@ -59,7 +59,6 @@ export interface SkillRequirement extends TeamRequirementBase {
 
 export interface TeamWithStats extends Team {
     total_points: number;
-    remaining_points: number;
     current_players: number;
 }
 

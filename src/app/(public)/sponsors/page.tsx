@@ -12,10 +12,8 @@ import {
   Button,
   Card,
   CardContent,
-  CardMedia,
   CardActions,
   Link as MuiLink,
-  Zoom,
   Fade,
   Grow,
   keyframes
@@ -49,39 +47,39 @@ interface Sponsor {
   logoPath: string;
   website: string;
   description: string;
-  sponsorshipLevel: 'presenting' | 'powered' | 'supporting';
+  sponsorshipLevel: 'presenting' | 'associate';
   order: number;
 }
 
-// Sample sponsor data
+// Sponsor data
 const sponsors: Sponsor[] = [
   {
     id: '1',
-    name: 'Ask Trice',
-    logoPath: '/images/sponsors/ask-trice-logo.png',
+    name: 'Ask Local by Trice',
+    logoPath: '/images/sponsors/ask-local-logo.png',
     website: 'https://apps.apple.com/in/app/trice-your-neighbourhood-app/id1383696181',
-    description: 'Trice is a unique Neighbourhood app built by the residents for the residents of Apartment Communities. It connects you with home chefs, local vendors offering free home delivery for groceries and fresh produce, and provides a personal assistant service called Trice Buddy to help with tasks. The app features natural & organic groceries, vegan & eco products, and same-day delivery from local favorites. As the presenting sponsor of the PBEL CIty Volleyball & Throwball League 2026, Trice is committed to promoting community engagement.',
+    description: 'Ask Local by Trice is a unique Neighbourhood app built by the residents for the residents of Apartment Communities. It connects you with home chefs, local vendors offering free home delivery for groceries and fresh produce, and provides a personal assistant service called Trice Buddy to help with tasks. The app features natural & organic groceries, vegan & eco products, and same-day delivery from local favorites. As the presenting sponsor of the PBEL City Volleyball & Throwball League 2026, Ask Local is committed to promoting community engagement.',
     sponsorshipLevel: 'presenting',
     order: 1
   },
   {
     id: '2',
-    name: 'Indis',
-    logoPath: '/images/sponsors/indis-logo.png',
-    website: 'https://indis.co.in/',
-    description: 'Indis is a premier real estate developer known for creating sustainable and modern living spaces. As a powered by sponsor, Indis brings its commitment to excellence and community building to the PBEL CIty Volleyball & Throwball League 2026.',
-    sponsorshipLevel: 'powered',
+    name: 'Candid Studio',
+    logoPath: '/images/sponsors/candid-studio-logo.png',
+    website: '',
+    description: 'Candid Studio is the official photography partner of the PBEL City Volleyball & Throwball League 2026, capturing every thrilling moment of the tournament with their expert lens.',
+    sponsorshipLevel: 'associate',
     order: 2
   },
   {
     id: '3',
-    name: 'Creekside Farm Resort',
-    logoPath: '/images/sponsors/creekside-farm-resort-logo.png',
-    website: 'https://www.instagram.com/creeksidefarmresortvikarabad/',
-    description: 'Creekside Farm Resort offers a serene retreat amidst nature with world-class amenities and hospitality. As a supporting sponsor, Creekside Farm Resort helps create memorable experiences for players and fans of the PBEL CIty Volleyball & Throwball League 2026.',
-    sponsorshipLevel: 'supporting',
+    name: 'Stellar Ecosystems',
+    logoPath: '/images/sponsors/stellar-ecosystems-logo.png',
+    website: '',
+    description: 'Stellar Ecosystems — Brighter Everyday. Stellar Ecosystems is a proud associate sponsor of the PBEL City Volleyball & Throwball League 2026, supporting community sports and engagement.',
+    sponsorshipLevel: 'associate',
     order: 3
-  }
+  },
 ];
 
 // Volleyball decoration component
@@ -119,8 +117,7 @@ export default function SponsorsPage() {
   
   // Group sponsors by level
   const presentingSponsors = sponsors.filter(s => s.sponsorshipLevel === 'presenting');
-  const poweredBySponsors = sponsors.filter(s => s.sponsorshipLevel === 'powered');
-  const supportingSponsors = sponsors.filter(s => s.sponsorshipLevel === 'supporting');
+  const associateSponsors = sponsors.filter(s => s.sponsorshipLevel === 'associate');
   
   return (
     <Container maxWidth="xl">
@@ -334,8 +331,8 @@ export default function SponsorsPage() {
         </Box>
       )}
       
-      {/* Powered By Sponsors Section */}
-      {poweredBySponsors.length > 0 && (
+      {/* Associate Sponsors Section */}
+      {associateSponsors.length > 0 && (
         <Box sx={{ mb: 6 }}>
           <Grow in={isLoaded} timeout={1000} style={{ transformOrigin: '0 0 0', transitionDelay: '200ms' }}>
             <Paper
@@ -349,27 +346,27 @@ export default function SponsorsPage() {
                 border: `1px solid ${alpha(theme.palette.secondary.main, 0.1)}`,
               }}
             >
-              <Typography 
-                variant="h4" 
-                component="h2" 
-                sx={{ 
+              <Typography
+                variant="h4"
+                component="h2"
+                sx={{
                   fontWeight: 600,
                   textAlign: 'center',
                   color: theme.palette.secondary.main
                 }}
               >
-                Powered By
+                Associate Sponsors
               </Typography>
             </Paper>
           </Grow>
-          
-          <Grid container spacing={4} justifyContent="center">
-            {poweredBySponsors.map((sponsor, index) => (
-              <Grid item xs={12} sm={10} md={8} lg={6} key={sponsor.id}>
+
+          <Grid container spacing={3} justifyContent="center">
+            {associateSponsors.map((sponsor, index) => (
+              <Grid item xs={12} sm={6} md={4} key={sponsor.id}>
                 <Fade in={isLoaded} timeout={1000} style={{ transitionDelay: `${300 + index * 200}ms` }}>
-                  <Card 
+                  <Card
                     elevation={3}
-                    sx={{ 
+                    sx={{
                       height: '100%',
                       display: 'flex',
                       flexDirection: 'column',
@@ -383,8 +380,8 @@ export default function SponsorsPage() {
                       }
                     }}
                   >
-                    <Box 
-                      sx={{ 
+                    <Box
+                      sx={{
                         p: 3,
                         bgcolor: 'white',
                         display: 'flex',
@@ -403,11 +400,11 @@ export default function SponsorsPage() {
                         }
                       }}
                     >
-                      <Box 
-                        sx={{ 
-                          position: 'relative', 
+                      <Box
+                        sx={{
+                          position: 'relative',
                           width: '100%',
-                          height: 150,
+                          height: 140,
                           zIndex: 1,
                           transition: 'transform 0.3s ease',
                           '&:hover': {
@@ -423,7 +420,7 @@ export default function SponsorsPage() {
                         />
                       </Box>
                     </Box>
-                    
+
                     <CardContent sx={{ flexGrow: 1, p: 3 }}>
                       <Typography variant="h5" component="h3" gutterBottom sx={{ fontWeight: 600 }}>
                         {sponsor.name}
@@ -432,162 +429,33 @@ export default function SponsorsPage() {
                         {sponsor.description}
                       </Typography>
                     </CardContent>
-                    
-                    <CardActions sx={{ p: 3, pt: 0 }}>
-                      <Button 
-                        component={MuiLink}
-                        href={sponsor.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        variant="outlined"
-                        color="secondary"
-                        endIcon={<OpenInNewIcon />}
-                        sx={{ 
-                          borderRadius: 2,
-                          px: 2,
-                          transition: 'transform 0.2s ease',
-                          '&:hover': {
-                            transform: 'scale(1.05)'
-                          },
-                          '&:active': {
-                            transform: 'scale(0.95)'
-                          }
-                        }}
-                      >
-                        Visit Website
-                      </Button>
-                    </CardActions>
-                  </Card>
-                </Fade>
-              </Grid>
-            ))}
-          </Grid>
-        </Box>
-      )}
-      
-      {/* Supporting Sponsors Section */}
-      {supportingSponsors.length > 0 && (
-        <Box sx={{ mb: 6 }}>
-          <Grow in={isLoaded} timeout={1000} style={{ transformOrigin: '0 0 0', transitionDelay: '400ms' }}>
-            <Paper
-              elevation={0}
-              sx={{
-                p: 2,
-                mb: 3,
-                borderRadius: 2,
-                background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.1)}, ${alpha(theme.palette.success.light, 0.05)})`,
-                backdropFilter: 'blur(10px)',
-                border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
-              }}
-            >
-              <Typography 
-                variant="h4" 
-                component="h2" 
-                sx={{ 
-                  fontWeight: 600,
-                  textAlign: 'center',
-                  color: theme.palette.success.main
-                }}
-              >
-                Supporting Sponsors
-              </Typography>
-            </Paper>
-          </Grow>
-          
-          <Grid container spacing={3} justifyContent="center">
-            {supportingSponsors.map((sponsor, index) => (
-              <Grid item xs={12} sm={10} md={6} lg={4} key={sponsor.id}>
-                <Fade in={isLoaded} timeout={1000} style={{ transitionDelay: `${500 + index * 200}ms` }}>
-                  <Card 
-                    elevation={3}
-                    sx={{ 
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      borderRadius: 3,
-                      overflow: 'hidden',
-                      position: 'relative',
-                      transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-5px) scale(1.05)',
-                        boxShadow: theme.shadows[10]
-                      }
-                    }}
-                  >
-                    <Box 
-                      sx={{ 
-                        p: 3,
-                        bgcolor: 'white',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        position: 'relative',
-                        '&::after': {
-                          content: '""',
-                          position: 'absolute',
-                          top: 0,
-                          left: 0,
-                          right: 0,
-                          bottom: 0,
-                          background: `radial-gradient(circle, ${alpha(theme.palette.success.main, 0.05)} 0%, transparent 70%)`,
-                          zIndex: 0
-                        }
-                      }}
-                    >
-                      <Box 
-                        sx={{ 
-                          position: 'relative', 
-                          width: '100%',
-                          height: 120,
-                          zIndex: 1,
-                          transition: 'transform 0.3s ease',
-                          '&:hover': {
-                            transform: 'scale(1.05) rotate(1deg)'
-                          }
-                        }}
-                      >
-                        <Image
-                          src={sponsor.logoPath}
-                          alt={sponsor.name}
-                          fill
-                          style={{ objectFit: 'contain' }}
-                        />
-                      </Box>
-                    </Box>
-                    
-                    <CardContent sx={{ flexGrow: 1, p: 3 }}>
-                      <Typography variant="h5" component="h3" gutterBottom sx={{ fontWeight: 600 }}>
-                        {sponsor.name}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {sponsor.description}
-                      </Typography>
-                    </CardContent>
-                    
-                    <CardActions sx={{ p: 3, pt: 0 }}>
-                      <Button 
-                        component={MuiLink}
-                        href={sponsor.website}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        variant="outlined"
-                        color="success"
-                        endIcon={<OpenInNewIcon />}
-                        sx={{ 
-                          borderRadius: 2,
-                          px: 2,
-                          transition: 'transform 0.2s ease',
-                          '&:hover': {
-                            transform: 'scale(1.05)'
-                          },
-                          '&:active': {
-                            transform: 'scale(0.95)'
-                          }
-                        }}
-                      >
-                        Visit Website
-                      </Button>
-                    </CardActions>
+
+                    {sponsor.website && (
+                      <CardActions sx={{ p: 3, pt: 0 }}>
+                        <Button
+                          component={MuiLink}
+                          href={sponsor.website}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          variant="outlined"
+                          color="secondary"
+                          endIcon={<OpenInNewIcon />}
+                          sx={{
+                            borderRadius: 2,
+                            px: 2,
+                            transition: 'transform 0.2s ease',
+                            '&:hover': {
+                              transform: 'scale(1.05)'
+                            },
+                            '&:active': {
+                              transform: 'scale(0.95)'
+                            }
+                          }}
+                        >
+                          Visit Website
+                        </Button>
+                      </CardActions>
+                    )}
                   </Card>
                 </Fade>
               </Grid>

@@ -1,8 +1,8 @@
 export interface FilterState {
-    position: string;
-    skillLevel: string;
+    position: string[];
+    skillLevel: string[];
     searchQuery: string;
-    category: string;
+    category: string[];
 }
 
 export interface SortState {

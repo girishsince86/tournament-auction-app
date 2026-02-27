@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
         const position = searchParams.get('position');
         const skillLevel = searchParams.get('skillLevel');
         const categoryId = searchParams.get('categoryId');
-        const tournamentId = searchParams.get('tournamentId') || '11111111-1111-1111-1111-111111111111'; // Default to hardcoded tournament ID
+        const tournamentId = searchParams.get('tournamentId');
 
         console.log('API /players - Query parameters:', { 
             status, position, skillLevel, categoryId, tournamentId 
@@ -71,60 +71,29 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        // Fetch categories for the tournament
-        console.log(`Fetching categories for tournament ID: ${tournamentId}`);
-        const { data: tournamentCategories, error: categoriesError } = await supabase
-            .from('player_categories')
-            .select('*')
-            .eq('tournament_id', tournamentId);
-        
-        if (categoriesError) {
-            console.error('Error fetching categories:', categoriesError);
-        }
-
-        // Create a map of category IDs to category objects
+        // Fetch categories for the tournament (only if tournamentId is provided)
         let categories: Record<string, any> = {};
-        if (tournamentCategories) {
-            categories = tournamentCategories.reduce((acc: Record<string, any>, category) => {
-                acc[category.id] = category;
-                return acc;
-            }, {});
-        }
+        const categoryByType: Record<string, any> = {};
+        if (tournamentId) {
+            console.log(`Fetching categories for tournament ID: ${tournamentId}`);
+            const { data: tournamentCategories, error: categoriesError } = await supabase
+                .from('player_categories')
+                .select('*')
+                .eq('tournament_id', tournamentId);
 
-        // Add the marquee category if it doesn't exist
-        const marqueeId = 'aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa';
-        if (!categories[marqueeId]) {
-            categories[marqueeId] = {
-                id: marqueeId,
-                name: 'Marquee',
-                category_type: 'LEVEL_1',
-                base_points: 50000000,
-                tournament_id: tournamentId
-            };
-        }
+            if (categoriesError) {
+                console.error('Error fetching categories:', categoriesError);
+            }
 
-        // Add the capped category if it doesn't exist
-        const cappedId = 'bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb';
-        if (!categories[cappedId]) {
-            categories[cappedId] = {
-                id: cappedId,
-                name: 'Capped',
-                category_type: 'LEVEL_2',
-                base_points: 30000000,
-                tournament_id: tournamentId
-            };
-        }
-
-        // Add the uncapped category if it doesn't exist
-        const uncappedId = 'cccccccc-cccc-cccc-cccc-cccccccccccc';
-        if (!categories[uncappedId]) {
-            categories[uncappedId] = {
-                id: uncappedId,
-                name: 'UnCapped',
-                category_type: 'LEVEL_3',
-                base_points: 20000000,
-                tournament_id: tournamentId
-            };
+            if (tournamentCategories) {
+                categories = tournamentCategories.reduce((acc: Record<string, any>, category) => {
+                    acc[category.id] = category;
+                    return acc;
+                }, {});
+                for (const cat of tournamentCategories) {
+                    categoryByType[cat.category_type] = cat;
+                }
+            }
         }
 
         console.log(`API /players - Found ${players?.length || 0} players`);
@@ -133,20 +102,20 @@ export async function GET(request: NextRequest) {
         const formattedPlayers = players.map(player => {
             // Determine category based on player attributes if not already assigned
             let categoryId = player.category_id;
-            
+
             if (!categoryId) {
-                // Assign category based on skill level and base price
-                if (player.base_price >= 40000000) {
-                    categoryId = marqueeId; // Marquee
-                } else if (player.skill_level === 'COMPETITIVE_A') {
-                    categoryId = cappedId; // Capped
-                } else {
-                    categoryId = uncappedId; // UnCapped
+                // Assign category based on skill level and base price, using dynamic lookup
+                if (player.base_price >= 40000000 && categoryByType['LEVEL_1']) {
+                    categoryId = categoryByType['LEVEL_1'].id;
+                } else if (player.skill_level === 'COMPETITIVE_A' && categoryByType['LEVEL_2']) {
+                    categoryId = categoryByType['LEVEL_2'].id;
+                } else if (categoryByType['LEVEL_3']) {
+                    categoryId = categoryByType['LEVEL_3'].id;
                 }
             }
-            
+
             // Get the category from our map if available
-            const category = categoryId && categories[categoryId] 
+            const category = categoryId && categories[categoryId]
                 ? categories[categoryId]
                 : (player.categories && player.categories.length > 0 ? player.categories[0] : null);
                     

@@ -63,7 +63,6 @@ export function AddPreferredPlayer({
     const [maxBids, setMaxBids] = useState<Record<string, number>>({});
     const [error, setError] = useState<string | null>(null);
     const [isAdding, setIsAdding] = useState(false);
-    const [selectedCategory, setSelectedCategory] = useState<string>('');
 
     const {
         filterState,
@@ -73,34 +72,18 @@ export function AddPreferredPlayer({
         sortPlayers
     } = useFiltersAndSort();
 
-    // Add category to filter state
-    useEffect(() => {
-        if (selectedCategory) {
-            setFilterState({
-                ...filterState,
-                category: selectedCategory
-            });
-        }
-    }, [selectedCategory, filterState]);
-
     // Reset state when dialog closes
     useEffect(() => {
         if (!open) {
             setSelectedPlayers([]);
             setMaxBids({});
             setError(null);
-            setSelectedCategory('');
             handleClearFilters();
         }
     }, [open]);
 
-    // Get unique categories from available players
-    const categories = Array.from(new Set(availablePlayers.map(player => player.category?.category_type))).filter(Boolean);
-
-    // Apply filters including category
-    const filteredPlayers = sortPlayers(filterPlayers(availablePlayers.filter(player => 
-        !selectedCategory || player.category?.category_type === selectedCategory
-    )));
+    // Apply filters
+    const filteredPlayers = sortPlayers(filterPlayers(availablePlayers));
 
     const handleSelectAll = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.checked) {

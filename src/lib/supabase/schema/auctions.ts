@@ -2,9 +2,10 @@ import { z } from 'zod';
 
 export const AuctionStatus = z.enum([
   'NOT_STARTED',
-  'ACTIVE',
-  'PAUSED',
+  'IN_PROGRESS',
   'COMPLETED',
+  'CANCELLED',
+  'UNDONE',
 ]);
 
 export const BidStatus = z.enum([

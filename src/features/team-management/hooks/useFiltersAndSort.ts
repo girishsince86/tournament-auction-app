@@ -24,9 +24,9 @@ export function useFiltersAndSort(): UseFiltersAndSortReturn {
     const filterPlayers = useCallback((players: PlayerWithPreference[]) => {
         return players?.filter(player => {
             const matchesSearch = player.name.toLowerCase().includes(filterState.searchQuery.toLowerCase());
-            const matchesPosition = !filterState.position || player.player_position === filterState.position;
-            const matchesSkill = !filterState.skillLevel || player.skill_level === filterState.skillLevel;
-            const matchesCategory = !filterState.category || player.category?.category_type === filterState.category;
+            const matchesPosition = filterState.position.length === 0 || filterState.position.includes(player.player_position);
+            const matchesSkill = filterState.skillLevel.length === 0 || filterState.skillLevel.includes(player.skill_level);
+            const matchesCategory = filterState.category.length === 0 || filterState.category.includes(player.category?.category_type || '');
             return matchesSearch && matchesPosition && matchesSkill && matchesCategory;
         }) || [];
     }, [filterState]);
