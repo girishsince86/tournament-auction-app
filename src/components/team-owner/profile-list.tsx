@@ -15,25 +15,17 @@ import {
   Chip,
   IconButton,
   Tooltip,
-  Divider,
-  TextField
 } from '@mui/material'
 import EditIcon from '@mui/icons-material/Edit'
 import SportsVolleyballIcon from '@mui/icons-material/SportsVolleyball'
 import GroupsIcon from '@mui/icons-material/Groups'
-import DriveFileRenameOutlineIcon from '@mui/icons-material/DriveFileRenameOutline'
 import { TeamOwnerProfile } from '@/types/team-owner'
 import { useToast } from '@/components/ui/use-toast'
-import { useRouter } from 'next/navigation'
-import { useTeamOwnerProfile } from '@/hooks/use-team-owner'
 
 export function ProfileList() {
   const [profiles, setProfiles] = useState<TeamOwnerProfile[]>([])
   const [loading, setLoading] = useState(true)
-  const [editingTeamName, setEditingTeamName] = useState<{ id: string; name: string } | null>(null)
   const { toast } = useToast()
-  const router = useRouter()
-  const { handleTeamNameUpdate } = useTeamOwnerProfile()
 
   const fetchProfiles = async () => {
     try {
@@ -80,33 +72,6 @@ export function ProfileList() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
     // Dispatch event to load profile in form
     window.dispatchEvent(new CustomEvent('edit-profile', { detail: profile }))
-  }
-
-  const handleTeamNameEdit = (profile: TeamOwnerProfile) => {
-    setEditingTeamName({
-      id: profile.team_id,
-      name: profile.team_name || ''
-    })
-  }
-
-  const handleTeamNameSave = async () => {
-    if (!editingTeamName) return
-
-    try {
-      await handleTeamNameUpdate(editingTeamName.id, { name: editingTeamName.name.trim() })
-      setEditingTeamName(null)
-      await fetchProfiles() // Refresh the list
-      toast({
-        title: 'Success',
-        description: 'Team name updated successfully',
-      })
-    } catch (error) {
-      toast({
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to update team name',
-        variant: 'destructive',
-      })
-    }
   }
 
   if (loading) {
@@ -157,10 +122,8 @@ export function ProfileList() {
                 <TableCell className="font-semibold text-primary-700">Actions</TableCell>
                 <TableCell className="font-semibold text-primary-700">Profile</TableCell>
                 <TableCell className="font-semibold text-primary-700">Name</TableCell>
-                <TableCell className="font-semibold text-primary-700">Team</TableCell>
                 <TableCell className="font-semibold text-primary-700">Role</TableCell>
                 <TableCell className="font-semibold text-primary-700">Contact</TableCell>
-                <TableCell className="font-semibold text-primary-700">Phone</TableCell>
                 <TableCell className="font-semibold text-primary-700">Background</TableCell>
                 <TableCell className="font-semibold text-primary-700">Achievements</TableCell>
               </TableRow>
@@ -207,54 +170,6 @@ export function ProfileList() {
                     </Typography>
                   </TableCell>
                   <TableCell>
-                    {editingTeamName?.id === profile.team_id ? (
-                      <div className="flex items-center space-x-2 animate-fadeIn">
-                        <TextField
-                          value={editingTeamName.name}
-                          onChange={(e) => setEditingTeamName(prev => prev ? { ...prev, name: e.target.value } : null)}
-                          size="small"
-                          className="min-w-[200px] transition-all duration-300"
-                          autoFocus
-                        />
-                        <div className="flex items-center space-x-1">
-                          <IconButton
-                            onClick={handleTeamNameSave}
-                            size="small"
-                            className="text-green-600 hover:text-green-700 hover:bg-green-50 transition-all duration-300"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          </IconButton>
-                          <IconButton
-                            onClick={() => setEditingTeamName(null)}
-                            size="small"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-300"
-                          >
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                              <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                            </svg>
-                          </IconButton>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="flex items-center space-x-2">
-                        <Chip
-                          label={profile.team_name || 'N/A'}
-                          size="small"
-                          className="bg-blue-50 text-blue-700 font-medium transition-all duration-300 hover:bg-blue-100"
-                        />
-                        <IconButton
-                          onClick={() => handleTeamNameEdit(profile)}
-                          size="small"
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-300"
-                        >
-                          <DriveFileRenameOutlineIcon fontSize="small" />
-                        </IconButton>
-                      </div>
-                    )}
-                  </TableCell>
-                  <TableCell>
                     <Chip
                       label={profile.team_role || 'Owner'}
                       size="small"
@@ -266,11 +181,6 @@ export function ProfileList() {
                   <TableCell>
                     <Typography variant="body2" className="text-gray-700">
                       {profile.contact_email}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2" className="text-gray-700">
-                      {profile.phone_number || 'N/A'}
                     </Typography>
                   </TableCell>
                   <TableCell>

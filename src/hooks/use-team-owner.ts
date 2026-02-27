@@ -109,7 +109,6 @@ export function useTeamOwnerProfile() {
         const updateRequest: TeamOwnerUpdateRequest = {
           first_name: profile.first_name,
           last_name: profile.last_name,
-          team_id: profile.team_id,
           contact_email: profile.contact_email,
           bio: profile.bio,
           profile_image_url: response.data.imageUrl,
@@ -120,16 +119,16 @@ export function useTeamOwnerProfile() {
           phone_number: profile.phone_number,
           social_media: profile.social_media
         };
-        
+
         const updatedProfile = await updateTeamOwnerProfile(updateRequest);
         setProfile(updatedProfile.data);
       }
-      
+
       toast({
         title: 'Success',
         description: 'Profile image uploaded successfully',
       });
-      
+
       return response;
     } catch (error) {
       console.error('Image upload error:', error);
@@ -147,17 +146,16 @@ export function useTeamOwnerProfile() {
   const handleImageDelete = useCallback(async (imageUrl: string) => {
     try {
       setIsLoading(true);
-      
+
       // Delete the image first
       await deleteProfileImage(imageUrl);
-      
+
       // If we have a profile, update it to remove the image URL
       if (profile) {
         // Create update request with all required fields
         const updateRequest: TeamOwnerUpdateRequest = {
           first_name: profile.first_name,
           last_name: profile.last_name,
-          team_id: profile.team_id,
           contact_email: profile.contact_email,
           bio: profile.bio,
           profile_image_url: undefined,

@@ -1,7 +1,7 @@
 export interface TeamOwnerProfile {
   id: string;
   user_id: string;
-  team_id: string;
+  team_id?: string;
   team_name?: string;
   first_name: string;
   last_name: string;
@@ -29,7 +29,7 @@ export interface TeamOwnerProfile {
 export interface TeamOwnerUpdateRequest {
   first_name: string;
   last_name: string;
-  team_id: string;
+  team_id?: string;
   sports_background?: string;
   notable_achievements?: string[];
   team_role?: string;

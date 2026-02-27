@@ -31,7 +31,6 @@ export function TeamOwnerProfileForm() {
   const [formData, setFormData] = useState<TeamOwnerUpdateRequest>({
     first_name: '',
     last_name: '',
-    team_id: '',
     contact_email: '',
     bio: '',
     sports_background: '',
@@ -74,7 +73,7 @@ export function TeamOwnerProfileForm() {
       setFormData({
         first_name: profile.first_name,
         last_name: profile.last_name,
-        team_id: profile.team_id,
+        team_id: profile.team_id || '',
         contact_email: profile.contact_email,
         bio: profile.bio,
         sports_background: profile.sports_background,
@@ -82,7 +81,7 @@ export function TeamOwnerProfileForm() {
         phone_number: profile.phone_number || '',
         profile_image_url: profile.profile_image_url || '',
       })
-      setSelectedTeam(profile.team_id)
+      setSelectedTeam(profile.team_id || '')
       setTeamName(profile.team_name || '')
       setPreviewUrl(profile.profile_image_url || null)
       setIsEditing(true)
@@ -103,7 +102,7 @@ export function TeamOwnerProfileForm() {
       setFormData({
         first_name: profile.first_name,
         last_name: profile.last_name,
-        team_id: profile.team_id,
+        team_id: profile.team_id || '',
         sports_background: profile.sports_background || '',
         notable_achievements: profile.notable_achievements || [],
         contact_email: profile.contact_email,
@@ -113,7 +112,7 @@ export function TeamOwnerProfileForm() {
       });
       setSelectedFile(null);
       setIsEditing(true);
-      setSelectedTeam(profile.team_id);
+      setSelectedTeam(profile.team_id || '');
       setTeamName(profile.team_name || '')
       setPreviewUrl(profile.profile_image_url || null);
       setShowConfirmDialog(false);
@@ -214,10 +213,6 @@ export function TeamOwnerProfileForm() {
       errors.last_name = 'Last name is required'
     }
     
-    if (!formData.team_id) {
-      errors.team_id = 'Please select a team'
-    }
-    
     if (!formData.bio?.trim()) {
       errors.bio = 'Bio is required'
     }
@@ -271,7 +266,6 @@ export function TeamOwnerProfileForm() {
     setFormData({
       first_name: '',
       last_name: '',
-      team_id: '',
       contact_email: '',
       bio: '',
       sports_background: '',
@@ -417,7 +411,7 @@ export function TeamOwnerProfileForm() {
             <FormControl fullWidth error={Boolean(formErrors.team_id)} sx={{ '& .MuiInputLabel-root:not(.Mui-focused)': { color: '#6b7280' } }}>
               <InputLabel>Select Team</InputLabel>
               <Select
-                value={formData.team_id}
+                value={formData.team_id || ''}
                 onChange={handleTeamChange}
                 className="bg-white transition-all duration-300 hover:border-primary-500"
                 sx={{ '& .MuiSelect-select': { color: '#1f2937' } }}
