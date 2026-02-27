@@ -414,12 +414,13 @@ export function TeamOwnerProfileForm() {
             Team Information
           </Typography>
           <div className="space-y-4">
-            <FormControl fullWidth error={Boolean(formErrors.team_id)}>
+            <FormControl fullWidth error={Boolean(formErrors.team_id)} sx={{ '& .MuiInputLabel-root:not(.Mui-focused)': { color: '#6b7280' } }}>
               <InputLabel>Select Team</InputLabel>
               <Select
                 value={formData.team_id}
                 onChange={handleTeamChange}
                 className="bg-white transition-all duration-300 hover:border-primary-500"
+                sx={{ '& .MuiSelect-select': { color: '#1f2937' } }}
               >
                 {teams.map((team) => (
                   <MenuItem key={team.id} value={team.id}>
@@ -443,6 +444,7 @@ export function TeamOwnerProfileForm() {
                   disabled={!isEditingTeamName}
                   onChange={(e) => setTeamName(e.target.value)}
                   className="bg-white"
+                  sx={{ '& .MuiInputBase-input': { color: '#1f2937' }, '& .MuiInputLabel-root:not(.Mui-focused)': { color: '#6b7280' } }}
                   InputProps={{
                     endAdornment: (
                       <div className="flex space-x-2 animate-fadeIn">
@@ -560,6 +562,7 @@ export function TeamOwnerProfileForm() {
               error={Boolean(formErrors.first_name)}
               helperText={formErrors.first_name}
               className="bg-white transition-all duration-300 hover:border-primary-500"
+              sx={{ '& .MuiInputBase-input': { color: '#1f2937' }, '& .MuiInputLabel-root:not(.Mui-focused)': { color: '#6b7280' }, '& .MuiFormHelperText-root': { color: '#6b7280' } }}
             />
             <TextField
               label="Last Name"
@@ -570,6 +573,7 @@ export function TeamOwnerProfileForm() {
               error={Boolean(formErrors.last_name)}
               helperText={formErrors.last_name}
               className="bg-white transition-all duration-300 hover:border-primary-500"
+              sx={{ '& .MuiInputBase-input': { color: '#1f2937' }, '& .MuiInputLabel-root:not(.Mui-focused)': { color: '#6b7280' }, '& .MuiFormHelperText-root': { color: '#6b7280' } }}
             />
           </div>
         </div>
@@ -591,6 +595,7 @@ export function TeamOwnerProfileForm() {
               error={Boolean(formErrors.contact_email)}
               helperText={formErrors.contact_email}
               className="bg-white transition-all duration-300 hover:border-primary-500"
+              sx={{ '& .MuiInputBase-input': { color: '#1f2937' }, '& .MuiInputLabel-root:not(.Mui-focused)': { color: '#6b7280' }, '& .MuiFormHelperText-root': { color: '#6b7280' } }}
             />
             <TextField
               label="Phone Number"
@@ -607,6 +612,7 @@ export function TeamOwnerProfileForm() {
                 pattern: "[6-9][0-9]{9}"
               }}
               className="bg-white transition-all duration-300 hover:border-primary-500"
+              sx={{ '& .MuiInputBase-input': { color: '#1f2937' }, '& .MuiInputLabel-root:not(.Mui-focused)': { color: '#6b7280' }, '& .MuiFormHelperText-root': { color: '#6b7280' } }}
             />
           </div>
         </div>
@@ -627,6 +633,7 @@ export function TeamOwnerProfileForm() {
               rows={3}
               fullWidth
               className="bg-white transition-all duration-300 hover:border-primary-500"
+              sx={{ '& .MuiInputBase-input': { color: '#1f2937' }, '& .MuiInputLabel-root:not(.Mui-focused)': { color: '#6b7280' }, '& .MuiFormHelperText-root': { color: '#6b7280' } }}
               placeholder="Share your experience in sports, including any coaching, playing, or management roles"
             />
             <TextField
@@ -639,6 +646,7 @@ export function TeamOwnerProfileForm() {
               maxRows={8}
               fullWidth
               className="bg-white transition-all duration-300 hover:border-primary-500"
+              sx={{ '& .MuiInputBase-input': { color: '#1f2937' }, '& .MuiInputLabel-root:not(.Mui-focused)': { color: '#6b7280' }, '& .MuiFormHelperText-root': { color: '#6b7280' } }}
               placeholder="List your achievements in sports (one per line)"
               helperText="Press Enter for each new achievement"
             />
@@ -664,6 +672,7 @@ export function TeamOwnerProfileForm() {
               helperText={formErrors.bio || "Tell us about your passion for sports and your vision for the team"}
               fullWidth
               className="bg-white transition-all duration-300 hover:border-primary-500"
+              sx={{ '& .MuiInputBase-input': { color: '#1f2937' }, '& .MuiInputLabel-root:not(.Mui-focused)': { color: '#6b7280' }, '& .MuiFormHelperText-root': { color: '#6b7280' } }}
               placeholder="Tell us about your passion for sports and your vision for the team"
             />
           </div>

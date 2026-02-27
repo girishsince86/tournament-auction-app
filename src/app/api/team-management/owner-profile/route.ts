@@ -77,13 +77,7 @@ export async function GET(request: NextRequest) {
     try {
       let query = supabase
         .from('team_owner_profiles')
-        .select(`
-          *,
-          teams (
-            id,
-            name
-          )
-        `)
+        .select('*')
 
       // If not admin, only show profiles where user is the team owner
       if (!isAdmin) {
@@ -110,11 +104,23 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ data: [] })
       }
 
+      // Fetch team names for profiles that have team_id
+      const teamIds = data.map(p => p.team_id).filter(Boolean)
+      let teamNames: Record<string, string> = {}
+      if (teamIds.length > 0) {
+        const { data: teams } = await supabase
+          .from('teams')
+          .select('id, name')
+          .in('id', teamIds)
+        if (teams) {
+          teamNames = Object.fromEntries(teams.map(t => [t.id, t.name]))
+        }
+      }
+
       // Transform the data to include team_name
       const profiles = data.map(profile => ({
         ...profile,
-        team_name: profile.teams?.name,
-        teams: undefined // Remove the teams object from the response
+        team_name: profile.team_id ? teamNames[profile.team_id] : undefined,
       }))
 
       console.log('Successfully fetched profiles:', profiles.length)
@@ -213,13 +219,7 @@ export async function POST(request: NextRequest) {
     const { data: savedProfile, error: insertError } = await supabase
       .from('team_owner_profiles')
       .insert([profile])
-      .select(`
-        *,
-        teams (
-          id,
-          name
-        )
-      `)
+      .select('*')
       .single()
 
     if (insertError) {
@@ -238,11 +238,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Transform the response to include team_name
+    // Fetch team name
+    let teamName: string | undefined
+    if (savedProfile.team_id) {
+      const { data: team } = await supabase
+        .from('teams')
+        .select('name')
+        .eq('id', savedProfile.team_id)
+        .single()
+      teamName = team?.name
+    }
+
     const responseProfile = {
       ...savedProfile,
-      team_name: savedProfile.teams?.name,
-      teams: undefined
+      team_name: teamName,
     }
 
     return NextResponse.json({ data: responseProfile })
@@ -310,13 +319,7 @@ export async function PUT(request: NextRequest) {
       .from('team_owner_profiles')
       .update(profile)
       .eq('team_id', data.team_id)
-      .select(`
-        *,
-        teams (
-          id,
-          name
-        )
-      `)
+      .select('*')
       .single()
 
     if (error) {
@@ -327,11 +330,20 @@ export async function PUT(request: NextRequest) {
       )
     }
 
-    // Transform the response to include team_name
+    // Fetch team name
+    let teamName: string | undefined
+    if (updatedProfile.team_id) {
+      const { data: team } = await supabase
+        .from('teams')
+        .select('name')
+        .eq('id', updatedProfile.team_id)
+        .single()
+      teamName = team?.name
+    }
+
     const responseProfile = {
       ...updatedProfile,
-      team_name: updatedProfile.teams?.name,
-      teams: undefined
+      team_name: teamName,
     }
 
     return NextResponse.json({ data: responseProfile })

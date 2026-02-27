@@ -57,13 +57,7 @@ export async function GET(request: NextRequest) {
 
     let query = supabase
       .from('team_owner_profiles')
-      .select(`
-        *,
-        teams (
-          id,
-          name
-        )
-      `)
+      .select('*')
 
     // If not admin, only show the user's own profile
     if (!isAdmin) {
@@ -81,12 +75,24 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Fetch team names for profiles that have team_id
+    const teamIds = (data || []).map(p => p.team_id).filter(Boolean)
+    let teamNames: Record<string, string> = {}
+    if (teamIds.length > 0) {
+      const { data: teams } = await supabase
+        .from('teams')
+        .select('id, name')
+        .in('id', teamIds)
+      if (teams) {
+        teamNames = Object.fromEntries(teams.map(t => [t.id, t.name]))
+      }
+    }
+
     // Transform the data to include team_name
-    const profiles = data?.map(profile => ({
+    const profiles = (data || []).map(profile => ({
       ...profile,
-      team_name: profile.teams?.name,
-      teams: undefined // Remove the teams object from the response
-    })) || []
+      team_name: profile.team_id ? teamNames[profile.team_id] : undefined,
+    }))
 
     return NextResponse.json({ data: profiles })
   } catch (error) {
