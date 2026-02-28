@@ -90,6 +90,8 @@ import UndoIcon from '@mui/icons-material/Undo';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { fetchWithAuth } from '@/lib/utils/api-client';
 import BugReportIcon from '@mui/icons-material/BugReport';
+import { useAuctionRealtime } from '@/hooks/useAuctionRealtime';
+import { ConnectionStatus } from '@/components/auction/ConnectionStatus';
 
 interface AuctionControlProps {
     params: {
@@ -444,6 +446,17 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
         error: playersError,
         refetch: fetchPlayers
     } = useAvailablePlayers({ tournamentId, sportCategory });
+
+    // Wire up realtime subscriptions — callbacks trigger the existing hooks' refetch functions
+    const { isConnected, connectionError } = useAuctionRealtime({
+        tournamentId,
+        callbacks: {
+            onQueueChange: () => fetchQueue(),
+            onRoundChange: () => { fetchQueue(); fetchTeams(); fetchPlayers(); },
+            onTeamChange: () => fetchTeams(),
+            onPlayerChange: () => fetchPlayers(),
+        },
+    });
 
     const { showToast } = useToast();
 
@@ -1005,12 +1018,17 @@ function AuctionControl({ params: { tournamentId } }: AuctionControlProps) {
                             }}
                         />
                     </Tabs>
+                    <ConnectionStatus
+                        isConnected={isConnected}
+                        connectionError={connectionError}
+                        onRefresh={handleRefresh}
+                    />
                     <Tooltip title="Refresh data">
-                        <IconButton 
-                            color="primary" 
-                            onClick={handleRefresh} 
+                        <IconButton
+                            color="primary"
+                            onClick={handleRefresh}
                             aria-label="refresh data"
-                            sx={{ 
+                            sx={{
                                 bgcolor: 'rgba(25, 118, 210, 0.08)',
                                 '&:hover': {
                                     bgcolor: 'rgba(25, 118, 210, 0.15)',

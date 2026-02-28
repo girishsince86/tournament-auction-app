@@ -93,4 +93,28 @@ export interface TimerConfig {
     };
     visualIndicators: boolean;
     soundEnabled: boolean;
+}
+
+// Realtime event types
+export type AuctionEventType = 'queue_change' | 'round_change' | 'team_change' | 'player_change' | 'reconnect';
+
+export interface AuctionEvent {
+    type: AuctionEventType;
+    timestamp: number;
+    payload?: Record<string, unknown>;
+}
+
+export interface AuctionRealtimeCallbacks {
+    onQueueChange: () => void;
+    onRoundChange: (payload: Record<string, unknown>) => void;
+    onTeamChange: (teamId: string) => void;
+    onPlayerChange: (playerId: string) => void;
+}
+
+export interface AuctionLiveState {
+    teams: TeamWithStats[];
+    queue: QueueItemWithPlayer[];
+    availablePlayers: PlayerProfile[];
+    isConnected: boolean;
+    lastEvent: AuctionEvent | null;
 } 

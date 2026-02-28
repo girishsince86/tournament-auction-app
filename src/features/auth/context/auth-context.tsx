@@ -147,7 +147,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 }
               } else if (event === 'SIGNED_OUT') {
                 // If user signed out and on a protected page, redirect to login
-                if (!pathname.startsWith('/login') && !pathname.startsWith('/register') && pathname !== '/') {
+                // Exclude public pages: home, login, register, and auction live spectator page
+                if (
+                  !pathname.startsWith('/login') &&
+                  !pathname.startsWith('/register') &&
+                  pathname !== '/' &&
+                  !/\/auction\/[^/]+\/live/.test(pathname)
+                ) {
                   router.push('/login')
                 }
               }

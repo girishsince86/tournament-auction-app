@@ -1,153 +1,128 @@
-import { useEffect, useState } from 'react';
-import { createBrowserClient } from '@supabase/ssr';
-import { Database } from '@/lib/supabase/types/supabase';
-import { AuctionRoundWithRelations, PlayerProfile, QueueItemWithPlayer } from '@/types/auction';
-import { RealtimePostgresChangesPayload } from '@supabase/supabase-js';
+import { useEffect, useRef, useState, useCallback } from 'react';
+import { supabase } from '@/lib/supabase/client';
+import { AuctionRealtimeCallbacks, AuctionEvent } from '@/types/auction';
+import { RealtimeChannel } from '@supabase/supabase-js';
 
-interface AuctionUpdate {
-    currentPlayer: PlayerProfile | null;
-    currentRound: AuctionRoundWithRelations | null;
-    queue: QueueItemWithPlayer[];
-    lastBid: {
-        amount: number;
-        teamId: string;
-        timestamp: string;
-    } | null;
+interface UseAuctionRealtimeOptions {
+    tournamentId: string;
+    callbacks: AuctionRealtimeCallbacks;
+    enabled?: boolean;
 }
 
-type AuctionRoundRow = Database['public']['Tables']['auction_rounds']['Row'];
-type AuctionRoundChanges = RealtimePostgresChangesPayload<AuctionRoundRow>;
+interface UseAuctionRealtimeReturn {
+    isConnected: boolean;
+    connectionError: string | null;
+    lastEvent: AuctionEvent | null;
+}
 
-export function useAuctionRealtime(tournamentId: string) {
-    const [auctionState, setAuctionState] = useState<AuctionUpdate>({
-        currentPlayer: null,
-        currentRound: null,
-        queue: [],
-        lastBid: null
-    });
-    const [error, setError] = useState<string | null>(null);
+export function useAuctionRealtime({
+    tournamentId,
+    callbacks,
+    enabled = true,
+}: UseAuctionRealtimeOptions): UseAuctionRealtimeReturn {
+    const [isConnected, setIsConnected] = useState(false);
+    const [connectionError, setConnectionError] = useState<string | null>(null);
+    const [lastEvent, setLastEvent] = useState<AuctionEvent | null>(null);
+    const channelRef = useRef<RealtimeChannel | null>(null);
+    // Store callbacks in a ref so channel doesn't re-subscribe on every render
+    const callbacksRef = useRef(callbacks);
+    callbacksRef.current = callbacks;
+
+    const fireEvent = useCallback((type: AuctionEvent['type'], payload?: Record<string, unknown>) => {
+        setLastEvent({ type, timestamp: Date.now(), payload });
+    }, []);
 
     useEffect(() => {
-        // Initialize Supabase client
-        const supabase = createBrowserClient<Database>(
-            process.env.NEXT_PUBLIC_SUPABASE_URL!,
-            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-        );
+        if (!enabled || !tournamentId) return;
 
-        // Subscribe to auction queue changes
-        const queueSubscription = supabase
-            .channel('auction_queue_changes')
+        const channel = supabase
+            .channel(`auction-live-${tournamentId}`)
             .on(
                 'postgres_changes',
                 {
                     event: '*',
                     schema: 'public',
                     table: 'auction_queue',
-                    filter: `tournament_id=eq.${tournamentId}`
+                    filter: `tournament_id=eq.${tournamentId}`,
                 },
-                async () => {
-                    try {
-                        // Fetch updated queue
-                        const { data: queue, error: queueError } = await supabase
-                            .from('auction_queue')
-                            .select(`
-                                *,
-                                players (*)
-                            `)
-                            .eq('tournament_id', tournamentId)
-                            .eq('is_processed', false)
-                            .order('queue_position', { ascending: true });
-
-                        if (queueError) throw queueError;
-
-                        // Fetch current round if exists
-                        const { data: currentRound, error: roundError } = await supabase
-                            .from('auction_rounds')
-                            .select('*')
-                            .eq('tournament_id', tournamentId)
-                            .eq('status', 'ACTIVE')
-                            .single();
-
-                        if (roundError && roundError.code !== 'PGRST116') throw roundError;
-
-                        // Update state
-                        setAuctionState(prev => ({
-                            ...prev,
-                            queue: queue || [],
-                            currentPlayer: queue?.[0]?.players || null,
-                            currentRound: currentRound || null
-                        }));
-                    } catch (error) {
-                        console.error('Error handling queue update:', error);
-                        setError('Failed to process queue update');
-                    }
+                () => {
+                    fireEvent('queue_change');
+                    callbacksRef.current.onQueueChange();
                 }
             )
-            .subscribe();
-
-        // Subscribe to auction rounds changes
-        const roundsSubscription = supabase
-            .channel('auction_rounds_changes')
             .on(
                 'postgres_changes',
                 {
                     event: '*',
                     schema: 'public',
                     table: 'auction_rounds',
-                    filter: `tournament_id=eq.${tournamentId}`
+                    filter: `tournament_id=eq.${tournamentId}`,
                 },
-                async (payload: AuctionRoundChanges) => {
-                    if (!payload.new || typeof payload.new !== 'object') return;
-                    
-                    const newRound = payload.new as AuctionRoundRow;
-
-                    try {
-                        if (newRound.status === 'ACTIVE') {
-                            // Fetch player details for the current round
-                            const { data: player, error: playerError } = await supabase
-                                .from('players')
-                                .select('*')
-                                .eq('id', newRound.player_id)
-                                .single();
-
-                            if (playerError) throw playerError;
-
-                            // Update state with new round and player
-                            setAuctionState(prev => ({
-                                ...prev,
-                                currentRound: newRound as AuctionRoundWithRelations,
-                                currentPlayer: player
-                            }));
-                        } else if (newRound.status === 'COMPLETED') {
-                            // Clear current round and player
-                            setAuctionState(prev => ({
-                                ...prev,
-                                currentRound: null,
-                                currentPlayer: null,
-                                lastBid: {
-                                    amount: newRound.final_points || 0,
-                                    teamId: newRound.winning_team_id || '',
-                                    timestamp: newRound.updated_at
-                                }
-                            }));
-                        }
-                    } catch (error) {
-                        console.error('Error handling round update:', error);
-                        setError('Failed to process round update');
-                    }
+                (payload) => {
+                    const record = (payload.new ?? payload.old ?? {}) as Record<string, unknown>;
+                    fireEvent('round_change', record);
+                    callbacksRef.current.onRoundChange(record);
                 }
             )
-            .subscribe();
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'teams',
+                    filter: `tournament_id=eq.${tournamentId}`,
+                },
+                (payload) => {
+                    const record = (payload.new ?? payload.old ?? {}) as Record<string, unknown>;
+                    const teamId = (record.id as string) ?? '';
+                    fireEvent('team_change', { teamId });
+                    callbacksRef.current.onTeamChange(teamId);
+                }
+            )
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'players',
+                    // players table has no tournament_id — filter client-side
+                },
+                (payload) => {
+                    const record = (payload.new ?? payload.old ?? {}) as Record<string, unknown>;
+                    const playerId = (record.id as string) ?? '';
+                    fireEvent('player_change', { playerId });
+                    callbacksRef.current.onPlayerChange(playerId);
+                }
+            )
+            .subscribe((status) => {
+                if (status === 'SUBSCRIBED') {
+                    setIsConnected(true);
+                    setConnectionError(null);
+                } else if (status === 'CHANNEL_ERROR') {
+                    setIsConnected(false);
+                    setConnectionError('Failed to connect to realtime updates');
+                } else if (status === 'TIMED_OUT') {
+                    setIsConnected(false);
+                    setConnectionError('Connection timed out');
+                    // On reconnect, signal all callbacks for a full re-fetch
+                    fireEvent('reconnect');
+                    callbacksRef.current.onQueueChange();
+                    callbacksRef.current.onRoundChange({});
+                    callbacksRef.current.onTeamChange('');
+                    callbacksRef.current.onPlayerChange('');
+                } else if (status === 'CLOSED') {
+                    setIsConnected(false);
+                }
+            });
 
-        // Cleanup subscriptions
+        channelRef.current = channel;
+
         return () => {
-            queueSubscription.unsubscribe();
-            roundsSubscription.unsubscribe();
+            channel.unsubscribe();
+            channelRef.current = null;
+            setIsConnected(false);
         };
-    }, [tournamentId]);
+    }, [tournamentId, enabled, fireEvent]);
 
-    return {
-        auctionState,
-        error
-    };
-} 
+    return { isConnected, connectionError, lastEvent };
+}

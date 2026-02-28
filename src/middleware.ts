@@ -164,7 +164,8 @@ export async function middleware(request: NextRequest) {
       pathname.startsWith('/static') ||
       pathname.includes('.') ||
       pathname.startsWith('/api') ||
-      PUBLIC_ROUTES.some(route => pathname === route) // Exact match for public routes
+      PUBLIC_ROUTES.some(route => pathname === route) || // Exact match for public routes
+      /^\/auction\/[^/]+\/live$/.test(pathname) // Public spectator page
     ) {
       return NextResponse.next();
     }
